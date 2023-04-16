@@ -112,7 +112,15 @@ function Scheduled-Tasks {
         "%SystemRoot%\System32\drvinst.exe",
         "%windir%\system32\eduprintprov.exe",
         "%windir%\system32\speech_onecore\common\SpeechModelDownload.exe",
-        "%windir%\system32\speech_onecore\common\SpeechRuntime.exe"
+        "%windir%\system32\speech_onecore\common\SpeechRuntime.exe",
+        "%windir%\System32\SDNDiagnosticsTask.exe",
+        "%windir%\system32\srvinitconfig.exe"
+    )
+
+    $default_task_args = @(
+        "config upnphost start= auto",
+        '/B /nologo %systemroot%\system32\calluxxprovider.vbs $(Arg0) $(Arg1) $(Arg2)',
+        '%systemroot%\system32\pla.dll,PlaHost "Server Manager Performance Monitor" "$(Arg0)"'
     )
 
     ForEach ($task in $tasks){
@@ -125,7 +133,7 @@ function Scheduled-Tasks {
                 $exe_match = $false 
             }
         }
-        if ($exe_match -eq $false) {
+        if ($exe_match -eq $false -and $task.Arguments -notin $default_task_args) {
             # Current Task Executable Path is non-standard
             $detection = [PSCustomObject]@{
                 Name = 'Non-Standard Scheduled Task Executable'
@@ -137,7 +145,7 @@ function Scheduled-Tasks {
             Write-Detection $detection
         }
         # Task Running as SYSTEM
-        if ($task.RunAs -eq "SYSTEM" -and $exe_match -eq $false) {
+        if ($task.RunAs -eq "SYSTEM" -and $exe_match -eq $false -and $task.Arguments -notin $default_task_args) {
             # Current Task Executable Path is non-standard
             $detection = [PSCustomObject]@{
                 Name = 'Non-Standard Scheduled Task Running as SYSTEM'
@@ -347,7 +355,11 @@ function Services {
         'C:\Windows\system32\svchost.exe -k DevicesFlow -p',
         'C:\Windows\system32\svchost.exe -k PrintWorkflow',
         'C:\Windows\system32\svchost.exe -k UdkSvcGroup',
-        'C:\Windows\System32\svchost.exe -k UnistackSvcGroup'
+        'C:\Windows\System32\svchost.exe -k UnistackSvcGroup',
+        'C:\Windows\System32\svchost.exe -k termsvcs',
+        'C:\Windows\system32\RSoPProv.exe',
+        'C:\Windows\System32\svchost.exe -k smbsvcs',
+        'C:\Windows\system32\svchost.exe -k KpsSvcGroup'
     )
 
     $services = Get-CimInstance -ClassName Win32_Service  | select Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
@@ -679,10 +691,13 @@ function Registry-Checks {
     }
 
     # Winlogon Helper DLL Hijack
+    $standard_winlogon_helper_dlls = @(
+        "C:\Windows\system32\userinit.exe," # Server 2019
+    )
     if (Test-Path -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon") {
         $items = Get-ItemProperty -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
-            if ($_.Value -match '.*,.*') {
+            if ($_.Value -match '.*,.*' -and $_.Value -notin $standard_winlogon_helper_dlls) {
                 $detection = [PSCustomObject]@{
                     Name = 'Potential WinLogon Helper Persistence'
                     Risk = 'High'
@@ -921,7 +936,9 @@ function Registry-Checks {
         "C:\Windows\system32\unregmp2.exe /FirstLogon",
         "U",
         "C:\Windows\System32\ie4uinit.exe -UserConfig",
-        "C:\Windows\System32\Rundll32.exe C:\Windows\System32\mscories.dll,Install"
+        "C:\Windows\System32\Rundll32.exe C:\Windows\System32\mscories.dll,Install",
+        '"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenUser',
+        '"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenAdmin'
     )
     if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components") {
         $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -1153,7 +1170,8 @@ function Registry-Checks {
 
     # T1556.002: Modify Authentication Process: Password Filter DLL
     $standard_lsa_notification_packages = @(
-        "scecli"
+        "scecli", # Windows 10/Server
+        "rassfm" # Windows Server 2019 AWS Lightsail
     )
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
