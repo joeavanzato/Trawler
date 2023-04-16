@@ -182,7 +182,7 @@ function Users {
             Name = 'Local Administrator Account'
             Risk = 'Medium'
             Source = 'Users'
-            Technique = "TODO"
+            Technique = "T1136: Create Account"
             Meta = "Name: "+$admin.Name +", Last Logon: "+ $admin_user.LastLogon+", Enabled: "+ $admin_user.Enabled
         }
         Write-Detection $detection
@@ -340,7 +340,7 @@ function Services {
                 Name = 'Non-Standard Service Path'
                 Risk = 'Low'
                 Source = 'Services'
-                Technique = "TODO"
+                Technique = "T1543.003: Create or Modify System Process: Windows Service"
                 Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
             }
             Write-Detection $detection
@@ -351,7 +351,7 @@ function Services {
                 Name = 'Service launching from cmd.exe'
                 Risk = 'Medium'
                 Source = 'Services'
-                Technique = "TODO"
+                Technique = "T1543.003: Create or Modify System Process: Windows Service"
                 Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
             }
             Write-Detection $detection
@@ -368,7 +368,7 @@ function Processes {
                 Name = 'IP Address Pattern detected in Process CommandLine'
                 Risk = 'Medium'
                 Source = 'Processes'
-                Technique = "TODO"
+                Technique = "T1059: Command and Scripting Interpreter"
                 Meta = "Process Name: "+ $process.ProcessName+", CommandLine: "+ $process.CommandLine+", Executable: "+$process.ExecutablePath
             }
             Write-Detection $detection
@@ -379,7 +379,7 @@ function Processes {
                     Name = 'Suspicious Executable Path on Running Process'
                     Risk = 'High'
                     Source = 'Processes'
-                    Technique = "TODO"
+                    Technique = "T1059: Command and Scripting Interpreter"
                     Meta = "Process Name: "+ $process.ProcessName+", CommandLine: "+ $process.CommandLine+", Executable: "+$process.ExecutablePath
                 }
                 Write-Detection $detection
@@ -413,7 +413,7 @@ function Connections {
                 Name = 'Process Listening on Ephemeral Port'
                 Risk = 'Very Low'
                 Source = 'Connections'
-                Technique = "TODO"
+                Technique = "T1071: Application Layer Protocol"
                 Meta = "Local Port: "+$conn.LocalPort+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
             }
             Write-Detection $detection
@@ -423,7 +423,7 @@ function Connections {
                 Name = 'Established Connection on Suspicious Port'
                 Risk = 'Low'
                 Source = 'Connections'
-                Technique = "TODO"
+                Technique = "T1071: Application Layer Protocol"
                 Meta = "Local Port: "+$conn.LocalPort+", Remote Port: "+$conn.RemotePort+", Remote Address: "+$conn.RemoteAddress+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
             }
             Write-Detection $detection
@@ -435,7 +435,7 @@ function Connections {
                         Name = 'Process running from suspicious path has Network Connection'
                         Risk = 'High'
                         Source = 'Connections'
-                        Technique = "TODO"
+                        Technique = "T1071: Application Layer Protocol"
                         Meta = "Local Port: "+$conn.LocalPort+", Remote Port: "+$conn.RemotePort+", Remote Address: "+$conn.RemoteAddress+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
                     }
                     Write-Detection $detection
@@ -454,7 +454,7 @@ function WMI-Consumers {
                 Name = 'WMI ActiveScript Consumer'
                 Risk = 'High'
                 Source = 'WMI'
-                Technique = "TODO"
+                Technique = "T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription"
                 Meta = "Consumer Name: "+$consumer.Name+", Script Name: "+$consumer.ScriptFileName+", Script Text: "+$consumer.ScriptText
             }
             Write-Detection $detection
@@ -464,7 +464,7 @@ function WMI-Consumers {
                 Name = 'WMI CommandLine Consumer'
                 Risk = 'High'
                 Source = 'WMI'
-                Technique = "TODO"
+                Technique = "T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription"
                 Meta = "Consumer Name: "+$consumer.Name+", Executable Path: "+$consumer.ExecutablePath+", CommandLine Template: "+$consumer.CommandLineTemplate
             }
             Write-Detection $detection
@@ -479,7 +479,7 @@ function Startups {
             Name = 'Startup Item Review'
             Risk = 'Low'
             Source = 'Startup'
-            Technique = "TODO"
+            Technique = "T1037.005: Boot or Logon Initialization Scripts: Startup Items"
             Meta = "Item Name: "+$item.Name+", Command: "+$item.Command+", Location: "+$item.Location+", User: "+$item.User
         }
         Write-Detection $detection
@@ -493,7 +493,7 @@ function BITS {
             Name = 'BITS Item Review'
             Risk = 'Low'
             Source = 'BITS'
-            Technique = "TODO"
+            Technique = "T1197: BITS Jobs"
             Meta = "Item Name: "+$item.DisplayName+", TransferType: "+$item.TransferType+", Job State: "+$item.JobState+", User: "+$item.OwnerAccount
         }
         Write-Detection $detection
@@ -651,7 +651,7 @@ function Registry-Checks {
                     Name = 'Potential WinLogon Helper Persistence'
                     Risk = 'High'
                     Source = 'Registry'
-                    Technique = "TODO"
+                    Technique = "T1547.004: Boot or Logon Autostart Execution: Winlogon Helper DLL"
                     Meta = "Key Location: HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
                 }
                 Write-Detection $detection
@@ -664,7 +664,7 @@ function Registry-Checks {
                 Name = 'Potential utilman.exe Registry Persistence'
                 Risk = 'High'
                 Source = 'Registry'
-                Technique = "TODO"
+                Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
                 Meta = "Review Data for Key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe"
             }
             Write-Detection $detection
@@ -675,7 +675,7 @@ function Registry-Checks {
                 Name = 'Potential sethc.exe Registry Persistence'
                 Risk = 'High'
                 Source = 'Registry'
-                Technique = "TODO"
+                Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
                 Meta = "Review Data for Key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe"
             }
             Write-Detection $detection
@@ -684,12 +684,12 @@ function Registry-Checks {
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'Shadow' -and $_.Value -eq 4) {
+            if ($_.Name -eq 'Shadow' -and ($_.Value -eq 4 -or $_.Value -eq 2)) {
                 $detection = [PSCustomObject]@{
                     Name = 'RDP Shadowing without Consent is Enabled'
                     Risk = 'High'
                     Source = 'Registry'
-                    Technique = "TODO"
+                    Technique = "T1098: Account Manipulation"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
                 }
                 Write-Detection $detection
@@ -705,7 +705,7 @@ function Registry-Checks {
                     Name = 'UAC Disabled for Remote Sessions'
                     Risk = 'High'
                     Source = 'Registry'
-                    Technique = "TODO"
+                    Technique = "T1112: Modify Registry"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
                 }
                 Write-Detection $detection
@@ -732,7 +732,7 @@ function Registry-Checks {
                         Name = 'Non-Standard Print Monitor DLL'
                         Risk = 'Medium'
                         Source = 'Registry'
-                        Technique = "TODO"
+                        Technique = "T1112: Modify Registry"
                         Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
                     }
                     Write-Detection $detection
@@ -826,7 +826,7 @@ function Registry-Checks {
                         Name = 'Non-Standard Time Providers DLL'
                         Risk = 'High'
                         Source = 'Registry'
-                        Technique = "TODO"
+                        Technique = "T1547.003: Boot or Logon Autostart Execution: Time Providers"
                         Meta = "Registry Path: "+$item.Name+", DLL: "+$data.DllName
                     }
                     Write-Detection $detection
