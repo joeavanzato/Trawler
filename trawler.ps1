@@ -111,9 +111,9 @@ function Scheduled-Tasks {
         "%windir%\system32\gatherNetworkInfo.vbs",
         "%SystemRoot%\System32\drvinst.exe",
         "%windir%\system32\eduprintprov.exe",
-        "%windir%\system32\speech_onecore\common\SpeechModelDownload.exe"
+        "%windir%\system32\speech_onecore\common\SpeechModelDownload.exe",
+        "%windir%\system32\speech_onecore\common\SpeechRuntime.exe"
     )
-
 
     ForEach ($task in $tasks){
         # Detection - Non-Standard Tasks
@@ -132,7 +132,7 @@ function Scheduled-Tasks {
                 Risk = 'Low'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", RunAs: "+$task.RunAs
+                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
             }
             Write-Detection $detection
         }
@@ -144,7 +144,7 @@ function Scheduled-Tasks {
                 Risk = 'High'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", RunAs: "+$task.RunAs
+                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
             }
             Write-Detection $detection
         }
@@ -156,7 +156,7 @@ function Scheduled-Tasks {
                 Risk = 'High'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
             }
             Write-Detection $detection
         }
@@ -167,7 +167,7 @@ function Scheduled-Tasks {
                 Risk = 'High'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
             }
             Write-Detection $detection
         }
@@ -181,7 +181,7 @@ function Scheduled-Tasks {
                         Risk = 'Low'
                         Source = 'Scheduled Tasks'
                         Technique = "T1053: Scheduled Task/Job"
-                        Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                        Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
                     }
                     Write-Detection $detection
                     if ($task.RunAs -eq "SYSTEM") {
@@ -191,7 +191,7 @@ function Scheduled-Tasks {
                             Risk = 'High'
                             Source = 'Scheduled Tasks'
                             Technique = "T1053: Scheduled Task/Job"
-                            Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                            Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
                         }
                         Write-Detection $detection
                     }
