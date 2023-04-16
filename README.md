@@ -14,7 +14,7 @@ Just download and run trawler.ps1 from an Administrative PowerShell/cmd prompt -
 
 ## Example Image
 <p align="center">
-<img src="sample.png">
+<img src="sample.PNG">
 </p>
 
 
