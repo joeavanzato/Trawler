@@ -1,5 +1,33 @@
-﻿
-$cwd = Get-Location
+﻿<#
+.SYNOPSIS
+    trawler is designed to help Incident Responders discover suspicious persistence mechanisms on Windows devices.
+
+.DESCRIPTION
+    trawler inspects a constantly-growing variety of Windows artifacts to help discover signals of persistence including the registry, scheduled tasks, services, startup items, etc.
+
+.PARAMETER outpath
+    The fully-qualified file-path where detection output should be stored as a CSV.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    None
+
+.EXAMPLE
+    .\trawler.ps1
+    .\trawler.ps1 -outpath "C:\detections.csv"
+
+.LINK
+    https://github.com/joeavanzato/Trawler
+
+.NOTES
+    None
+
+#>
+param (
+    [string]$outpath=".\detections.csv"
+)
 
 $suspicious_process_paths = @(
     ".*\\windows\\fonts\\.*",
@@ -15,7 +43,6 @@ $suspicious_process_paths = @(
 )
 $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
-
 
 
 function Scheduled-Tasks {
@@ -175,6 +202,7 @@ function Scheduled-Tasks {
 }
 
 function Users {
+    # Find all local administrators and their last logon time as well as if they are enabled.
     $local_admins = Get-LocalGroupMember -Group "Administrators" | Select *
     ForEach ($admin in $local_admins){
         $admin_user = Get-LocalUser -SID $admin.SID | Select-Object AccountExpires,Description,Enabled,FullName,PasswordExpires,UserMayChangePassword,PasswordLastSet,LastLogon,Name,SID,PrincipalSource
@@ -346,9 +374,20 @@ function Services {
             Write-Detection $detection
         }
         if ($service.PathName -match ".*cmd.exe /(k|c).*") {
-            # Command 
+            # Service has a suspicious launch pattern
             $detection = [PSCustomObject]@{
                 Name = 'Service launching from cmd.exe'
+                Risk = 'Medium'
+                Source = 'Services'
+                Technique = "T1543.003: Create or Modify System Process: Windows Service"
+                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+            }
+            Write-Detection $detection
+        }
+        if ($service.PathName -match ".*powershell.exe.*") {
+            # Service has a suspicious launch pattern
+            $detection = [PSCustomObject]@{
+                Name = 'Service launching from powershell.exe'
                 Risk = 'Medium'
                 Source = 'Services'
                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
@@ -1204,13 +1243,12 @@ function Registry-Checks {
 
 
 function Write-Detection($det)  {
-    # Data is a custom object which will contain various pieces of metadata for the detection
-    # Name
-    # Risk (Very Low, Low, Medium, High, Very High, Critical)
-    # Source
-    # Tactic
-    # Technique
-    # Meta - String containing detection reference material specific to the detection
+    # det is a custom object which will contain various pieces of metadata for the detection
+    # Name - The name of the detection logic.
+    # Risk (Very Low, Low, Medium, High, Very High)
+    # Source - The source 'module' reporting the detection
+    # Technique - The most relevant MITRE Technique
+    # Meta - String containing reference material specific to the received detection
     if ($det.Risk -eq 'Very Low' -or $det.Risk -eq 'Low') {
         $fg_color = 'Green'
     } elseif ($det.Risk -eq 'Medium'){
@@ -1222,7 +1260,7 @@ function Write-Detection($det)  {
     }
     Write-Host [+] New Detection: $det.Name - Risk: $det.Risk -ForegroundColor $fg_color
     Write-Host [%] $det.Meta
-    $det | Export-CSV $cwd"\detections.csv" -Append -NoTypeInformation -Encoding UTF8
+    $det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
 }
 
 function Logo {
