@@ -616,9 +616,6 @@ function Office-Startup {
 }
 
 function Registry-Checks {
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit") {
-        Get-Item -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit" | Select-Object -ExpandProperty Property
-    }
 
     # SilentProcessExit Persistence
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit") {

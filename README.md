@@ -12,4 +12,38 @@ Trawler is a PowerShell script designed to help Incident Responders discover pot
 ## How do I use it?
 Just download and run trawler.ps1 from an Administrative PowerShell/cmd prompt - any detections will be displayed in the console as well as written to a CSV ('detections.csv') in the current working directory.
 
+## What is inspected?
+
+* Scheduled Tasks
+* Users
+* Services
+* Running Processes
+* Network Connections
+* WMI Event Consumers
+* Startup Items
+* BITS Jobs
+* Windows Accessibility Modifications
+* PowerShell Profile Existence
+* Office Add-Ins/Startup Items
+* SilentProcessExit Monitoring
+* Winlogon Helper DLL Hijacking
+* Image File Execution Option Hijacking
+* RDP Shadowing
+* UAC Setting for Remote Sessions
+* Print Monitor DLL Hijacking
+* LSA Security and Authentication Package Hijacking
+* Time Provider DLL Hijacking
+* Print Processor DLL Hijacking
+* Boot/Logon Active Setup Hijacking
+* User Initialization Logon Script Hijacking
+* ScreenSaver Executable Hijacking
+* Netsh DLL Hijacking
+* AppCert DLL Hijacking
+* AppInit DLL Hijacking
+* Application Shimming
+* Certain COM Object Hijacking
+* LSA Notification Hijacking
+* 'Office test' Usage
+* Office GlobalDotName Usage
+* Terminal Services DLL Hijacking
 
