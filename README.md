@@ -22,9 +22,12 @@ Certain detections have allow-lists built-in to help remove noise from default W
 
 If you have examples, write-ups or ideas for additional detections, please feel free to submit an Issue or PR with relevant technical details/references - the code-base is a little messy right now and will be cleaned up over time.
 
-## Example Image
+## Example Images
 <p align="center">
 <img src="sample.PNG">
+</p>
+<p align="center">
+<img src="sample2.PNG">
 </p>
 
 
