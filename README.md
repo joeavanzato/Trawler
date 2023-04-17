@@ -12,6 +12,11 @@ Trawler is a PowerShell script designed to help Incident Responders discover pot
 ## How do I use it?
 Just download and run trawler.ps1 from an Administrative PowerShell/cmd prompt - any detections will be displayed in the console as well as written to a CSV ('detections.csv') in the current working directory.
 
+Or use this one-liner from an Administrative PowerShell terminal:
+```
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/joeavanzato/Trawler/main/trawler.ps1'))
+```
+
 ## Example Image
 <p align="center">
 <img src="sample.PNG">
