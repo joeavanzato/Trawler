@@ -9,6 +9,7 @@ Dredging Windows for Persistence
 
 Trawler is a PowerShell script designed to help Incident Responders discover potential indicators of compromise on Windows hosts, primarily focused on persistence mechanisms including Scheduled Tasks, Services, Registry Modifications, Startup Items, Binary Modifications and more.
 
+Currently it can detect most of the persistence techniques specifically called out by MITRE and Atomic Red Team with more detections being added on a regular basis.
 ## How do I use it?
 Just download and run trawler.ps1 from an Administrative PowerShell/cmd prompt - any detections will be displayed in the console as well as written to a CSV ('detections.csv') in the current working directory.
 
@@ -52,9 +53,16 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercon
 * AppCert DLL Hijacking
 * AppInit DLL Hijacking
 * Application Shimming
-* Certain COM Object Hijacking
+* COM Object Hijacking
 * LSA Notification Hijacking
 * 'Office test' Usage
 * Office GlobalDotName Usage
 * Terminal Services DLL Hijacking
+* Autodial DLL Hijacking
+* Command AutoRun Processor
+* Outlook OTM Hijacking
+
+TODO
+* Browser Extension Analysis
+* 
 

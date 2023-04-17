@@ -662,8 +662,8 @@ function PowerShell-Profiles {
 
 function Office-Startup {
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select *
-    ForEach ($item in $profile_names){
-        $path = "C:\Users\"+$item.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
+    ForEach ($user in $profile_names){
+        $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
         $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Select * | where {$_.extension -in ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba"}
         ForEach ($item in $items){
             $detection = [PSCustomObject]@{
@@ -672,6 +672,17 @@ function Office-Startup {
                 Source = 'Windows'
                 Technique = "T1137.006: Office Application Startup: Add-ins"
                 Meta = "File: "+$item.FullName+", Last Write Time: "+$item.LastWriteTime
+            }
+            Write-Detection $detection
+        }
+        $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Outlook\VbaProject.OTM"
+        if (Test-Path $path) {
+            $detection = [PSCustomObject]@{
+                Name = 'Potential Persistence via Outlook Application Startup'
+                Risk = 'Medium'
+                Source = 'Windows'
+                Technique = "T1137.006: Office Application Startup: Add-ins"
+                Meta = "File: "+$path
             }
             Write-Detection $detection
         }
@@ -1167,6 +1178,34 @@ function Registry-Checks {
         }
     }
 
+    # COM Object Hijack Scan
+    if (Test-Path -Path "Registry::HKCU\SOFTWARE\Classes\CLSID") {
+        $items = Get-ChildItem -Path "Registry::HKCU\SOFTWARE\Classes\CLSID" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $children = Get-ChildItem -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            ForEach ($child in $children){
+                $path = "Registry::"+$child.Name
+                $data = Get-Item -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                if ($data.Name -match '.*InprocServer32'){
+                    $datum = Get-ItemProperty $path
+                    $datum.PSObject.Properties | ForEach-Object {
+                        if ($_.Name -eq '(default)'){
+                            $detection = [PSCustomObject]@{
+                                Name = 'Potential COM Hijack'
+                                Risk = 'High'
+                                Source = 'Registry'
+                                Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
+                                Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                            }
+                            Write-Detection $detection
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     # Folder Open Hijack
     if (Test-Path -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command") {
         $items = Get-ItemProperty -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -1265,12 +1304,60 @@ function Registry-Checks {
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'ServiceDll' -and $_.Value -ne 'C:\Windows\System32\termsrv.dll'){
                 $detection = [PSCustomObject]@{
-                    Name = 'Potential Redirection of Terminal Services DLL'
+                    Name = 'Potential Hijacking of Terminal Services DLL'
                     Risk = 'Very High'
                     Source = 'Registry'
                     Technique = "T1505.005: Server Software Component: Terminal Services DLL"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
                 }      
+                Write-Detection $detection
+            }
+        }
+    }
+
+    # Autodial DLL
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'AutodialDLL' -and $_.Value -ne 'C:\Windows\System32\rasadhlp.dll'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Autodial DLL'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    # Command AutoRun Processor
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'AutoRun'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Command AutoRun Processor'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    if (Test-Path -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor") {
+        $items = Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'AutoRun'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Command AutoRun Processor'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: HKCU\SOFTWARE\Microsoft\Command Processor, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
                 Write-Detection $detection
             }
         }
