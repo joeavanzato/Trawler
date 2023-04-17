@@ -1362,6 +1362,75 @@ function Registry-Checks {
             }
         }
     }
+
+    # Trust Provider Hijacking
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Dll' -and $_.Value -ne 'C:\Windows\System32\WindowsPowerShell\v1.0\pwrshsip.dll'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Trust Provider'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1553: Subvert Trust Controls"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+            if ($_.Name -eq 'FuncName' -and $_.Value -ne 'PsVerifyHash'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Trust Provider'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1553: Subvert Trust Controls"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function LNK-Scan {
+    $current_date = Get-Date
+    $WScript = New-Object -ComObject WScript.Shell
+    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select *
+    ForEach ($user in $profile_names){
+        $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Windows\Recent"
+        $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | where {$_.extension -in ".lnk"} | Select *
+        ForEach ($item in $items){
+            #Write-Host $item.FullName, $item.LastWriteTime
+            $lnk_target = $WScript.CreateShortcut($item.FullName).TargetPath
+            $date_diff = $current_date - $item.LastWriteTime
+            $comparison_timespan = New-TimeSpan -Days 90
+            #Write-Host $date_diff.ToString("dd' days 'hh' hours 'mm' minutes 'ss' seconds'")
+            $date_diff_temp = $comparison_timespan - $date_diff
+            if ($date_diff_temp -ge 0){
+                # If the LNK was modified within the last 90 days
+                if ($lnk_target -match ".*\.exe.*\.exe.*"){
+                    $detection = [PSCustomObject]@{
+                        Name = 'LNK Target contains multiple executables'
+                        Risk = 'High'
+                        Source = 'Windows'
+                        Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
+                        Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
+                    }
+                    Write-Detection $detection
+                }
+                if ($lnk_target -match ".*\.(csv|pdf|xlsx|doc|ppt|txt|jpeg|png|gif|exe|dll|ps1|webp|svg|zip|xls).*\.(csv|pdf|xlsx|doc|ppt|txt|jpeg|png|gif|exe|dll|ps1|webp|svg|zip|xls).*"){
+                    $detection = [PSCustomObject]@{
+                        Name = 'LNK Target contains multiple file extensions'
+                        Risk = 'Medium'
+                        Source = 'Windows'
+                        Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
+                        Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
+                    }
+                    Write-Detection $detection
+                }
+
+            }
+        }
+    }
 }
 
 
@@ -1414,6 +1483,7 @@ function Main {
     PowerShell-Profiles
     Office-Startup
     Registry-Checks
+    LNK-Scan
 }
 
 Main

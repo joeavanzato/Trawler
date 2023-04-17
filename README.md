@@ -65,8 +65,13 @@ If you have examples, write-ups or ideas for additional detections, please feel 
 * Autodial DLL Hijacking
 * Command AutoRun Processor
 * Outlook OTM Hijacking
+* Trust Provider Hijacking
 
 TODO
 * Browser Extension Analysis
 * File Association Hijacking
+* Certificate Installation (https://www.ired.team/offensive-security/persistence/t1130-install-root-certificate)
+* Maybe: Temporary RID Hijacking (https://www.ired.team/offensive-security/persistence/rid-hijacking)
+* Improve Office Trusted Location Scanning (HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\16.0\Word\Security\Trusted Locations)
+* 
 
