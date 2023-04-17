@@ -66,6 +66,7 @@ If you have examples, write-ups or ideas for additional detections, please feel 
 * Command AutoRun Processor
 * Outlook OTM Hijacking
 * Trust Provider Hijacking
+* LNK Target Scanning
 
 TODO
 * Browser Extension Analysis
