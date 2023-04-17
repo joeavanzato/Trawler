@@ -18,6 +18,8 @@ Or use this one-liner from an Administrative PowerShell terminal:
 iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/joeavanzato/Trawler/main/trawler.ps1'))
 ```
 
+Certain detections have allow-lists built-in to help remove noise from default Windows configurations - expected Scheduled Tasks, Services, etc.  Of course, it is always possible for attackers to hijack these directly and masquerade with great detail as a default OS process - take care to use multiple forms of analysis and detection when dealing with skillful adversaries.
+
 ## Example Image
 <p align="center">
 <img src="sample.PNG">
@@ -64,5 +66,5 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercon
 
 TODO
 * Browser Extension Analysis
-* 
+* File Association Hijacking
 
