@@ -114,7 +114,9 @@ function Scheduled-Tasks {
         "%windir%\system32\speech_onecore\common\SpeechModelDownload.exe",
         "%windir%\system32\speech_onecore\common\SpeechRuntime.exe",
         "%windir%\System32\SDNDiagnosticsTask.exe",
-        "%windir%\system32\srvinitconfig.exe"
+        "%windir%\system32\srvinitconfig.exe",
+        "%windir%\system32\ServerManagerLauncher.exe",
+        "%systemroot%\System32\sihclient.exe"
     )
 
     $default_task_args = @(
@@ -359,7 +361,15 @@ function Services {
         'C:\Windows\System32\svchost.exe -k termsvcs',
         'C:\Windows\system32\RSoPProv.exe',
         'C:\Windows\System32\svchost.exe -k smbsvcs',
-        'C:\Windows\system32\svchost.exe -k KpsSvcGroup'
+        'C:\Windows\system32\svchost.exe -k KpsSvcGroup',
+        'C:\Windows\System32\svchost.exe -k appmodel',
+        'C:\Windows\system32\UI0Detect.exe',
+        'C:\Windows\system32\svchost.exe -k DcomLaunch',
+        'C:\Windows\system32\svchost.exe -k NetworkServiceNetworkRestricted',
+        'C:\Windows\System32\svchost.exe -k LocalServiceNoNetwork',
+        'C:\Windows\System32\svchost.exe -k utcsvc',
+        'C:\Windows\System32\svchost.exe -k wsappx',
+        'C:\Windows\System32\svchost.exe -k AppReadiness'
     )
 
     $services = Get-CimInstance -ClassName Win32_Service  | select Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
@@ -770,7 +780,8 @@ function Registry-Checks {
         "FXSMON.dll",
         "tcpmon.dll",
         "usbmon.dll",
-        "APMon.dll"
+        "APMon.dll",
+        "WSDMon.dll" # Server 2016
     )
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors") {
         $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -803,7 +814,10 @@ function Registry-Checks {
         "msoidssp",
         "pku2u",
         "wsauth", #vmware
-        "ctxauth" #citrix
+        "ctxauth", #citrix
+        "cloudAP", # Server 2016
+        "tspkg", # Server 2016
+        "wdigest" # Server 2016
     )
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -931,14 +945,15 @@ function Registry-Checks {
 
     # T1547.014 - Boot or Logon Autostart Execution: Active Setup
     $standard_stubpaths = @(
-        "C:\Windows\system32\unregmp2.exe /ShowWMP",
+        "C:\Windows\system32\unregmp2.exe /ShowWMP", # 10
         "/UserInstall",
-        "C:\Windows\system32\unregmp2.exe /FirstLogon",
+        "C:\Windows\system32\unregmp2.exe /FirstLogon", # 10
         "U",
-        "C:\Windows\System32\ie4uinit.exe -UserConfig",
-        "C:\Windows\System32\Rundll32.exe C:\Windows\System32\mscories.dll,Install",
-        '"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenUser',
-        '"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenAdmin'
+        "C:\Windows\System32\ie4uinit.exe -UserConfig", # 10
+        "C:\Windows\System32\Rundll32.exe C:\Windows\System32\mscories.dll,Install", # 10
+        '"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenUser', # Server 2019
+        '"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenAdmin', # Server 2019
+        '"C:\Program Files\Windows Mail\WinMail.exe" OCInstallUserConfigOE' # Server 2016
     )
     if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components") {
         $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
