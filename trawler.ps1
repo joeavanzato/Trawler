@@ -116,7 +116,8 @@ function Scheduled-Tasks {
         "%windir%\System32\SDNDiagnosticsTask.exe",
         "%windir%\system32\srvinitconfig.exe",
         "%windir%\system32\ServerManagerLauncher.exe",
-        "%systemroot%\System32\sihclient.exe"
+        "%systemroot%\System32\sihclient.exe",
+        "%WINDIR%\system32\SecureBootEncodeUEFI.exe"
     )
 
     $default_task_args = @(
@@ -369,7 +370,8 @@ function Services {
         'C:\Windows\System32\svchost.exe -k LocalServiceNoNetwork',
         'C:\Windows\System32\svchost.exe -k utcsvc',
         'C:\Windows\System32\svchost.exe -k wsappx',
-        'C:\Windows\System32\svchost.exe -k AppReadiness'
+        'C:\Windows\System32\svchost.exe -k AppReadiness',
+        'C:\Windows\System32\svchost.exe -k CameraMonitor'
     )
 
     $services = Get-CimInstance -ClassName Win32_Service  | select Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
@@ -1032,7 +1034,8 @@ function Registry-Checks {
         "whhelper.dll",
         "wlancfg.dll",
         "wshelper.dll",
-        "wwancfg.dll"
+        "wwancfg.dll",
+        "netprofm.dll"
     )
     if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh") {
         $items = Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
