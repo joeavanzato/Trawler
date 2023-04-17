@@ -1295,7 +1295,7 @@ function Registry-Checks {
                         Name = 'Persistence via Office GlobalDotName'
                         Risk = 'Very High'
                         Source = 'Registry'
-                        Technique = "T1137.002: Office Application Startup: Office Test"
+                        Technique = "T1137.001: Office Application Office Template Macros"
                         Meta = "Key Location: HKCU\software\microsoft\office\$version.0\word\options, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
                     }      
                     Write-Detection $detection

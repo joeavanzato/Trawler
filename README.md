@@ -82,3 +82,37 @@ TODO
 
 ## MITRE Techniques Evaluated
 
+* T1037.001: Boot or Logon Initialization Scripts: Logon Script (Windows)
+* T1037.005: Boot or Logon Initialization Scripts: Startup Items
+* T1059: Command and Scripting Interpreter
+* T1071: Application Layer Protocol
+* T1098: Account Manipulation
+* T1112: Modify Registry
+* T1053: Scheduled Task/Job
+* T1136: Create Account
+* T1137.001: Office Application Office Template Macros
+* T1137.002: Office Application Startup: Office Test
+* T1137.006: Office Application Startup: Add-ins
+* T1197: BITS Jobs
+* T1505.005: Server Software Component: Terminal Services DLL
+* T1543.003: Create or Modify System Process: Windows Service
+* T1546: Event Triggered Execution
+* T1546.002: Event Triggered Execution: Screensaver
+* T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription
+* T1546.007: Event Triggered Execution: Netsh Helper DLL
+* T1546.008: Event Triggered Execution: Accessibility Features
+* T1546.009: Event Triggered Execution: AppCert DLLs
+* T1546.010: Event Triggered Execution: AppInit DLLs
+* T1546.011: Event Triggered Execution: Application Shimming
+* T1546.012: Event Triggered Execution: Image File Execution Options Injection
+* T1546.013: Event Triggered Execution: PowerShell Profile"
+* T1546.015: Event Triggered Execution: Component Object Model Hijacking
+* T1547.002: Boot or Logon Autostart Execution: Authentication Packages
+* T1547.003: Boot or Logon Autostart Execution: Time Providers
+* T1547.004: Boot or Logon Autostart Execution: Winlogon Helper DLL
+* T1547.005: Boot or Logon Autostart Execution: Security Support Provider
+* T1547.009: Boot or Logon Autostart Execution: Shortcut Modification
+* T1547.012: Boot or Logon Autostart Execution: Print Processors
+* T1547.014: Boot or Logon Autostart Execution: Active Setup
+* T1553: Subvert Trust Controls
+* T1556.002: Modify Authentication Process: Password Filter DLL
