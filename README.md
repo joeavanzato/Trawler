@@ -20,6 +20,8 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercon
 
 Certain detections have allow-lists built-in to help remove noise from default Windows configurations - expected Scheduled Tasks, Services, etc.  Of course, it is always possible for attackers to hijack these directly and masquerade with great detail as a default OS process - take care to use multiple forms of analysis and detection when dealing with skillful adversaries.
 
+If you have examples, write-ups or ideas for additional detections, please feel free to submit an Issue or PR with relevant technical details/references - the code-base is a little messy right now and will be cleaned up over time.
+
 ## Example Image
 <p align="center">
 <img src="sample.PNG">
