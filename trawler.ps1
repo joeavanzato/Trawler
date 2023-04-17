@@ -824,6 +824,7 @@ function Registry-Checks {
 
 
     # LSA Security Package Review
+    # TODO - Check DLL Modification/Creation times
     $common_ssp_dlls = @(
         "msv1_0",
         "kerberos",
@@ -1232,6 +1233,7 @@ function Registry-Checks {
     # TODO - Inspect Parameters for https://attack.mitre.org/techniques/T1574/011/
 
     # T1556.002: Modify Authentication Process: Password Filter DLL
+    # TODO - Check DLL Modification/Creation times
     $standard_lsa_notification_packages = @(
         "scecli", # Windows 10/Server
         "rassfm" # Windows Server 2019 AWS Lightsail
@@ -1285,6 +1287,7 @@ function Registry-Checks {
         }
     }
 
+    # Office GlobalDotName Hijack
     $office_versions = @(14.0,15.0,16.0)
     ForEach ($version in $office_versions){
         if (Test-Path -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options") {
