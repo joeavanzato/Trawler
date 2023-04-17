@@ -82,6 +82,8 @@ TODO
 
 ## MITRE Techniques Evaluated
 
+Please be aware that some of these are (of course) more detected than others - for example, we are not detecting all possible registry modifications but rather inspecting certain keys for obvious changes and using that technique where no other technique is applicable.  For other items such as COM hijacking, we are inspecting all entries in the relevant registry key and bubbling them all up to the surface, having a much more complete detection surface.
+
 * T1037.001: Boot or Logon Initialization Scripts: Logon Script (Windows)
 * T1037.005: Boot or Logon Initialization Scripts: Startup Items
 * T1059: Command and Scripting Interpreter
@@ -105,7 +107,7 @@ TODO
 * T1546.010: Event Triggered Execution: AppInit DLLs
 * T1546.011: Event Triggered Execution: Application Shimming
 * T1546.012: Event Triggered Execution: Image File Execution Options Injection
-* T1546.013: Event Triggered Execution: PowerShell Profile"
+* T1546.013: Event Triggered Execution: PowerShell Profile
 * T1546.015: Event Triggered Execution: Component Object Model Hijacking
 * T1547.002: Boot or Logon Autostart Execution: Authentication Packages
 * T1547.003: Boot or Logon Autostart Execution: Time Providers
