@@ -50,7 +50,7 @@ function Get-ValidOutPath
 	return $path
 }
 
-
+# TODO - Rearrange this functionality inside of Get-ValidOutPath if we want to halt execution prior to having a viable write path - unsure still.
 Try {
     $outpath = Get-ValidOutPath -path $outpath
     Write-Host "Using the following file path: $outpath"
@@ -62,7 +62,7 @@ Catch {
     $output_writable = $false
 }
 
-
+# TODO - JSON Output for more detail
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
 # TODO - Scanning Microsoft Office Trusted Locations for non-standard templates/add-ins
 # TODO - Scanning File Extension Associations for potential threats
@@ -70,8 +70,9 @@ Catch {
 # TODO - Installed Certificate Scanning
 # TODO - Temporary RID Hijacking
 # TODO - ntshrui.dll - https://www.mandiant.com/resources/blog/malware-persistence-windows-registry
-#
+# TODO - Add file metadata for detected files (COM Hijacks, etc)
 
+# TODO - Add more suspicious paths for running processes
 $suspicious_process_paths = @(
 	".*\\users\\administrator\\.*",
 	".*\\users\\default\\.*",
