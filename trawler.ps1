@@ -1681,20 +1681,22 @@ function File-Association-Hijack {
                             $exe = $_.Value
                             $detection_triggered = $false
 
-                            if ($exe -notmatch $value_regex_lookup[$basefile]){
-                                $detection = [PSCustomObject]@{
-                                    Name = 'Possible File Association Hijack - Mismatch on Expected Value'
-                                    Risk = 'High'
-                                    Source = 'Windows'
-                                    Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                    Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                            if ($value_regex_lookup.ContainsKey($basefile)){
+                                if ($exe -notmatch $value_regex_lookup[$basefile]){
+                                    $detection = [PSCustomObject]@{
+                                        Name = 'Possible File Association Hijack - Mismatch on Expected Value'
+                                        Risk = 'High'
+                                        Source = 'Windows'
+                                        Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
+                                        Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                    }
+                                    Write-Detection $detection
+                                    return
+                                } else {
+                                    return
                                 }
-                                Write-Detection $detection
-                                return
-                            } elseif ($exe -match $value_regex_lookup[$basefile]) {
-                                # file matches expected extension
-                                return
                             }
+
                             if ($exe -match ".*\.exe.*\.exe"){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Possible File Association Hijack - Multiple EXEs'
