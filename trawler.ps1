@@ -29,6 +29,15 @@ param (
     [string]$outpath=".\detections.csv"
 )
 
+# TODO - Non-Standard Service/Task running as/created by Local Administrator
+# TODO - Scanning Microsoft Office Trusted Locations for non-standard templates/add-ins
+# TODO - Scanning File Extension Associations for potential threats
+# TODO - Browser Extension Analysis
+# TODO - Installed Certificate Scanning
+# TODO - Temporary RID Hijacking
+# TODO - ntshrui.dll - https://www.mandiant.com/resources/blog/malware-persistence-windows-registry
+#
+
 $suspicious_process_paths = @(
     ".*\\windows\\fonts\\.*",
     ".*\\windows\\temp\\.*",
@@ -454,6 +463,7 @@ function Processes {
                 Write-Detection $detection
             }
         }
+
     }
 }
 
@@ -1442,6 +1452,91 @@ function LNK-Scan {
     }
 }
 
+function Process-Module-Scanning {
+    $processes = Get-CimInstance -ClassName Win32_Process | Select ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
+    ForEach ($process in $processes){
+
+        $suspicious_unsigned_dll_names = @(
+        "wlbsctrl.dll",
+        "wbemcomn.dll",
+        "WptsExtensions.dll",
+        "Tsmsisrv.dll",
+        "TSVIPSrv.dll",
+        "Msfte.dll",
+        "wow64log.dll",
+        "WindowsCoreDeviceInfo.dll",
+        "Ualapi.dll",
+        "wlanhlp.dll",
+        "phoneinfo.dll",
+        "EdgeGdi.dll",
+        "cdpsgshims.dll",
+        "windowsperformancerecordercontrol.dll",
+        "diagtrack_win.dll"
+        )
+        $modules = Get-Process -id $process.ProcessId -ErrorAction SilentlyContinue  | Select -ExpandProperty modules -ErrorAction SilentlyContinue | select Company,FileName,ModuleName
+        if ($modules -ne $null){
+            ForEach ($module in $modules){
+                if ($module.ModuleName -in $suspicious_unsigned_dll_names) {
+                    $signature = Get-AuthenticodeSignature $module.FileName
+                    if ($signature.Status -ne 'Valid'){
+                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select *
+                        $detection = [PSCustomObject]@{
+                            Name = 'Suspicious Unsigned DLL with commonly-masqueraded name loaded into running process.'
+                            Risk = 'Very High'
+                            Source = 'Windows'
+                            Technique = "T1574: Hijack Execution Flow"
+                            Meta = "DLL: "+$module.FileName+", Process Name: "+$process.ProcessName+", PID: "+$process.ProcessId+", Execuable Path: "+$process.ExecutablePath+", DLL Creation Time: "+$item.CreationTime+", DLL Last Write Time: "+$item.LastWriteTime
+                        }
+                        Write-Detection $detection
+                    } else {
+                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select *
+                        $detection = [PSCustomObject]@{
+                            Name = 'Suspicious DLL with commonly-masqueraded name loaded into running process.'
+                            Risk = 'High'
+                            Source = 'Windows'
+                            Technique = "T1574: Hijack Execution Flow"
+                            Meta = "DLL: "+$module.FileName+", Process Name: "+$process.ProcessName+", PID: "+$process.ProcessId+", Execuable Path: "+$process.ExecutablePath+", DLL Creation Time: "+$item.CreationTime+", DLL Last Write Time: "+$item.LastWriteTime
+                        }
+                        # TODO - This is too noisy to use as-is - these DLLs get loaded into quite a few processes.
+                        # Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+}
+
+function Scan-Windows-Unsigned-Files
+{
+    $scan_paths = @(
+    'C:\Windows',
+    'C:\Windows\System32',
+    'C:\Windows\System'
+    'C:\Windows\temp'
+    )
+    ForEach ($path in $scan_paths)
+    {
+        $files = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | where { $_.extension -in ".dll", ".exe" } | Select *
+        ForEach ($file in $files)
+        {
+            $sig = Get-AuthenticodeSignature $file.FullName
+            if ($sig.Status -ne 'Valid')
+            {
+                $item = Get-ChildItem -Path $file.FullName -File -ErrorAction SilentlyContinue | Select *
+                $detection = [PSCustomObject]@{
+                    Name = 'Unsigned DLL/EXE present in critical OS directory'
+                    Risk = 'Very High'
+                    Source = 'Windows'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "File: " + $file.FullName + ", Creation Time: " + $item.CreationTime + ", Last Write Time: " + $item.LastWriteTime
+                }
+                #Write-Host $detection.Meta
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
@@ -1493,6 +1588,8 @@ function Main {
     Office-Startup
     Registry-Checks
     LNK-Scan
+    Process-Module-Scanning
+    Scan-Windows-Unsigned-Files
 }
 
 Main
