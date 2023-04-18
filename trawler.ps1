@@ -1,32 +1,35 @@
 ﻿<#
-.SYNOPSIS
-    trawler is designed to help Incident Responders discover suspicious persistence mechanisms on Windows devices.
-
-.DESCRIPTION
-    trawler inspects a constantly-growing variety of Windows artifacts to help discover signals of persistence including the registry, scheduled tasks, services, startup items, etc.
-
-.PARAMETER outpath
-    The fully-qualified file-path where detection output should be stored as a CSV.
-
-.INPUTS
-    None
-
-.OUTPUTS
-    None
-
-.EXAMPLE
-    .\trawler.ps1
-    .\trawler.ps1 -outpath "C:\detections.csv"
-
-.LINK
-    https://github.com/joeavanzato/Trawler
-
-.NOTES
-    None
-
+	.SYNOPSIS
+		trawler is designed to help Incident Responders discover suspicious persistence mechanisms on Windows devices.
+	
+	.DESCRIPTION
+		trawler inspects a constantly-growing variety of Windows artifacts to help discover signals of persistence including the registry, scheduled tasks, services, startup items, etc.
+	
+	.PARAMETER outpath
+		The fully-qualified file-path where detection output should be stored as a CSV.
+	
+	.EXAMPLE
+		.\trawler.ps1
+		.\trawler.ps1 -outpath "C:\detections.csv"
+	
+	.OUTPUTS
+		None
+	
+	.NOTES
+		None
+	
+	.INPUTS
+		None
+	
+	.LINK
+		https://github.com/joeavanzato/Trawler
 #>
-param (
-    [string]$outpath=".\detections.csv"
+param
+(
+	[Parameter(Mandatory = $true,
+			   Position = 1,
+			   HelpMessage = 'Please provide the fully-qualified file-path where detection output should be stored as a CSV.')]
+	[string]$outpath = ".\detections.csv"
 )
 
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
@@ -39,101 +42,95 @@ param (
 #
 
 $suspicious_process_paths = @(
-    ".*\\windows\\fonts\\.*",
-    ".*\\windows\\temp\\.*",
-    ".*\\users\\public\\.*",
-    ".*\\windows\\debug\\.*",
-    ".*\\users\\administrator\\.*",
-    ".*\\windows\\servicing\\.*",
-    ".*\\users\\default\\.*",
-    ".*recycle.bin.*",
-    ".*\\windows\\media\\.*",
-    ".*\\windows\\repair\\.*"
+	".*\\users\\administrator\\.*",
+	".*\\users\\default\\.*",
+	".*\\users\\public\\.*",
+	".*\\windows\\debug\\.*",
+	".*\\windows\\fonts\\.*",
+	".*\\windows\\media\\.*",
+	".*\\windows\\repair\\.*",
+	".*\\windows\\servicing\\.*",
+	".*\\windows\\temp\\.*",
+	".*recycle.bin.*"
 )
 $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
 
 
 function Scheduled-Tasks {
-    $tasks = Get-ScheduledTask  | Select -Property State,Actions,Author,Date,Description,Principal,SecurityDescriptor,Settings,TaskName,TaskPath,Triggers,URI, @{Name="RunAs";Expression={ $_.principal.userid }} -ExpandProperty Actions | Select *
+    $tasks = Get-ScheduledTask  | Select-Object -Property State,Actions,Author,Date,Description,Principal,SecurityDescriptor,Settings,TaskName,TaskPath,Triggers,URI, @{Name="RunAs";Expression={ $_.principal.userid }} -ExpandProperty Actions | Select-Object *
 
     $default_task_exe_paths = @(
-        "%windir%\System32\XblGameSaveTask.exe",
-        "%SystemRoot%\System32\WiFiTask.exe",
-        "%SystemRoot%\System32\dsregcmd.exe",
-        "C:\Windows\system32\sc.exe"
-        '"%ProgramFiles%\Windows Media Player\wmpnscfg.exe"',
-        "C:\ProgramData\Microsoft\Windows Defender\Platform\*\MpCmdRun.exe",
-        "%windir%\system32\wermgr.exe",
-        "%windir%\system32\rundll32.exe",
-        "%systemroot%\system32\MusNotification.exe",
-        "%windir%\system32\tzsync.exe",
-        "%windir%\System32\UNP\UpdateNotificationMgr.exe",
-        "%systemroot%\system32\MusNotification.exe",
-        "%systemroot%\system32\usoclient.exe",
-        "%windir%\system32\appidpolicyconverter.exe",
-        "%windir%\system32\appidcertstorecheck.exe".
-        "%windir%\system32\compattelrunner.exe",
-        "%windir%\system32\rundll32.exe",
-        "%windir%\system32\compattelrunner.exe",
-        "%windir%\system32\rundll32.exe",
-        "%windir%\system32\AppHostRegistrationVerifier.exe",
-        "%windir%\system32\AppHostRegistrationVerifier.exe",
-        "%windir%\system32\rundll32.exe",
-        "%windir%\system32\dstokenclean.exe",
-        "%windir%\system32\defrag.exe",
-        "%windir%\system32\devicecensus.exe",
-        "%SystemRoot%\system32\ClipRenew.exe",
-        "%windir%\system32\srtasks.exe",
-        "%windir%\system32\sc.exe",
-        "%windir%\system32\RAServer.exe",
-        "%windir%\System32\wpcmon.exe",
-        "%windir%\system32\SpaceAgent.exe",
-        "%windir%\system32\spaceman.exe",
-        "%windir%\system32\ProvTool.exe",
-        "%windir%\system32\appidcertstorecheck.exe",
-        "BthUdTask.exe",
-        "%windir%\system32\bcdboot.exe",
-        "%SystemRoot%\system32\ClipUp.exe",
-        "%SystemRoot%\system32\fclip.exe",
-        '"C:\Windows\System32\MicTray64.exe"',
-        '"C:\Windows\System32\SynaMonApp.exe"',
-        "%SystemRoot%\System32\wsqmcons.exe",
-        "%windir%\system32\directxdatabaseupdater.exe",    
-        "%windir%\system32\dxgiadaptercache.exe",
-        "%windir%\system32\cleanmgr.exe",
-        "%windir%\system32\DFDWiz.exe",
-        "%windir%\system32\disksnapshot.exe",
-        "%SystemRoot%\System32\dusmtask.exe",
-        "%windir%\system32\dmclient.exe",
-        "C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe",
-        "C:\Program Files\NVIDIA Corporation\nview\nwiz.exe",
-        "C:\Program Files\Microsoft OneDrive\OneDriveStandaloneUpdater.exe",
-        "C:\Program Files\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe",
-        "C:\Program Files\Microsoft Office\root\Office16\sdxhelper.exe",
-        "C:\Program Files\Microsoft Office\root\VFS\ProgramFilesCommonX64\Microsoft Shared\Office16\operfmon.exe",
-        "%WinDir%\System32\WinBioPlugIns\FaceFodUninstaller.exe",
-        "%windir%\System32\LocationNotificationWindows.exe",
-        "%windir%\System32\WindowsActionDialog.exe",
-        "%SystemRoot%\System32\MbaeParserTask.exe",
-        "%windir%\system32\lpremove.exe",
-        "%windir%\system32\gatherNetworkInfo.vbs",
-        "%SystemRoot%\System32\drvinst.exe",
-        "%windir%\system32\eduprintprov.exe",
-        "%windir%\system32\speech_onecore\common\SpeechModelDownload.exe",
-        "%windir%\system32\speech_onecore\common\SpeechRuntime.exe",
-        "%windir%\System32\SDNDiagnosticsTask.exe",
-        "%windir%\system32\srvinitconfig.exe",
-        "%windir%\system32\ServerManagerLauncher.exe",
-        "%systemroot%\System32\sihclient.exe",
-        "%WINDIR%\system32\SecureBootEncodeUEFI.exe"
+		'"%ProgramFiles%\Windows Media Player\wmpnscfg.exe"',
+		"%SystemRoot%\System32\ClipRenew.exe",
+		"%SystemRoot%\System32\ClipUp.exe",
+		"%SystemRoot%\System32\drvinst.exe",
+		"%SystemRoot%\System32\dsregcmd.exe",
+		"%SystemRoot%\System32\dusmtask.exe",
+		"%SystemRoot%\System32\fclip.exe",
+		"%SystemRoot%\System32\MbaeParserTask.exe",
+		"%systemroot%\System32\MusNotification.exe",
+		"%systemroot%\System32\sihclient.exe",
+		"%systemroot%\System32\usoclient.exe",
+		"%SystemRoot%\System32\WiFiTask.exe",
+		"%SystemRoot%\System32\wsqmcons.exe",
+		"%windir%\System32\AppHostRegistrationVerifier.exe",
+		"%windir%\System32\appidcertstorecheck.exe",
+		"%windir%\System32\appidcertstorecheck.exe".
+		"%windir%\System32\appidpolicyconverter.exe",
+		"%windir%\System32\bcdboot.exe",
+		"%windir%\System32\cleanmgr.exe",
+		"%windir%\System32\compattelrunner.exe",
+		"%windir%\System32\defrag.exe",
+		"%windir%\System32\devicecensus.exe",
+		"%windir%\System32\DFDWiz.exe",
+		"%windir%\System32\directxdatabaseupdater.exe",
+		"%windir%\System32\disksnapshot.exe",
+		"%windir%\System32\dmclient.exe",
+		"%windir%\System32\dstokenclean.exe",
+		"%windir%\System32\dxgiadaptercache.exe",
+		"%windir%\System32\eduprintprov.exe",
+		"%windir%\System32\gatherNetworkInfo.vbs",
+		"%windir%\System32\LocationNotificationWindows.exe",
+		"%windir%\System32\lpremove.exe",
+		"%windir%\System32\ProvTool.exe",
+		"%windir%\System32\RAServer.exe",
+		"%windir%\System32\rundll32.exe",
+		"%windir%\System32\sc.exe",
+		"%windir%\System32\SDNDiagnosticsTask.exe",
+		"%WINDIR%\System32\SecureBootEncodeUEFI.exe",
+		"%windir%\System32\ServerManagerLauncher.exe",
+		"%windir%\System32\SpaceAgent.exe",
+		"%windir%\System32\spaceman.exe",
+		"%windir%\System32\speech_onecore\common\SpeechModelDownload.exe",
+		"%windir%\System32\speech_onecore\common\SpeechRuntime.exe",
+		"%windir%\System32\srtasks.exe",
+		"%windir%\System32\srvinitconfig.exe",
+		"%windir%\System32\tzsync.exe",
+		"%windir%\System32\UNP\UpdateNotificationMgr.exe",
+		"%windir%\System32\wermgr.exe",
+		"%WinDir%\System32\WinBioPlugIns\FaceFodUninstaller.exe",
+		"%windir%\System32\WindowsActionDialog.exe",
+		"%windir%\System32\wpcmon.exe",
+		"%windir%\System32\XblGameSaveTask.exe",
+		"BthUdTask.exe",
+		"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe",
+		"C:\Program Files\Common Files\Microsoft Shared\ClickToRun\OfficeC2RClient.exe",
+		"C:\Program Files\Microsoft Office\root\Office16\sdxhelper.exe",
+		"C:\Program Files\Microsoft Office\root\VFS\ProgramFilesCommonX64\Microsoft Shared\Office16\operfmon.exe",
+		"C:\Program Files\Microsoft OneDrive\OneDriveStandaloneUpdater.exe",
+		"C:\Program Files\NVIDIA Corporation\nview\nwiz.exe",
+		"C:\ProgramData\Microsoft\Windows Defender\Platform\*\MpCmdRun.exe",
+		'"C:\Windows\System32\MicTray64.exe"',
+		"C:\Windows\System32\sc.exe",
+		'"C:\Windows\System32\SynaMonApp.exe"'
     )
 
     $default_task_args = @(
-        "config upnphost start= auto",
-        '/B /nologo %systemroot%\system32\calluxxprovider.vbs $(Arg0) $(Arg1) $(Arg2)',
-        '%systemroot%\system32\pla.dll,PlaHost "Server Manager Performance Monitor" "$(Arg0)"',
-        '/NoUACCheck'
+		"config upnphost start= auto",
+		'%systemroot%\System32\pla.dll,PlaHost "Server Manager Performance Monitor" "$(Arg0)"',
+		'/B /nologo %systemroot%\System32\calluxxprovider.vbs $(Arg0) $(Arg1) $(Arg2)',
+		'/NoUACCheck'
     )
 
     ForEach ($task in $tasks){
@@ -229,7 +226,7 @@ function Scheduled-Tasks {
 
 function Users {
     # Find all local administrators and their last logon time as well as if they are enabled.
-    $local_admins = Get-LocalGroupMember -Group "Administrators" | Select *
+    $local_admins = Get-LocalGroupMember -Group "Administrators" | Select-Object *
     ForEach ($admin in $local_admins){
         $admin_user = Get-LocalUser -SID $admin.SID | Select-Object AccountExpires,Description,Enabled,FullName,PasswordExpires,UserMayChangePassword,PasswordLastSet,LastLogon,Name,SID,PrincipalSource
         $detection = [PSCustomObject]@{
@@ -246,150 +243,136 @@ function Users {
 
 function Services {
     $default_service_exe_paths = @(
-        'C:\Windows\system32\svchost.exe -k LocalServiceNetworkRestricted -p',
-        'C:\Windows\System32\alg.exe',
-        'C:\Windows\system32\Alps\GlidePoint\HidMonitorSvc.exe',
-        'C:\Windows\system32\svchost.exe -k netsvcs -p',
-        'C:\Windows\System32\svchost.exe -k AppReadiness -p',
-        'C:\Windows\system32\AppVClient.exe',
-        'C:\Windows\system32\svchost.exe -k wsappx -p',
-        'C:\Windows\system32\svchost.exe -k AssignedAccessManagerSvc',
-        'C:\Windows\System32\svchost.exe -k LocalSystemNetworkRestricted -p',
-        'C:\Windows\System32\svchost.exe -k LocalServiceNetworkRestricted -p',
-        'C:\Windows\system32\svchost.exe -k autoTimeSvc',
-        'C:\Windows\system32\svchost.exe -k AxInstSVGroup',
-        'C:\Windows\System32\svchost.exe -k netsvcs -p',
-        'C:\Windows\system32\svchost.exe -k LocalServiceNoNetworkFirewall -p',
-        'C:\Windows\system32\svchost.exe -k DcomLaunch -p',
-        'C:\Windows\system32\svchost.exe -k LocalServiceNetworkRestricted',
-        'C:\Windows\system32\svchost.exe -k LocalService -p',
-        'C:\Windows\system32\svchost.exe -k appmodel -p',
-        'C:\Windows\system32\svchost.exe -k netsvcs',
-        '"C:\Program Files\Common Files\Microsoft Shared\ClickToRun\OfficeClickToRun.exe" /service',
-        'C:\Windows\System32\svchost.exe -k wsappx -p',
-        'C:\Windows\system32\svchost.exe -k CloudIdServiceGroup -p',
-        'C:\Windows\system32\svchost.exe -k LocalServiceNoNetwork -p',
-        'C:\Windows\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_*\IntelCpHeciSvc.exe',
-        'C:\Windows\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_*\IntelCpHDCPSvc.exe',
-        'C:\Windows\system32\svchost.exe -k NetworkService -p',
-        '"C:\Windows\CxSvc\CxAudioSvc.exe"',
-        '"C:\Windows\CxSvc\CxUtilSvc.exe"',
-        'C:\Windows\system32\svchost.exe -k defragsvc',
-        'C:\Windows\system32\svchost.exe -k LocalSystemNetworkRestricted -p',
-        'C:\Windows\system32\DiagSvcs\DiagnosticsHub.StandardCollector.Service.exe',
-        'C:\Windows\System32\svchost.exe -k diagnostics',
-        'C:\Windows\System32\svchost.exe -k utcsvc -p',
-        'C:\Windows\system32\svchost.exe -k DialogBlockingService',
-        'C:\Windows\System32\svchost.exe -k NetworkService -p',
-        'C:\Windows\System32\svchost.exe -k LocalServiceNoNetwork -p',
-        '"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe" /svc',
-        '"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe" /medsvc',
-        'C:\Windows\System32\lsass.exe',
-        'C:\Windows\system32\fxssvc.exe',
-        'C:\Windows\system32\svchost.exe -k LocalServiceAndNoImpersonation -p',
-        '"C:\Program Files\Microsoft OneDrive\*\FileSyncHelper.exe"',
-        'C:\Windows\Microsoft.Net\*\*\WPF\PresentationFontCache.exe',
-        'C:\Windows\System32\svchost.exe -k Camera',
-        '"C:\Program Files\Google\Chrome\Application\*\elevation_service.exe"',
-        'C:\Windows\System32\svchost.exe -k GraphicsPerfSvcGroup',
-        '"C:\Program Files (x86)\Google\Update\GoogleUpdate.exe" /svc',
-        '"C:\Program Files (x86)\Google\Update\GoogleUpdate.exe" /medsvc',
-        'C:\Windows\System32\DriverStore\FileRepository\hpqkbsoftwarecompnent.inf_amd64_*\HotKeyServiceUWP.exe',
-        'C:\Windows\System32\ibtsiva',
-        'C:\Windows\System32\DriverStore\FileRepository\igcc_dch.inf_amd64_*\OneApp.IGCC.WinService.exe',
-        'C:\Windows\System32\DriverStore\FileRepository\cui_dch.inf_amd64_*\igfxCUIService.exe',
-        'C:\Windows\system32\cAVS\Intel(R) Audio Service\IntelAudioService.exe',
-        'C:\Windows\System32\svchost.exe -k NetSvcs -p',
-        'C:\Windows\system32\lsass.exe',
-        'C:\Windows\System32\svchost.exe -k NetworkServiceAndNoImpersonation -p',
-        'C:\Windows\System32\DriverStore\FileRepository\hpqkbsoftwarecompnent.inf_amd64_*\LanWlanWwanSwitchingServiceUWP.exe',
-        'C:\Windows\System32\svchost.exe -k LocalService -p',
-        'C:\Windows\system32\svchost.exe -k McpManagementServiceGroup',
-        '"C:\Program Files (x86)\Microsoft\Edge\Application\*\elevation_service.exe"',
-        'C:\Windows\System32\msdtc.exe',
-        'C:\Windows\system32\msiexec.exe /V',
-        'C:\Windows\Microsoft.NET\Framework64\*\SMSvcHost.exe',
-        '"C:\Program Files\NVIDIA Corporation\Display.NvContainer\NVDisplay.Container.exe" -s NVDisplay.ContainerLocalSystem -f "C:\ProgramData\NVIDIA\NVDisplay.ContainerLocalSystem.log" -l 3 -d "C:\Program Files\NVIDIA Corporation\Display.NvContainer\plugins\LocalSystem" -r -p 30000 ',
-        'C:\Windows\System32\nvwmi64.exe',
-        '"C:\Program Files\Microsoft OneDrive\*\OneDriveUpdaterService.exe"',
-        'C:\Windows\System32\svchost.exe -k LocalServicePeerNet',
-        'C:\Windows\System32\svchost.exe -k PeerDist',
-        'C:\Windows\system32\PerceptionSimulation\PerceptionSimulationService.exe',
-        'C:\Windows\SysWow64\perfhost.exe',
-        'C:\Windows\system32\svchost.exe -k NetworkServiceNetworkRestricted -p',
-        'C:\Windows\system32\svchost.exe -k print',
-        'C:\Windows\System32\svchost.exe -k netsvcs',
-        'C:\Windows\system32\svchost.exe -k localService -p',
-        'C:\Windows\System32\svchost.exe -k rdxgroup',
-        'C:\Windows\System32\svchost.exe -k LocalServiceNetworkRestricted',
-        'C:\Windows\system32\svchost.exe -k RPCSS -p',
-        'C:\Windows\system32\locator.exe',
-        'C:\Windows\system32\svchost.exe -k rpcss -p',
-        'C:\Windows\System32\DriverStore\FileRepository\iaahcic.inf_amd64_*\RstMwService.exe',
-        'C:\Windows\system32\svchost.exe -k LocalServiceAndNoImpersonation',
-        'C:\Windows\system32\svchost.exe -k LocalSystemNetworkRestricted',
-        'C:\Windows\system32\svchost.exe -k SDRSVC',
-        'C:\Windows\system32\SecurityHealthService.exe',
-        '"C:\Program Files\Windows Defender Advanced Threat Protection\MsSense.exe"',
-        'C:\Windows\System32\SensorDataService.exe',
-        'C:\Windows\system32\SgrmBroker.exe',
-        'C:\Windows\System32\svchost.exe -k smphost',
-        'C:\Windows\System32\snmptrap.exe',
-        'C:\Windows\system32\spectrum.exe',
-        'C:\Windows\System32\spoolsv.exe',
-        'C:\Windows\system32\sppsvc.exe',
-        'C:\Windows\System32\OpenSSH\ssh-agent.exe',
-        'C:\Windows\system32\svchost.exe -k imgsvc',
-        'C:\Windows\System32\svchost.exe -k swprv',
-        'C:\Windows\System32\svchost.exe -k NetworkService',
-        'C:\Windows\system32\TieringEngineService.exe',
-        'C:\Windows\servicing\TrustedInstaller.exe',
-        'C:\Windows\system32\AgentService.exe',
-        '"C:\Program Files\Microsoft Update Health Tools\uhssvc.exe"',
-        'C:\Windows\System32\vds.exe',
-        'C:\Windows\system32\svchost.exe -k ICService -p',
-        'C:\Windows\system32\vssvc.exe',
-        'C:\Windows\system32\svchost.exe -k LocalService',
-        'C:\Windows\system32\svchost.exe -k wusvcs -p',
-        'C:\Windows\System32\svchost.exe -k appmodel -p',
-        '"C:\Windows\system32\wbengine.exe"',
-        'C:\Windows\system32\svchost.exe -k WbioSvcGroup',
-        'C:\Windows\System32\svchost.exe -k LocalServiceAndNoImpersonation -p',
-        '"C:\ProgramData\Microsoft\Windows Defender\Platform\*\NisSrv.exe"',
-        'C:\Windows\system32\svchost.exe -k WepHostSvcGroup',
-        'C:\Windows\System32\svchost.exe -k WerSvcGroup',
-        '"C:\ProgramData\Microsoft\Windows Defender\Platform\*\MsMpEng.exe"',
-        'C:\Windows\system32\wbem\WmiApSrv.exe',
-        '"C:\Program Files\Windows Media Player\wmpnetwk.exe"',
-        'C:\Windows\system32\SearchIndexer.exe /Embedding',
-        'C:\Windows\SysWOW64\XtuService.exe',
-        'C:\Windows\system32\svchost.exe -k AarSvcGroup -p',
-        'C:\Windows\system32\svchost.exe -k BcastDVRUserService',
-        'C:\Windows\system32\svchost.exe -k BthAppGroup -p',
-        'C:\Windows\system32\svchost.exe -k ClipboardSvcGroup -p',
-        'C:\Windows\system32\svchost.exe -k UnistackSvcGroup',
-        'C:\Windows\system32\svchost.exe -k DevicesFlow',
-        'C:\Windows\system32\CredentialEnrollmentManager.exe',
-        'C:\Windows\system32\svchost.exe -k DevicesFlow -p',
-        'C:\Windows\system32\svchost.exe -k PrintWorkflow',
-        'C:\Windows\system32\svchost.exe -k UdkSvcGroup',
-        'C:\Windows\System32\svchost.exe -k UnistackSvcGroup',
-        'C:\Windows\System32\svchost.exe -k termsvcs',
-        'C:\Windows\system32\RSoPProv.exe',
-        'C:\Windows\System32\svchost.exe -k smbsvcs',
-        'C:\Windows\system32\svchost.exe -k KpsSvcGroup',
-        'C:\Windows\System32\svchost.exe -k appmodel',
-        'C:\Windows\system32\UI0Detect.exe',
-        'C:\Windows\system32\svchost.exe -k DcomLaunch',
-        'C:\Windows\system32\svchost.exe -k NetworkServiceNetworkRestricted',
-        'C:\Windows\System32\svchost.exe -k LocalServiceNoNetwork',
-        'C:\Windows\System32\svchost.exe -k utcsvc',
-        'C:\Windows\System32\svchost.exe -k wsappx',
-        'C:\Windows\System32\svchost.exe -k AppReadiness',
-        'C:\Windows\System32\svchost.exe -k CameraMonitor'
-    )
+		'"C:\Program Files (x86)\Google\Update\GoogleUpdate.exe" /medsvc',
+		'"C:\Program Files (x86)\Google\Update\GoogleUpdate.exe" /svc',
+		'"C:\Program Files (x86)\Microsoft\Edge\Application\*\elevation_service.exe"',
+		'"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe" /medsvc',
+		'"C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe" /svc',
+		'"C:\Program Files\Common Files\Microsoft Shared\ClickToRun\OfficeClickToRun.exe" /service',
+		'"C:\Program Files\Google\Chrome\Application\*\elevation_service.exe"',
+		'"C:\Program Files\Microsoft OneDrive\*\FileSyncHelper.exe"',
+		'"C:\Program Files\Microsoft OneDrive\*\OneDriveUpdaterService.exe"',
+		'"C:\Program Files\Microsoft Update Health Tools\uhssvc.exe"',
+		'"C:\Program Files\NVIDIA Corporation\Display.NvContainer\NVDisplay.Container.exe" -s NVDisplay.ContainerLocalSystem -f "C:\ProgramData\NVIDIA\NVDisplay.ContainerLocalSystem.log" -l 3 -d "C:\Program Files\NVIDIA Corporation\Display.NvContainer\plugins\LocalSystem" -r -p 30000 ',
+		'"C:\Program Files\Windows Defender Advanced Threat Protection\MsSense.exe"',
+		'"C:\Program Files\Windows Media Player\wmpnetwk.exe"',
+		'"C:\ProgramData\Microsoft\Windows Defender\Platform\*\MsMpEng.exe"',
+		'"C:\ProgramData\Microsoft\Windows Defender\Platform\*\NisSrv.exe"',
+		'"C:\Windows\CxSvc\CxAudioSvc.exe"',
+		'"C:\Windows\CxSvc\CxUtilSvc.exe"',
+		'"C:\Windows\System32\wbengine.exe"',
+		'C:\Windows\Microsoft.Net\*\*\WPF\PresentationFontCache.exe',
+		'C:\Windows\Microsoft.NET\Framework64\*\SMSvcHost.exe',
+		'C:\Windows\servicing\TrustedInstaller.exe',
+		'C:\Windows\System32\AgentService.exe',
+		'C:\Windows\System32\alg.exe',
+		'C:\Windows\System32\Alps\GlidePoint\HidMonitorSvc.exe',
+		'C:\Windows\System32\AppVClient.exe',
+		'C:\Windows\System32\cAVS\Intel(R) Audio Service\IntelAudioService.exe',
+		'C:\Windows\System32\CredentialEnrollmentManager.exe',
+		'C:\Windows\System32\DiagSvcs\DiagnosticsHub.StandardCollector.Service.exe',
+		'C:\Windows\System32\DriverStore\FileRepository\cui_dch.inf_amd64_*\igfxCUIService.exe',
+		'C:\Windows\System32\DriverStore\FileRepository\hpqkbsoftwarecompnent.inf_amd64_*\HotKeyServiceUWP.exe',
+		'C:\Windows\System32\DriverStore\FileRepository\hpqkbsoftwarecompnent.inf_amd64_*\LanWlanWwanSwitchingServiceUWP.exe',
+		'C:\Windows\System32\DriverStore\FileRepository\iaahcic.inf_amd64_*\RstMwService.exe',
+		'C:\Windows\System32\DriverStore\FileRepository\igcc_dch.inf_amd64_*\OneApp.IGCC.WinService.exe',
+		'C:\Windows\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_*\IntelCpHDCPSvc.exe',
+		'C:\Windows\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_*\IntelCpHeciSvc.exe',
+		'C:\Windows\System32\fxssvc.exe',
+		'C:\Windows\System32\ibtsiva',
+		'C:\Windows\System32\locator.exe',
+		'C:\Windows\System32\lsass.exe',
+		'C:\Windows\System32\msdtc.exe',
+		'C:\Windows\System32\msiexec.exe /V',
+		'C:\Windows\System32\nvwmi64.exe',
+		'C:\Windows\System32\OpenSSH\ssh-agent.exe',
+		'C:\Windows\System32\PerceptionSimulation\PerceptionSimulationService.exe',
+		'C:\Windows\System32\RSoPProv.exe',
+		'C:\Windows\System32\SearchIndexer.exe /Embedding',
+		'C:\Windows\System32\SecurityHealthService.exe',
+		'C:\Windows\System32\SensorDataService.exe',
+		'C:\Windows\System32\SgrmBroker.exe',
+		'C:\Windows\System32\snmptrap.exe',
+		'C:\Windows\System32\spectrum.exe',
+		'C:\Windows\System32\spoolsv.exe',
+		'C:\Windows\System32\sppsvc.exe',
+		'C:\Windows\System32\svchost.exe -k AarSvcGroup -p',
+		'C:\Windows\System32\svchost.exe -k appmodel -p',
+		'C:\Windows\System32\svchost.exe -k appmodel',
+		'C:\Windows\System32\svchost.exe -k AppReadiness -p',
+		'C:\Windows\System32\svchost.exe -k AppReadiness',
+		'C:\Windows\System32\svchost.exe -k AssignedAccessManagerSvc',
+		'C:\Windows\System32\svchost.exe -k autoTimeSvc',
+		'C:\Windows\System32\svchost.exe -k AxInstSVGroup',
+		'C:\Windows\System32\svchost.exe -k BcastDVRUserService',
+		'C:\Windows\System32\svchost.exe -k BthAppGroup -p',
+		'C:\Windows\System32\svchost.exe -k Camera',
+		'C:\Windows\System32\svchost.exe -k CameraMonitor',
+		'C:\Windows\System32\svchost.exe -k ClipboardSvcGroup -p',
+		'C:\Windows\System32\svchost.exe -k CloudIdServiceGroup -p',
+		'C:\Windows\System32\svchost.exe -k DcomLaunch -p',
+		'C:\Windows\System32\svchost.exe -k DcomLaunch',
+		'C:\Windows\System32\svchost.exe -k defragsvc',
+		'C:\Windows\System32\svchost.exe -k DevicesFlow -p',
+		'C:\Windows\System32\svchost.exe -k DevicesFlow',
+		'C:\Windows\System32\svchost.exe -k diagnostics',
+		'C:\Windows\System32\svchost.exe -k DialogBlockingService',
+		'C:\Windows\System32\svchost.exe -k GraphicsPerfSvcGroup',
+		'C:\Windows\System32\svchost.exe -k ICService -p',
+		'C:\Windows\System32\svchost.exe -k imgsvc',
+		'C:\Windows\System32\svchost.exe -k KpsSvcGroup',
+		'C:\Windows\System32\svchost.exe -k localService -p',
+		'C:\Windows\System32\svchost.exe -k LocalService -p',
+		'C:\Windows\System32\svchost.exe -k LocalService',
+		'C:\Windows\System32\svchost.exe -k LocalServiceAndNoImpersonation -p',
+		'C:\Windows\System32\svchost.exe -k LocalServiceAndNoImpersonation',
+		'C:\Windows\System32\svchost.exe -k LocalServiceNetworkRestricted -p',
+		'C:\Windows\System32\svchost.exe -k LocalServiceNetworkRestricted',
+		'C:\Windows\System32\svchost.exe -k LocalServiceNoNetwork -p',
+		'C:\Windows\System32\svchost.exe -k LocalServiceNoNetwork',
+		'C:\Windows\System32\svchost.exe -k LocalServiceNoNetworkFirewall -p',
+		'C:\Windows\System32\svchost.exe -k LocalServicePeerNet',
+		'C:\Windows\System32\svchost.exe -k LocalSystemNetworkRestricted -p',
+		'C:\Windows\System32\svchost.exe -k LocalSystemNetworkRestricted',
+		'C:\Windows\System32\svchost.exe -k McpManagementServiceGroup',
+		'C:\Windows\System32\svchost.exe -k netsvcs -p',
+		'C:\Windows\System32\svchost.exe -k NetSvcs -p',
+		'C:\Windows\System32\svchost.exe -k netsvcs',
+		'C:\Windows\System32\svchost.exe -k NetworkService -p',
+		'C:\Windows\System32\svchost.exe -k NetworkService',
+		'C:\Windows\System32\svchost.exe -k NetworkServiceAndNoImpersonation -p',
+		'C:\Windows\System32\svchost.exe -k NetworkServiceNetworkRestricted -p',
+		'C:\Windows\System32\svchost.exe -k NetworkServiceNetworkRestricted',
+		'C:\Windows\System32\svchost.exe -k PeerDist',
+		'C:\Windows\System32\svchost.exe -k print',
+		'C:\Windows\System32\svchost.exe -k PrintWorkflow',
+		'C:\Windows\System32\svchost.exe -k rdxgroup',
+		'C:\Windows\System32\svchost.exe -k rpcss -p',
+		'C:\Windows\System32\svchost.exe -k RPCSS -p',
+		'C:\Windows\System32\svchost.exe -k SDRSVC',
+		'C:\Windows\System32\svchost.exe -k smbsvcs',
+		'C:\Windows\System32\svchost.exe -k smphost',
+		'C:\Windows\System32\svchost.exe -k swprv',
+		'C:\Windows\System32\svchost.exe -k termsvcs',
+		'C:\Windows\System32\svchost.exe -k UdkSvcGroup',
+		'C:\Windows\System32\svchost.exe -k UnistackSvcGroup',
+		'C:\Windows\System32\svchost.exe -k utcsvc -p',
+		'C:\Windows\System32\svchost.exe -k utcsvc',
+		'C:\Windows\System32\svchost.exe -k WbioSvcGroup',
+		'C:\Windows\System32\svchost.exe -k WepHostSvcGroup',
+		'C:\Windows\System32\svchost.exe -k WerSvcGroup',
+		'C:\Windows\System32\svchost.exe -k wsappx -p',
+		'C:\Windows\System32\svchost.exe -k wsappx',
+		'C:\Windows\System32\svchost.exe -k wusvcs -p',
+		'C:\Windows\System32\TieringEngineService.exe',
+		'C:\Windows\System32\UI0Detect.exe',
+		'C:\Windows\System32\vds.exe',
+		'C:\Windows\System32\vssvc.exe',
+		'C:\Windows\System32\wbem\WmiApSrv.exe',
+		'C:\Windows\SysWow64\perfhost.exe',
+		'C:\Windows\SysWOW64\XtuService.exe'    )
 
-    $services = Get-CimInstance -ClassName Win32_Service  | select Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
+    $services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
 
     ForEach ($service in $services){
         # Detection - Non-Standard Tasks
@@ -439,7 +422,7 @@ function Services {
 
 function Processes {
     # TODO - Check for processes spawned from netsh.dll
-    $processes = Get-CimInstance -ClassName Win32_Process | Select ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
+    $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
         if ($process.CommandLine -match $ipv4_pattern -or $process.CommandLine -match $ipv6_pattern) {
             $detection = [PSCustomObject]@{
@@ -468,25 +451,25 @@ function Processes {
 }
 
 function Connections {
-    $tcp_connections = Get-NetTCPConnection | Select State,LocalAddress,LocalPort,OwningProcess,RemoteAddress,RemotePort
+    $tcp_connections = Get-NetTCPConnection | Select-Object State,LocalAddress,LocalPort,OwningProcess,RemoteAddress,RemotePort
     $suspicious_ports = @(20,21,22,23,25,137,139,445,3389,443)
     $allow_listed_process_names = @(
-        "chrome",
-        "GitHubDesktop",
-        "Spotify",
-        "Discord",
-        "OneDrive",
-        "msedge",
-        "brave",
-        "iexplorer",
-        "safari",
-        "firefox",
-        "officeclicktorun"
-        "steam"
-        "SearchApp"
+		"brave",
+		"chrome",
+		"Discord",
+		"firefox",
+		"GitHubDesktop",
+		"iexplorer",
+		"msedge",
+		"officeclicktorun"
+		"OneDrive",
+		"safari",
+		"SearchApp",
+		"Spotify",
+		"steam"		
     )
     ForEach ($conn in $tcp_connections) {
-        $proc = Get-Process -Id $conn.OwningProcess | Select Name,Path
+        $proc = Get-Process -Id $conn.OwningProcess | Select-Object Name,Path
         if ($conn.State -eq 'Listen' -and $conn.LocalPort -gt 1024){
             $detection = [PSCustomObject]@{
                 Name = 'Process Listening on Ephemeral Port'
@@ -525,7 +508,7 @@ function Connections {
 }
 
 function WMI-Consumers {
-    $consumers = Get-WMIObject -Namespace root\Subscription -Class __EventConsumer | Select *
+    $consumers = Get-WMIObject -Namespace root\Subscription -Class __EventConsumer | Select-Object *
 
     ForEach ($consumer in $consumers) {
         if ($consumer.ScriptingEngine -ne $null) {
@@ -552,7 +535,7 @@ function WMI-Consumers {
 }
 
 function Startups {
-    $startups = Get-CimInstance -ClassName Win32_StartupCommand | Select Command,Location,Name,User
+    $startups = Get-CimInstance -ClassName Win32_StartupCommand | Select-Object Command,Location,Name,User
     ForEach ($item in $startups) {
         $detection = [PSCustomObject]@{
             Name = 'Startup Item Review'
@@ -566,7 +549,7 @@ function Startups {
 }
 
 function BITS {
-    $bits = Get-BitsTransfer | Select JobId,DisplayName,TransferType,JobState,OwnerAccount
+    $bits = Get-BitsTransfer | Select-Object JobId,DisplayName,TransferType,JobState,OwnerAccount
     ForEach ($item in $bits) {
         $detection = [PSCustomObject]@{
             Name = 'BITS Item Review'
@@ -581,18 +564,17 @@ function BITS {
 
 function Modified-Windows-Accessibility-Feature {
     $files_to_check = @(
-        "C:\Windows\System32\sethc.exe",
-        "C:\Windows\System32\utilman.exe",
-        "C:\Windows\System32\osk.exe",
-        "C:\Windows\System32\Magnify.exe",
-        "C:\Windows\System32\Narrator.exe",
-        "C:\Windows\System32\DisplaySwitch.exe",
-        "C:\Windows\System32\AtBroker.exe"
-        "C:\Program Files\Common Files\microsoft shared\ink\HID.dll"
-
+		"C:\Program Files\Common Files\microsoft shared\ink\HID.dll"
+		"C:\Windows\System32\AtBroker.exe",
+		"C:\Windows\System32\DisplaySwitch.exe",
+		"C:\Windows\System32\Magnify.exe",
+		"C:\Windows\System32\Narrator.exe",
+		"C:\Windows\System32\osk.exe",
+		"C:\Windows\System32\sethc.exe",
+		"C:\Windows\System32\utilman.exe"		
     )
     ForEach ($file in $files_to_check){ 
-        $fdata = Get-Item $file -ErrorAction SilentlyContinue | Select CreationTime,LastWriteTime
+        $fdata = Get-Item $file -ErrorAction SilentlyContinue | Select-Object CreationTime,LastWriteTime
         if ($fdata.CreationTime -ne $null) {
             if ($fdata.CreationTime.ToString() -ne $fdata.LastWriteTime.ToString()){
                 $detection = [PSCustomObject]@{
@@ -608,7 +590,6 @@ function Modified-Windows-Accessibility-Feature {
     }
 }
 
-
 function PowerShell-Profiles {
     # PowerShell profiles may be abused by adversaries for persistence.
 
@@ -616,7 +597,7 @@ function PowerShell-Profiles {
     # $PSHOME\Microsoft.PowerShell_profile.ps1
     # $HOME\Documents\PowerShell\Profile.ps1
     # $HOME\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
-    $PROFILE | Select AllUsersAllHosts,AllUsersCurrentHost,CurrentUserAllHosts,CurrentUserCurrentHost | Out-Null
+    $PROFILE | Select-Object AllUsersAllHosts,AllUsersCurrentHost,CurrentUserAllHosts,CurrentUserCurrentHost | Out-Null
     if (Test-Path $PROFILE.AllUsersAllHosts){
         $detection = [PSCustomObject]@{
             Name = 'Custom PowerShell Profile for All Users should be reviewed.'
@@ -638,7 +619,7 @@ function PowerShell-Profiles {
         Write-Detection $detection
     }
 
-    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select Name
+    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object Name
     ForEach ($name in $profile_names){
         $path1 = "C:\Users\$name\Documents\WindowsPowerShell\profile.ps1"
         $path2 = "C:\Users\$name\Documents\WindowsPowerShell\Microsoft.PowerShellISE_profile.ps1"
@@ -677,10 +658,10 @@ function PowerShell-Profiles {
 }
 
 function Office-Startup {
-    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select *
+    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
     ForEach ($user in $profile_names){
         $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
-        $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Select * | where {$_.extension -in ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba"}
+        $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Select-Object * | Where-Object {$_.extension -in ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba"}
         ForEach ($item in $items){
             $detection = [PSCustomObject]@{
                 Name = 'Potential Persistence via Office Startup Addin'
@@ -709,10 +690,10 @@ function Registry-Checks {
 
     # SilentProcessExit Persistence
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.MonitorProcess -ne $null){
                 if ($data.ReportingMode -eq $null){
                     $data.ReportingMode = 'NA'
@@ -731,10 +712,10 @@ function Registry-Checks {
 
     # Winlogon Helper DLL Hijack
     $standard_winlogon_helper_dlls = @(
-        "C:\Windows\system32\userinit.exe," # Server 2019
+        "C:\Windows\System32\userinit.exe," # Server 2019
     )
     if (Test-Path -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon") {
-        $items = Get-ItemProperty -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Value -match '.*,.*' -and $_.Value -notin $standard_winlogon_helper_dlls) {
                 $detection = [PSCustomObject]@{
@@ -772,7 +753,7 @@ function Registry-Checks {
     }
 
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Shadow' -and ($_.Value -eq 4 -or $_.Value -eq 2)) {
                 $detection = [PSCustomObject]@{
@@ -788,7 +769,7 @@ function Registry-Checks {
     }
 
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'LocalAccountTokenFilterPolicy' -and $_.Value -eq 1) {
                 $detection = [PSCustomObject]@{
@@ -804,19 +785,19 @@ function Registry-Checks {
     }
 
     $standard_print_monitors = @(
-        "AppMon.dll",
-        "localspl.dll",
-        "FXSMON.dll",
-        "tcpmon.dll",
-        "usbmon.dll",
-        "APMon.dll",
-        "WSDMon.dll" # Server 2016
+		"APMon.dll",
+		"AppMon.dll",
+		"FXSMON.dll",
+		"localspl.dll",
+		"tcpmon.dll",
+		"usbmon.dll",
+		"WSDMon.dll" # Server 2016
     )
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.Driver -ne $null){
                 if ($data.Driver -inotin $standard_print_monitors){
                     $detection = [PSCustomObject]@{
@@ -836,21 +817,21 @@ function Registry-Checks {
     # LSA Security Package Review
     # TODO - Check DLL Modification/Creation times
     $common_ssp_dlls = @(
-        "msv1_0",
-        "kerberos",
-        "negoexts",
-        "wsauth",
-        "schannel"
-        "msoidssp",
-        "pku2u",
-        "wsauth", #vmware
-        "ctxauth", #citrix
-        "cloudAP", # Server 2016
-        "tspkg", # Server 2016
-        "wdigest" # Server 2016
+		"cloudAP", # Server 2016
+		"ctxauth", #citrix
+		"kerberos",
+		"msoidssp",
+		"msv1_0",
+		"negoexts",
+		"pku2u",
+		"schannel",
+		"tspkg", # Server 2016
+		"wdigest" # Server 2016
+		"wsauth",
+		"wsauth" #vmware
     )
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
@@ -885,7 +866,7 @@ function Registry-Checks {
         }
     }
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
@@ -907,14 +888,14 @@ function Registry-Checks {
 
     # Time Provider Review
     $standard_timeprovider_dll = @(
-        "C:\Windows\system32\w32time.dll",
+        "C:\Windows\System32\w32time.dll",
         "C:\Windows\System32\vmictimeprovider.dll"
     )
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.DllName -ne $null){
                 if ($standard_timeprovider_dll -notcontains $data.DllName){
                     $detection = [PSCustomObject]@{
@@ -935,10 +916,10 @@ function Registry-Checks {
         "winprint.dll"
     )
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.Driver -ne $null){
                 if ($standard_print_processors -notcontains $data.Driver){
                     $detection = [PSCustomObject]@{
@@ -954,10 +935,10 @@ function Registry-Checks {
         }
     }
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.Driver -ne $null){
                 if ($standard_print_processors -notcontains $data.Driver){
                     $detection = [PSCustomObject]@{
@@ -975,21 +956,21 @@ function Registry-Checks {
 
     # T1547.014 - Boot or Logon Autostart Execution: Active Setup
     $standard_stubpaths = @(
-        "C:\Windows\system32\unregmp2.exe /ShowWMP", # 10
-        "/UserInstall",
-        "C:\Windows\system32\unregmp2.exe /FirstLogon", # 10
-        "U",
-        "C:\Windows\System32\ie4uinit.exe -UserConfig", # 10
-        "C:\Windows\System32\Rundll32.exe C:\Windows\System32\mscories.dll,Install", # 10
-        '"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenUser', # Server 2019
-        '"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenAdmin', # Server 2019
-        '"C:\Program Files\Windows Mail\WinMail.exe" OCInstallUserConfigOE' # Server 2016
+		"/UserInstall",
+		'"C:\Program Files\Windows Mail\WinMail.exe" OCInstallUserConfigOE', # Server 2016
+		"C:\Windows\System32\ie4uinit.exe -UserConfig", # 10
+		"C:\Windows\System32\Rundll32.exe C:\Windows\System32\mscories.dll,Install", # 10
+		'"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenAdmin', # Server 2019
+		'"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenUser', # Server 2019
+		"C:\Windows\System32\unregmp2.exe /FirstLogon", # 10
+		"C:\Windows\System32\unregmp2.exe /ShowWMP", # 10
+		"U"
     )
     if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components") {
-        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.StubPath -ne $null){
                 if ($standard_stubpaths -notcontains $data.StubPath -and $data.StubPath -notmatch ".*(\\Program Files\\Google\\Chrome\\Application\\.*chrmstp.exe|Microsoft\\Edge\\Application\\.*\\Installer\\setup.exe).*"){
                     $detection = [PSCustomObject]@{
@@ -1007,7 +988,7 @@ function Registry-Checks {
 
     # T1037.001 - Boot or Logon Initialization Scripts: Logon Script (Windows)
     if (Test-Path -Path "Registry::HKCU\Environment\UserInitMprLogonScript") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\Environment\UserInitMprLogonScript" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKCU\Environment\UserInitMprLogonScript" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             $detection = [PSCustomObject]@{
                 Name = 'Potential Persistence via Logon Initialization Script'
@@ -1026,7 +1007,7 @@ function Registry-Checks {
 
     # T1546.002 - Event Triggered Execution: Screensaver
     if (Test-Path -Path "Registry::HKCU\Control Panel\Desktop") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq "SCRNSAVE.exe") {
                 $detection = [PSCustomObject]@{
@@ -1043,30 +1024,30 @@ function Registry-Checks {
 
     # T1546.007 - Event Triggered Execution: Netsh Helper DLL
     $standard_netsh_dlls = @(
-        "ifmon.dll",
-        "rasmontr.dll",
-        "authfwcfg.dll",
-        "dhcpcmonitor.dll",
-        "dot3cfg.dll",
-        "fwcfg.dll",
-        "hnetmon.dll",
-        "netiohlp.dll",
-        "nettrace.dll",
-        "nshhttp.dll",
-        "nshipsec.dll",
-        "nshwfp.dll",
-        "p2pnetsh.dll",
-        "peerdistsh.dll",
-        "rpcnsh.dll",
-        "WcnNetsh.dll",
-        "whhelper.dll",
-        "wlancfg.dll",
-        "wshelper.dll",
-        "wwancfg.dll",
-        "netprofm.dll"
+		"authfwcfg.dll",
+		"dhcpcmonitor.dll",
+		"dot3cfg.dll",
+		"fwcfg.dll",
+		"hnetmon.dll",
+		"ifmon.dll",
+		"netiohlp.dll",
+		"netprofm.dll",
+		"nettrace.dll",
+		"nshhttp.dll",
+		"nshipsec.dll",
+		"nshwfp.dll",
+		"p2pnetsh.dll",
+		"peerdistsh.dll",
+		"rasmontr.dll",
+		"rpcnsh.dll",
+		"WcnNetsh.dll",
+		"whhelper.dll",
+		"wlancfg.dll",
+		"wshelper.dll",
+		"wwancfg.dll"
     )
     if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh") {
-        $items = Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Value -notin $standard_netsh_dlls) {
                 $detection = [PSCustomObject]@{
@@ -1084,7 +1065,7 @@ function Registry-Checks {
     # AppCertDLL
     $standard_appcert_dlls = @()
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Value -notin $standard_appcert_dlls) {
                 $detection = [PSCustomObject]@{
@@ -1102,7 +1083,7 @@ function Registry-Checks {
     # AppInit DLLs
 
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AppInit_DLLs' -and $_.Value -ne '') {
                 $detection = [PSCustomObject]@{
@@ -1117,7 +1098,7 @@ function Registry-Checks {
         }
     }
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AppInit_DLLs' -and $_.Value -ne '') {
                 $detection = [PSCustomObject]@{
@@ -1134,7 +1115,7 @@ function Registry-Checks {
 
     # Shims
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             $detection = [PSCustomObject]@{
                 Name = 'Potential Application Shimming Persistence'
@@ -1149,10 +1130,10 @@ function Registry-Checks {
 
     # IFEO Injection
     if (Test-Path -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options") {
-        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.Debugger -ne $null){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential Image File Execution Option Debugger Injection'
@@ -1168,7 +1149,7 @@ function Registry-Checks {
     # COM Hijacks
     # shell32.dll Hijack
     if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             $detection = [PSCustomObject]@{
                 Name = 'Potential shell32.dll Hijack for Persistence'
@@ -1182,7 +1163,7 @@ function Registry-Checks {
     }
     # WBEM Subsystem
     if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             $detection = [PSCustomObject]@{
                 Name = 'Potential WBEM Subsystem Hijack for Persistence'
@@ -1197,13 +1178,13 @@ function Registry-Checks {
 
     # COM Object Hijack Scan
     if (Test-Path -Path "Registry::HKCU\SOFTWARE\Classes\CLSID") {
-        $items = Get-ChildItem -Path "Registry::HKCU\SOFTWARE\Classes\CLSID" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::HKCU\SOFTWARE\Classes\CLSID" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
-            $children = Get-ChildItem -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $children = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             ForEach ($child in $children){
                 $path = "Registry::"+$child.Name
-                $data = Get-Item -Path $path | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                $data = Get-Item -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
                 if ($data.Name -match '.*InprocServer32'){
                     $datum = Get-ItemProperty $path
                     $datum.PSObject.Properties | ForEach-Object {
@@ -1225,7 +1206,7 @@ function Registry-Checks {
 
     # Folder Open Hijack
     if (Test-Path -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'DelegateExecute') {
                 $detection = [PSCustomObject]@{
@@ -1245,11 +1226,11 @@ function Registry-Checks {
     # T1556.002: Modify Authentication Process: Password Filter DLL
     # TODO - Check DLL Modification/Creation times
     $standard_lsa_notification_packages = @(
-        "scecli", # Windows 10/Server
-        "rassfm" # Windows Server 2019 AWS Lightsail
+		"rassfm", # Windows Server 2019 AWS Lightsail
+		"scecli" # Windows 10/Server
     )
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq "Notification Packages") {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
@@ -1271,7 +1252,7 @@ function Registry-Checks {
 
     # Office test Persistence
     if (Test-Path -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             $detection = [PSCustomObject]@{
                 Name = 'Persistence via Office test\Special\Perf Key'
@@ -1284,7 +1265,7 @@ function Registry-Checks {
         }
     }
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             $detection = [PSCustomObject]@{
                 Name = 'Persistence via Office test\Special\Perf Key'
@@ -1301,7 +1282,7 @@ function Registry-Checks {
     $office_versions = @(14.0,15.0,16.0)
     ForEach ($version in $office_versions){
         if (Test-Path -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options") {
-            $items = Get-ItemProperty -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items = Get-ItemProperty -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             $items.PSObject.Properties | ForEach-Object {
                 if ($_.Name -eq "GlobalDotName"){
                     $detection = [PSCustomObject]@{
@@ -1319,7 +1300,7 @@ function Registry-Checks {
 
     # Terminal Services DLL
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'ServiceDll' -and $_.Value -ne 'C:\Windows\System32\termsrv.dll'){
                 $detection = [PSCustomObject]@{
@@ -1336,7 +1317,7 @@ function Registry-Checks {
 
     # Autodial DLL
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AutodialDLL' -and $_.Value -ne 'C:\Windows\System32\rasadhlp.dll'){
                 $detection = [PSCustomObject]@{
@@ -1352,7 +1333,7 @@ function Registry-Checks {
     }
     # Command AutoRun Processor
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AutoRun'){
                 $detection = [PSCustomObject]@{
@@ -1367,7 +1348,7 @@ function Registry-Checks {
         }
     }
     if (Test-Path -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AutoRun'){
                 $detection = [PSCustomObject]@{
@@ -1384,7 +1365,7 @@ function Registry-Checks {
 
     # Trust Provider Hijacking
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}" | Select * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Dll' -and $_.Value -ne 'C:\Windows\System32\WindowsPowerShell\v1.0\pwrshsip.dll'){
                 $detection = [PSCustomObject]@{
@@ -1413,10 +1394,10 @@ function Registry-Checks {
 function LNK-Scan {
     $current_date = Get-Date
     $WScript = New-Object -ComObject WScript.Shell
-    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select *
+    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
     ForEach ($user in $profile_names){
         $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Windows\Recent"
-        $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | where {$_.extension -in ".lnk"} | Select *
+        $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Where-Object {$_.extension -in ".lnk"} | Select-Object *
         ForEach ($item in $items){
             #Write-Host $item.FullName, $item.LastWriteTime
             $lnk_target = $WScript.CreateShortcut($item.FullName).TargetPath
@@ -1453,33 +1434,33 @@ function LNK-Scan {
 }
 
 function Process-Module-Scanning {
-    $processes = Get-CimInstance -ClassName Win32_Process | Select ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
+    $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
 
         $suspicious_unsigned_dll_names = @(
-        "wlbsctrl.dll",
-        "wbemcomn.dll",
-        "WptsExtensions.dll",
-        "Tsmsisrv.dll",
-        "TSVIPSrv.dll",
-        "Msfte.dll",
-        "wow64log.dll",
-        "WindowsCoreDeviceInfo.dll",
-        "Ualapi.dll",
-        "wlanhlp.dll",
-        "phoneinfo.dll",
-        "EdgeGdi.dll",
-        "cdpsgshims.dll",
-        "windowsperformancerecordercontrol.dll",
-        "diagtrack_win.dll"
+			"cdpsgshims.dll",
+			"diagtrack_win.dll",
+			"EdgeGdi.dll",
+			"Msfte.dll",
+			"phoneinfo.dll",
+			"Tsmsisrv.dll",
+			"TSVIPSrv.dll",
+			"Ualapi.dll",
+			"wbemcomn.dll",
+			"WindowsCoreDeviceInfo.dll",
+			"windowsperformancerecordercontrol.dll",
+			"wlanhlp.dll",
+			"wlbsctrl.dll",
+			"wow64log.dll",
+			"WptsExtensions.dll"
         )
-        $modules = Get-Process -id $process.ProcessId -ErrorAction SilentlyContinue  | Select -ExpandProperty modules -ErrorAction SilentlyContinue | select Company,FileName,ModuleName
+        $modules = Get-Process -id $process.ProcessId -ErrorAction SilentlyContinue  | Select-Object -ExpandProperty modules -ErrorAction SilentlyContinue | Select-Object Company,FileName,ModuleName
         if ($modules -ne $null){
             ForEach ($module in $modules){
                 if ($module.ModuleName -in $suspicious_unsigned_dll_names) {
                     $signature = Get-AuthenticodeSignature $module.FileName
                     if ($signature.Status -ne 'Valid'){
-                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select *
+                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select-Object *
                         $detection = [PSCustomObject]@{
                             Name = 'Suspicious Unsigned DLL with commonly-masqueraded name loaded into running process.'
                             Risk = 'Very High'
@@ -1489,7 +1470,7 @@ function Process-Module-Scanning {
                         }
                         Write-Detection $detection
                     } else {
-                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select *
+                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select-Object *
                         $detection = [PSCustomObject]@{
                             Name = 'Suspicious DLL with commonly-masqueraded name loaded into running process.'
                             Risk = 'High'
@@ -1516,13 +1497,13 @@ function Scan-Windows-Unsigned-Files
     )
     ForEach ($path in $scan_paths)
     {
-        $files = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | where { $_.extension -in ".dll", ".exe" } | Select *
+        $files = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Where-Object { $_.extension -in ".dll", ".exe" } | Select-Object *
         ForEach ($file in $files)
         {
             $sig = Get-AuthenticodeSignature $file.FullName
             if ($sig.Status -ne 'Valid')
             {
-                $item = Get-ChildItem -Path $file.FullName -File -ErrorAction SilentlyContinue | Select *
+                $item = Get-ChildItem -Path $file.FullName -File -ErrorAction SilentlyContinue | Select-Object *
                 $detection = [PSCustomObject]@{
                     Name = 'Unsigned DLL/EXE present in critical OS directory'
                     Risk = 'Very High'
