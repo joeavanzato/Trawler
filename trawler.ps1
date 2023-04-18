@@ -1585,6 +1585,45 @@ function Find-Service-Hijacks {
     }
 }
 
+function Find-PATH-Hijacks {
+    $system32_path = $env:windir+'\system32'
+    $system32_bins = Get-ChildItem -File -Path $system32_path  -ErrorAction SilentlyContinue | Where-Object { $_.extension -in ".exe" } | Select-Object Name
+    $sys32_bins = New-Object -TypeName "System.Collections.ArrayList"
+
+    ForEach ($bin in $system32_bins){
+        $sys32_bins.Add($bin.Name) | Out-Null
+    }
+
+    $path_entries = $env:PATH.Split(";")
+    $paths_before_sys32 = New-Object -TypeName "System.Collections.ArrayList"
+    ForEach ($path in $path_entries){
+        if ($path -ne $system32_path){
+            $paths_before_sys32.Add($path) | Out-Null
+        } else {
+            break
+        }
+    }
+
+    ForEach ($path in $paths_before_sys32){
+        $path_bins = Get-ChildItem -File -Path $path  -ErrorAction SilentlyContinue | Where-Object { $_.extension -in ".exe" } | Select-Object *
+        ForEach ($bin in $path_bins){
+            if ($bin.Name -in $sys32_bins){
+                $detection = [PSCustomObject]@{
+                    Name = 'Possible PATH Binary Hijack - same name as SYS32 binary'
+                    Risk = 'Very High'
+                    Source = 'Windows'
+                    Technique = "T1574.007: Hijack Execution Flow: Path Interception by PATH Environment Variable"
+                    Meta = "File: " + $bin.FullName + ", Creation Time: " + $bin.CreationTime + ", Last Write Time: " + $bin.LastWriteTime
+                }
+                #Write-Host $detection.Meta
+                Write-Detection $detection
+            }
+        }
+
+    }
+}
+
+
 
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
@@ -1643,6 +1682,7 @@ function Main {
     Process-Module-Scanning
     Scan-Windows-Unsigned-Files
     Find-Service-Hijacks
+    Find-PATH-Hijacks
 }
 
 Main
