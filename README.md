@@ -71,8 +71,10 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * Outlook OTM Hijacking
 * Trust Provider Hijacking
 * LNK Target Scanning
-* Commonly-Masqueraded Windows DLL Names in running process
+* Commonly-Masqueraded Windows DLL Names in running process (eg. un-signed WptsExtensions.dll)
 * Scanning Critical OS Directories for Unsigned EXEs/DLLs
+* Un-Quoted Service Path Hijacking
+* PATH Binary Hijacking
 
 TODO
 * Browser Extension Analysis
@@ -121,3 +123,5 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1553: Subvert Trust Controls
 * T1556.002: Modify Authentication Process: Password Filter DLL
 * T1574: Hijack Execution Flow
+* T1574.007: Hijack Execution Flow: Path Interception by PATH Environment Variable
+* T1574.009: Hijack Execution Flow: Path Interception by Unquoted Path
