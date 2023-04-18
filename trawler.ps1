@@ -1146,6 +1146,7 @@ function Registry-Checks {
     }
 
     # Shims
+    # TODO - Also check HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Custom
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -1550,6 +1551,40 @@ function Scan-Windows-Unsigned-Files
     }
 }
 
+function Find-Service-Hijacks {
+    $services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
+    ForEach ($service in $services){
+        if ($service.PathName -match '".*"[\s]?.*') {
+            # Skip Paths where the executable is contained in quotes
+            continue
+        }
+        # Is there a space in the service path?
+        if ($service.PathName.Contains(" ")) {
+            $original_service_path = $service.PathName
+            # Does the path contain a space before the exe?
+            if ($original_service_path -match '.*\s.*\.exe.*'){
+                $tmp_path = $original_service_path.Split(" ")
+                $base_path = ""
+                ForEach ($path in $tmp_path){
+                    $base_path += $path
+                    $test_path = $base_path + ".exe"
+                    if (Test-Path $test_path) {
+                        $detection = [PSCustomObject]@{
+                            Name = 'Possible Service Path Hijack via Unquoted Path'
+                            Risk = 'High'
+                            Source = 'Services'
+                            Technique = "T1574.009: Create or Modify System Process: Windows Service"
+                            Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName+", Suspicious File: "+$test_path
+                        }
+                        Write-Detection $detection
+                    }
+                    $base_path += " "
+                }
+            }
+        }
+    }
+}
+
 
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
@@ -1566,6 +1601,8 @@ function Write-Detection($det)  {
         $fg_color = 'Red'
     } elseif ($det.Risk -eq 'Very High') {
         $fg_color = 'Magenta'
+    } else {
+        $fg_color = 'Yellow'
     }
     Write-Host [+] New Detection: $det.Name - Risk: $det.Risk -ForegroundColor $fg_color
     Write-Host [%] $det.Meta -ForegroundColor White
@@ -1605,6 +1642,7 @@ function Main {
     LNK-Scan
     Process-Module-Scanning
     Scan-Windows-Unsigned-Files
+    Find-Service-Hijacks
 }
 
 Main
