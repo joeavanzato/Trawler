@@ -85,6 +85,8 @@ $suspicious_process_paths = @(
 	".*\\windows\\temp\\.*",
 	".*recycle.bin.*"
 )
+$suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|invoke|frombase64|tobase64|rundll32|http:|https:|system\.net\.webclient|downloadfile|downloadstring|bitstransfer|system\.net\.sockets|tcpclient|xmlhttp|AssemblyBuilderAccess|shellcode|rc4bytestream|disablerealtimemonitoring|wmiobject|wmimethod|remotewmi|wmic|gzipstream|::decompress|io\.compression|write-zip|encodedcommand).*"
+
 $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
 
@@ -1450,6 +1452,16 @@ function LNK-Scan {
                     }
                     Write-Detection $detection
                 }
+                if ($lnk_target -match $suspicious_terms){
+                    $detection = [PSCustomObject]@{
+                        Name = 'LNK Target contains suspicious key-term'
+                        Risk = 'High'
+                        Source = 'Windows'
+                        Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
+                        Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
+                    }
+                    Write-Detection $detection
+                }
                 if ($lnk_target -match ".*\.(csv|pdf|xlsx|doc|ppt|txt|jpeg|png|gif|exe|dll|ps1|webp|svg|zip|xls).*\.(csv|pdf|xlsx|doc|ppt|txt|jpeg|png|gif|exe|dll|ps1|webp|svg|zip|xls).*"){
                     $detection = [PSCustomObject]@{
                         Name = 'LNK Target contains multiple file extensions'
@@ -1623,6 +1635,95 @@ function Find-PATH-Hijacks {
     }
 }
 
+function File-Association-Hijack {
+
+    $homedrive = $env:HOMEDRIVE
+    $value_regex_lookup = @{
+        accesshtmlfile = "`"$homedrive\\Program Files\\Microsoft Office\\Root\\Office.*\\MSACCESS.EXE`"";
+        batfile = '"%1" %';
+        certificate_wab_auto_file = "`"$homedrive\\Program Files\\Windows Mail\\wab.exe`" /certificate `"%1`"";
+        "chm.file" = "`"$homedrive\\Windows\\hh.exe`" %1"
+        cmdfile = '"%1" %';
+        comfile = '"%1" %';
+        desktopthemepackfile = "$homedrive\\Windows\\system32\\rundll32.exe $homedrive\\Windows\\system32\\themecpl.dll,OpenThemeAction %1";
+        evtfile = "$homedrive\\Windows\\system32\\eventvwr.exe /l:`"%1`"";
+        evtxfile = "$homedrive\\Windows\\system32\\eventvwr.exe /l:`"%1`"";
+        exefile = '"%1" %\*';
+        hlpfile = "$homedrive\\Windows\\winhlp32.exe %1";
+        mscfile = "$homedrive\\Windows\\system32\\mmc.exe `"%1`" %\*";
+        powerpointhtmlfile = "`"$homedrive\\Program Files\\Microsoft Office\\Root\\Office16\\POWERPNT.EXE`"";
+        powerpointxmlfile = "`"$homedrive\\Program Files\\Microsoft Office\\Root\\Office16\\POWERPNT.EXE`"";
+        prffile = "`"$homedrive\\Windows\\System32\\rundll32.exe`" `"$homedrive\\Windows\\System32\\msrating.dll`",ClickedOnPRF %1";
+        ratfile = "`"$homedrive\\Windows\\System32\\rundll32.exe`" `"$homedrive\\Windows\\System32\\msrating.dll`",ClickedOnRAT %1";
+        regfile = "regedit.exe `"%1`""
+        scrfile = "`"%1`" /S"
+        themefile = "$homedrive\\Windows\\system32\\rundll32.exe $homedrive\\Windows\\system32\\themecpl.dll,OpenThemeAction %1"
+        themepackfile = "$homedrive\\Windows\\system32\\rundll32.exe $homedrive\\Windows\\system32\\themecpl.dll,OpenThemeAction %1"
+        wbcatfile = "$homedrive\\Windows\\system32\\sdclt.exe /restorepage"
+        wcxfile = "`"$homedrive\\Windows\\System32\\xwizard.exe`" RunWizard /u {.*} /z%1"
+        "wireshark-capture-file" = "`"$homedrive\\.*\\Wireshark.exe`" `"%1`""
+        wordhtmlfile = "`"$homedrive\\Program Files\\Microsoft Office\\Root\\Office.*\\WINWORD.EXE`""
+
+    }
+
+    if (Test-Path -Path "Registry::HKEY_CLASSES_ROOT") {
+        $items = Get-ChildItem -Path "Registry::HKEY_CLASSES_ROOT" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = $item.Name
+            if ($path.EndsWith('file')){
+                $basefile = $path.Split("\")[1]
+                $open_path = $path+"\shell\open\command"
+                if (Test-Path -Path "Registry::$open_path"){
+                    $key = Get-ItemProperty -Path "Registry::$open_path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                    $key.PSObject.Properties | ForEach-Object {
+                        if ($_.Name -eq '(default)'){
+                            #Write-Host $open_path $_.Value
+                            $exe = $_.Value
+                            $detection_triggered = $false
+
+                            if ($exe -notmatch $value_regex_lookup[$basefile]){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Possible File Association Hijack - Mismatch on Expected Value'
+                                    Risk = 'High'
+                                    Source = 'Windows'
+                                    Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
+                                    Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                }
+                                Write-Detection $detection
+                                return
+                            } elseif ($exe -match $value_regex_lookup[$basefile]) {
+                                # file matches expected extension
+                                return
+                            }
+                            if ($exe -match ".*\.exe.*\.exe"){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Possible File Association Hijack - Multiple EXEs'
+                                    Risk = 'High'
+                                    Source = 'Windows'
+                                    Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
+                                    Meta = "FileType: " + $basefile + ", Current Association: " + $exe
+                                }
+                                Write-Detection $detection
+                                return
+                            }
+                            if ($exe -match $suspicious_terms){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Possible File Association Hijack - Suspicious Keywords'
+                                    Risk = 'High'
+                                    Source = 'Windows'
+                                    Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
+                                    Meta = "FileType: " + $basefile + ", Current Association: " + $exe
+                                }
+                                Write-Detection $detection
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 
 function Write-Detection($det)  {
@@ -1683,6 +1784,7 @@ function Main {
     Scan-Windows-Unsigned-Files
     Find-Service-Hijacks
     Find-PATH-Hijacks
+    File-Association-Hijack
 }
 
 Main

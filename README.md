@@ -70,11 +70,12 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * Command AutoRun Processor
 * Outlook OTM Hijacking
 * Trust Provider Hijacking
-* LNK Target Scanning
+* LNK Target Scanning (Suspicious Terms, Multiple Extensions, Multiple EXEs)
 * Commonly-Masqueraded Windows DLL Names in running process (eg. un-signed WptsExtensions.dll)
 * Scanning Critical OS Directories for Unsigned EXEs/DLLs
 * Un-Quoted Service Path Hijacking
 * PATH Binary Hijacking
+* Common File Association Hijacks and Suspicious Keywords
 
 TODO
 * Browser Extension Analysis
@@ -103,6 +104,7 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1505.005: Server Software Component: Terminal Services DLL
 * T1543.003: Create or Modify System Process: Windows Service
 * T1546: Event Triggered Execution
+* T1546.001: Event Triggered Execution: Change Default File Association
 * T1546.002: Event Triggered Execution: Screensaver
 * T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription
 * T1546.007: Event Triggered Execution: Netsh Helper DLL
