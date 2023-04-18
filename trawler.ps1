@@ -29,11 +29,19 @@
 #>
 param
 (
-	[Parameter(Mandatory = $true,
+	[Parameter(Mandatory = $false,
 			   Position = 1,
 			   HelpMessage = 'Please provide the fully-qualified file-path where detection output should be stored as a CSV.')]
-	[string]$outpath = ".\detections.csv"
+	[string]$outpath = "$PSScriptRoot\detections.csv"
 )
+Try {
+    [io.file]::OpenWrite($outpath).close()
+    $output_writable = $true
+}
+Catch {
+    Write-Warning "Unable to write to provided output path: $outpath"
+    $output_writable = $false
+}
 
 function Get-ValidOutPath
 {
@@ -1558,7 +1566,9 @@ function Write-Detection($det)  {
     }
     Write-Host [+] New Detection: $det.Name - Risk: $det.Risk -ForegroundColor $fg_color
     Write-Host [%] $det.Meta -ForegroundColor White
-    $det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
+    if ($output_writable){
+       $det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
+    }
 }
 
 function Logo {
