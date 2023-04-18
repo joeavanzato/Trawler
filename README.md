@@ -76,11 +76,10 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * Un-Quoted Service Path Hijacking
 * PATH Binary Hijacking
 * Common File Association Hijacks and Suspicious Keywords
+* Suspicious Certificate Hunting
 
 TODO
 * Browser Extension Analysis
-* File Association Hijacking
-* Certificate Installation (https://www.ired.team/offensive-security/persistence/t1130-install-root-certificate)
 * Maybe: Temporary RID Hijacking (https://www.ired.team/offensive-security/persistence/rid-hijacking)
 * Improve Office Trusted Location Scanning (HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\16.0\Word\Security\Trusted Locations)
 * 
@@ -123,6 +122,7 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1547.012: Boot or Logon Autostart Execution: Print Processors
 * T1547.014: Boot or Logon Autostart Execution: Active Setup
 * T1553: Subvert Trust Controls
+* T1553.004: Subvert Trust Controls: Install Root Certificate
 * T1556.002: Modify Authentication Process: Password Filter DLL
 * T1574: Hijack Execution Flow
 * T1574.007: Hijack Execution Flow: Path Interception by PATH Environment Variable

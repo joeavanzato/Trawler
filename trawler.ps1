@@ -1726,6 +1726,158 @@ function File-Association-Hijack {
     }
 }
 
+function Find-Suspicious-Certificates {
+    $certs = Get-ChildItem -path cert:\ -Recurse | Select-Object *
+    # PSPath,DnsNameList,SendAsTrustedIssuer,PolicyId,Archived,FriendlyName,IssuerName,NotAfter,NotBefore,HasPrivateKey,SerialNumber,SubjectName,Version,Issuer,Subject
+    $wellknown_ca = @(
+        "DigiCert.*",
+        "GlobalSign.*",
+        "Comodo.*",
+        "VeriSign.*",
+        "Microsoft Corporation.*",
+        "Go Daddy.*"
+        "SecureTrust.*"
+        "Entrust.*"
+        "Microsoft.*"
+        "USERTrust RSA Certification Authority"
+        "Blizzard.*"
+        "Hellenic Academic and Research Institutions.*"
+        "Starfield.*"
+        "T-TeleSec GlobalRoot.*"
+        "QuoVadis.*"
+        "ISRG Root.*"
+        "Baltimore CyberTrust.*"
+        "Security Communication Root.*"
+        "AAA Certificate Services.*"
+        "thawte Primary Root.*"
+        "SECOM Trust.*"
+        "Certum Trusted Network.*"
+        "SSL\.com Root Certification.*"
+
+    )
+    $date = Get-Date
+    ForEach ($cert in $certs){
+        # Skip current object if it is a container of a cert rather than a certificate directly
+        if ($cert.PSIsContainer){
+            continue
+        }
+        if ($cert.PSPath.Contains("\Root\") -or $cert.PSPath.Contains("\AuthRoot\") -or $cert.PSPath.Contains("\CertificateAuthority\")){
+            $trusted_cert = $true
+        } else {
+            continue
+        }
+
+        $cn_pattern = ".*CN=(.*?),.*"
+        $cn_pattern_2 = "CN=(.*)"
+        $ou_pattern = ".*O=(.*?),.*"
+        $ou_pattern_2 = ".*O=(.*?)"
+
+        $cn_match = [regex]::Matches($cert.Issuer, $cn_pattern).Groups.Captures.Value
+        #Write-Host $cert.Issuer
+        if ($cn_match -ne $null){
+            #Write-Host $cn_match[1]
+        } else {
+            $cn_match = [regex]::Matches($cert.Issuer, $cn_pattern_2).Groups.Captures.Value
+            if ($cn_match -ne $null){
+                #Write-Host $cn_match[1]
+            } else {
+                $cn_match = [regex]::Matches($cert.Issuer, $ou_pattern).Groups.Captures.Value
+                #Write-Host $cn_match[1]
+                if ($cn_match -eq $null){
+                $cn_match = [regex]::Matches($cert.Issuer, $ou_pattern_2).Groups.Captures.Value
+                }
+            }
+        }
+
+        $signer = $cn_match[1]
+        $diff = New-TimeSpan -Start $date -End $cert.NotAfter
+        $cert_verification_status = Test-Certificate -Cert $cert.PSPath -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+
+        ForEach ($ca in $wellknown_ca){
+            if ($signer -match $ca){
+                #Write-Host "Comparing:"+$signer+" to"+$ca
+                $valid_signer = $true
+                break
+            } else {
+                $valid_signer = $false
+            }
+        }
+
+        # Valid Cert, Unknown Signer, Valid in Date, Contains Root/AuthRoot/CertificateAuthority
+        if ($cert_verification_status -eq $true -and $valid_signer -eq $false -and $diff.Hours -ge 0) {
+            $detection = [PSCustomObject]@{
+                Name = 'Valid Root or CA Certificate Issued by Non-Standard Authority'
+                Risk = 'Low'
+                Source = 'Certificates'
+                Technique = "T1553: Subvert Trust Controls: Install Root Certificate"
+                Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+            }
+            Write-Detection $detection
+            #Write-Host $detection.Meta
+        }
+        if ($cert_verification_status -ne $true -and $valid_signer -eq $false -and $diff.Hours -ge 0) {
+            $detection = [PSCustomObject]@{
+                Name = 'Invalid Root or CA Certificate Issued by Non-Standard Authority'
+                Risk = 'Low'
+                Source = 'Certificates'
+                Technique = "T1553: Subvert Trust Controls: Install Root Certificate"
+                Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+            }
+            Write-Detection $detection
+            #Write-Host $detection.Meta
+        }
+
+
+        #$cert.SubjectName.Name
+        if ($cert_verification_status -ne $true -and $diff.Hours -ge 0){
+            # Invalid Certs that are still within valid range
+            if ($cert.PSPath.Contains("\Root\")){
+                $detection = [PSCustomObject]@{
+                    Name = 'Installed Trusted Root Certificate Failed Validation'
+                    Risk = 'Medium'
+                    Source = 'Certificates'
+                    Technique = "T1553.004: Subvert Trust Controls: Install Root Certificate"
+                    Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                }
+                Write-Detection $detection
+                #Write-Host $detection.Meta
+            } elseif ($cert.PSPath.Contains("\AuthRoot\")){
+                $detection = [PSCustomObject]@{
+                    Name = 'Installed Third-Party Root Certificate Failed Validation'
+                    Risk = 'Low'
+                    Source = 'Certificates'
+                    Technique = "T1553.004: Subvert Trust Controls: Install Root Certificate"
+                    Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                }
+                Write-Detection $detection
+                #Write-Host $detection.Meta
+            } elseif ($cert.PSPath.Contains("\CertificateAuthority\")){
+                $detection = [PSCustomObject]@{
+                    Name = 'Installed Intermediary Certificate Failed Validation'
+                    Risk = 'Low'
+                    Source = 'Certificates'
+                    Technique = "T1553.004: Subvert Trust Controls: Install Root Certificate"
+                    Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                }
+                Write-Detection $detection
+                #Write-Host $detection.Meta
+            } else {
+                $detection = [PSCustomObject]@{
+                    Name = 'Installed Certificate Failed Validation'
+                    Risk = 'Very Low'
+                    Source = 'Certificates'
+                    Technique = "T1553: Subvert Trust Controls"
+                    Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                }
+                Write-Detection $detection
+                #Write-Host $detection.Meta
+            }
+        } elseif ($cert_verification_status -and $diff.Hours -ge 0){
+            # Validated Certs that are still valid
+        }
+    }
+
+}
 
 
 function Write-Detection($det)  {
@@ -1787,6 +1939,7 @@ function Main {
     Find-Service-Hijacks
     Find-PATH-Hijacks
     File-Association-Hijack
+    Find-Suspicious-Certificates
 }
 
 Main
