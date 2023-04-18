@@ -508,7 +508,7 @@ function Connections {
             $detection = [PSCustomObject]@{
                 Name = 'Process Listening on Ephemeral Port'
                 Risk = 'Very Low'
-                Source = 'Connections'
+                Source = 'Network Connections'
                 Technique = "T1071: Application Layer Protocol"
                 Meta = "Local Port: "+$conn.LocalPort+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
             }
@@ -518,7 +518,7 @@ function Connections {
             $detection = [PSCustomObject]@{
                 Name = 'Established Connection on Suspicious Port'
                 Risk = 'Low'
-                Source = 'Connections'
+                Source = 'Network Connections'
                 Technique = "T1071: Application Layer Protocol"
                 Meta = "Local Port: "+$conn.LocalPort+", Remote Port: "+$conn.RemotePort+", Remote Address: "+$conn.RemoteAddress+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
             }
@@ -530,7 +530,7 @@ function Connections {
                     $detection = [PSCustomObject]@{
                         Name = 'Process running from suspicious path has Network Connection'
                         Risk = 'High'
-                        Source = 'Connections'
+                        Source = 'Network Connections'
                         Technique = "T1071: Application Layer Protocol"
                         Meta = "Local Port: "+$conn.LocalPort+", Remote Port: "+$conn.RemotePort+", Remote Address: "+$conn.RemoteAddress+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
                     }
@@ -636,7 +636,7 @@ function PowerShell-Profiles {
         $detection = [PSCustomObject]@{
             Name = 'Custom PowerShell Profile for All Users should be reviewed.'
             Risk = 'Medium'
-            Source = 'Windows'
+            Source = 'PowerShell'
             Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
             Meta = "Profile: "+$PROFILE.AllUsersAllHosts
         }
@@ -646,7 +646,7 @@ function PowerShell-Profiles {
         $detection = [PSCustomObject]@{
             Name = 'Custom PowerShell Profile for All Users should be reviewed.'
             Risk = 'Medium'
-            Source = 'Windows'
+            Source = 'PowerShell'
             Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
             Meta = "Profile: "+$PROFILE.AllUsersCurrentHost
         }
@@ -662,7 +662,7 @@ function PowerShell-Profiles {
             $detection = [PSCustomObject]@{
                 Name = 'Custom PowerShell Profile for Specific User should be reviewed.'
                 Risk = 'Medium'
-                Source = 'Windows'
+                Source = 'PowerShell'
                 Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
                 Meta = "Profile: "+$path1
             }
@@ -672,7 +672,7 @@ function PowerShell-Profiles {
             $detection = [PSCustomObject]@{
                 Name = 'Custom PowerShell Profile for Specific User should be reviewed.'
                 Risk = 'Medium'
-                Source = 'Windows'
+                Source = 'PowerShell'
                 Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
                 Meta = "Profile: "+$path2
             }
@@ -682,7 +682,7 @@ function PowerShell-Profiles {
             $detection = [PSCustomObject]@{
                 Name = 'Custom PowerShell Profile for Specific User should be reviewed.'
                 Risk = 'Medium'
-                Source = 'Windows'
+                Source = 'PowerShell'
                 Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
                 Meta = "Profile: "+$path3
             }
@@ -700,7 +700,7 @@ function Office-Startup {
             $detection = [PSCustomObject]@{
                 Name = 'Potential Persistence via Office Startup Addin'
                 Risk = 'Medium'
-                Source = 'Windows'
+                Source = 'Office'
                 Technique = "T1137.006: Office Application Startup: Add-ins"
                 Meta = "File: "+$item.FullName+", Last Write Time: "+$item.LastWriteTime
             }
@@ -711,7 +711,7 @@ function Office-Startup {
             $detection = [PSCustomObject]@{
                 Name = 'Potential Persistence via Outlook Application Startup'
                 Risk = 'Medium'
-                Source = 'Windows'
+                Source = 'Office'
                 Technique = "T1137.006: Office Application Startup: Add-ins"
                 Meta = "File: "+$path
             }
@@ -1292,7 +1292,7 @@ function Registry-Checks {
             $detection = [PSCustomObject]@{
                 Name = 'Persistence via Office test\Special\Perf Key'
                 Risk = 'Very High'
-                Source = 'Registry'
+                Source = 'Office'
                 Technique = "T1137.002: Office Application Startup: Office Test"
                 Meta = "Key Location: HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf: "+$_.Name+", Entry Value: "+$_.Value
             }      
@@ -1305,7 +1305,7 @@ function Registry-Checks {
             $detection = [PSCustomObject]@{
                 Name = 'Persistence via Office test\Special\Perf Key'
                 Risk = 'Very High'
-                Source = 'Registry'
+                Source = 'Office'
                 Technique = "T1137.002: Office Application Startup: Office Test"
                 Meta = "Key Location: HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
             }      
@@ -1323,7 +1323,7 @@ function Registry-Checks {
                     $detection = [PSCustomObject]@{
                         Name = 'Persistence via Office GlobalDotName'
                         Risk = 'Very High'
-                        Source = 'Registry'
+                        Source = 'Office'
                         Technique = "T1137.001: Office Application Office Template Macros"
                         Meta = "Key Location: HKCU\software\microsoft\office\$version.0\word\options, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
                     }      
@@ -1446,7 +1446,7 @@ function LNK-Scan {
                     $detection = [PSCustomObject]@{
                         Name = 'LNK Target contains multiple executables'
                         Risk = 'High'
-                        Source = 'Windows'
+                        Source = 'LNK'
                         Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
                         Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
                     }
@@ -1456,7 +1456,7 @@ function LNK-Scan {
                     $detection = [PSCustomObject]@{
                         Name = 'LNK Target contains suspicious key-term'
                         Risk = 'High'
-                        Source = 'Windows'
+                        Source = 'LNK'
                         Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
                         Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
                     }
@@ -1466,7 +1466,7 @@ function LNK-Scan {
                     $detection = [PSCustomObject]@{
                         Name = 'LNK Target contains multiple file extensions'
                         Risk = 'Medium'
-                        Source = 'Windows'
+                        Source = 'LNK'
                         Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
                         Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
                     }
@@ -1509,7 +1509,7 @@ function Process-Module-Scanning {
                         $detection = [PSCustomObject]@{
                             Name = 'Suspicious Unsigned DLL with commonly-masqueraded name loaded into running process.'
                             Risk = 'Very High'
-                            Source = 'Windows'
+                            Source = 'Processes'
                             Technique = "T1574: Hijack Execution Flow"
                             Meta = "DLL: "+$module.FileName+", Process Name: "+$process.ProcessName+", PID: "+$process.ProcessId+", Execuable Path: "+$process.ExecutablePath+", DLL Creation Time: "+$item.CreationTime+", DLL Last Write Time: "+$item.LastWriteTime
                         }
@@ -1519,7 +1519,7 @@ function Process-Module-Scanning {
                         $detection = [PSCustomObject]@{
                             Name = 'Suspicious DLL with commonly-masqueraded name loaded into running process.'
                             Risk = 'High'
-                            Source = 'Windows'
+                            Source = 'Processes'
                             Technique = "T1574: Hijack Execution Flow"
                             Meta = "DLL: "+$module.FileName+", Process Name: "+$process.ProcessName+", PID: "+$process.ProcessId+", Execuable Path: "+$process.ExecutablePath+", DLL Creation Time: "+$item.CreationTime+", DLL Last Write Time: "+$item.LastWriteTime
                         }
@@ -1623,7 +1623,7 @@ function Find-PATH-Hijacks {
                 $detection = [PSCustomObject]@{
                     Name = 'Possible PATH Binary Hijack - same name as SYS32 binary'
                     Risk = 'Very High'
-                    Source = 'Windows'
+                    Source = 'PATH'
                     Technique = "T1574.007: Hijack Execution Flow: Path Interception by PATH Environment Variable"
                     Meta = "File: " + $bin.FullName + ", Creation Time: " + $bin.CreationTime + ", Last Write Time: " + $bin.LastWriteTime
                 }
@@ -1686,7 +1686,7 @@ function File-Association-Hijack {
                                     $detection = [PSCustomObject]@{
                                         Name = 'Possible File Association Hijack - Mismatch on Expected Value'
                                         Risk = 'High'
-                                        Source = 'Windows'
+                                        Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
                                         Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
                                     }
@@ -1701,7 +1701,7 @@ function File-Association-Hijack {
                                 $detection = [PSCustomObject]@{
                                     Name = 'Possible File Association Hijack - Multiple EXEs'
                                     Risk = 'High'
-                                    Source = 'Windows'
+                                    Source = 'Registry'
                                     Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
                                     Meta = "FileType: " + $basefile + ", Current Association: " + $exe
                                 }
@@ -1712,7 +1712,7 @@ function File-Association-Hijack {
                                 $detection = [PSCustomObject]@{
                                     Name = 'Possible File Association Hijack - Suspicious Keywords'
                                     Risk = 'High'
-                                    Source = 'Windows'
+                                    Source = 'Registry'
                                     Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
                                     Meta = "FileType: " + $basefile + ", Current Association: " + $exe
                                 }
