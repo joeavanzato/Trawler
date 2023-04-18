@@ -34,7 +34,26 @@ param
 			   HelpMessage = 'Please provide the fully-qualified file-path where detection output should be stored as a CSV.')]
 	[string]$outpath = "$PSScriptRoot\detections.csv"
 )
+
+function Get-ValidOutPath
+{
+	param (
+		[string]$path
+	)
+
+	while (Test-Path -Path $path -PathType Container)
+	{
+		Write-Warning "The provided path is a folder, not a file. Please provide a file path."
+		$path = Read-Host "Enter a valid file path"
+	}
+
+	return $path
+}
+
+
 Try {
+    $outpath = Get-ValidOutPath -path $outpath
+    Write-Host "Using the following file path: $outpath"
     [io.file]::OpenWrite($outpath).close()
     $output_writable = $true
 }
@@ -43,23 +62,6 @@ Catch {
     $output_writable = $false
 }
 
-function Get-ValidOutPath
-{
-	param (
-		[string]$path
-	)
-	
-	while (Test-Path -Path $path -PathType Container)
-	{
-		Write-Warning "The provided path is a folder, not a file. Please provide a file path."
-		$path = Read-Host "Enter a valid file path"
-	}
-	
-	return $path
-}
-
-$outpath = Get-ValidOutPath -path $outpath
-Write-Host "Using the following file path: $outpath"
 
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
 # TODO - Scanning Microsoft Office Trusted Locations for non-standard templates/add-ins
