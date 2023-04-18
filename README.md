@@ -70,7 +70,7 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * Command AutoRun Processor
 * Outlook OTM Hijacking
 * Trust Provider Hijacking
-* LNK Target Scanning
+* LNK Target Scanning (Suspicious Terms, Multiple Extensions, Multiple EXEs)
 * Commonly-Masqueraded Windows DLL Names in running process (eg. un-signed WptsExtensions.dll)
 * Scanning Critical OS Directories for Unsigned EXEs/DLLs
 * Un-Quoted Service Path Hijacking

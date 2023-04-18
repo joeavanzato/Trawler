@@ -1450,6 +1450,17 @@ function LNK-Scan {
                     }
                     Write-Detection $detection
                 }
+                $suspicious_terms_shortcut = ".*(\[System\.Reflection\.Assembly\]|invoke|frombase64|tobase64|rundll32|http:|https:|system\.net\.webclient|downloadfile|downloadstring|bitstransfer|system\.net\.sockets|tcpclient|xmlhttp|AssemblyBuilderAccess|shellcode|rc4bytestream|disablerealtimemonitoring|wmiobject|wmimethod|remotewmi|wmic|gzipstream|::decompress|io\.compression|write-zip|encodedcommand).*"
+                if ($lnk_target -match $suspicious_terms_shortcut){
+                    $detection = [PSCustomObject]@{
+                        Name = 'LNK Target contains suspicious key-term'
+                        Risk = 'High'
+                        Source = 'Windows'
+                        Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
+                        Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
+                    }
+                    Write-Detection $detection
+                }
                 if ($lnk_target -match ".*\.(csv|pdf|xlsx|doc|ppt|txt|jpeg|png|gif|exe|dll|ps1|webp|svg|zip|xls).*\.(csv|pdf|xlsx|doc|ppt|txt|jpeg|png|gif|exe|dll|ps1|webp|svg|zip|xls).*"){
                     $detection = [PSCustomObject]@{
                         Name = 'LNK Target contains multiple file extensions'
