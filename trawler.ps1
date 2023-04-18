@@ -8,6 +8,9 @@
 	.PARAMETER outpath
 		The fully-qualified file-path where detection output should be stored as a CSV.
 	
+	.PARAMETER outputPath
+		A description of the outputPath parameter.
+	
 	.EXAMPLE
 		.\trawler.ps1
 		.\trawler.ps1 -outpath "C:\detections.csv"
@@ -31,6 +34,24 @@ param
 			   HelpMessage = 'Please provide the fully-qualified file-path where detection output should be stored as a CSV.')]
 	[string]$outpath = ".\detections.csv"
 )
+
+function Get-ValidOutPath
+{
+	param (
+		[string]$path
+	)
+	
+	while (Test-Path -Path $path -PathType Container)
+	{
+		Write-Warning "The provided path is a folder, not a file. Please provide a file path."
+		$path = Read-Host "Enter a valid file path"
+	}
+	
+	return $path
+}
+
+$outpath = Get-ValidOutPath -path $outpath
+Write-Host "Using the following file path: $outpath"
 
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
 # TODO - Scanning Microsoft Office Trusted Locations for non-standard templates/add-ins
@@ -480,7 +501,7 @@ function Connections {
             }
             Write-Detection $detection
         }
-        if ($conn.State -eq 'Established' -and ($conn.LocalPort -in $suspicious_ports -or $conn.RemotePort -in $suspicious_ports) -and $proc.Name -inotin $allow_listed_process_names){
+        if ($conn.State -eq 'Established' -and ($conn.LocalPort -in $suspicious_ports -or $conn.RemotePort -in $suspicious_ports) -and $proc.Name -notin $allow_listed_process_names){
             $detection = [PSCustomObject]@{
                 Name = 'Established Connection on Suspicious Port'
                 Risk = 'Low'
@@ -799,7 +820,7 @@ function Registry-Checks {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.Driver -ne $null){
-                if ($data.Driver -inotin $standard_print_monitors){
+                if ($data.Driver -notin $standard_print_monitors){
                     $detection = [PSCustomObject]@{
                         Name = 'Non-Standard Print Monitor DLL'
                         Risk = 'Medium'
@@ -836,7 +857,7 @@ function Registry-Checks {
             if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
                 ForEach ($package in $packages){
-                    if ($package -inotin $common_ssp_dlls){
+                    if ($package -notin $common_ssp_dlls){
                         $detection = [PSCustomObject]@{
                             Name = 'LSA Security Package Review'
                             Risk = 'Medium'
@@ -851,7 +872,7 @@ function Registry-Checks {
             if ($_.Name -eq 'Authentication Packages' -and $_.Value -ne '""') {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
                 ForEach ($package in $packages){
-                    if ($package -inotin $common_ssp_dlls){
+                    if ($package -notin $common_ssp_dlls){
                         $detection = [PSCustomObject]@{
                             Name = 'LSA Authentication Package Review'
                             Risk = 'Medium'
@@ -871,7 +892,7 @@ function Registry-Checks {
             if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
                 ForEach ($package in $packages){
-                    if ($package -inotin $common_ssp_dlls){
+                    if ($package -notin $common_ssp_dlls){
                         $detection = [PSCustomObject]@{
                             Name = 'LSA Security Package Review'
                             Risk = 'Medium'
