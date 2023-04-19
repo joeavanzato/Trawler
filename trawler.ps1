@@ -85,7 +85,7 @@ $suspicious_process_paths = @(
 	".*\\windows\\temp\\.*",
 	".*recycle.bin.*"
 )
-$suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|invoke|frombase64|tobase64|rundll32|http:|https:|system\.net\.webclient|downloadfile|downloadstring|bitstransfer|system\.net\.sockets|tcpclient|xmlhttp|AssemblyBuilderAccess|shellcode|rc4bytestream|disablerealtimemonitoring|wmiobject|wmimethod|remotewmi|wmic|gzipstream|::decompress|io\.compression|write-zip|encodedcommand).*"
+$suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|regedit|invoke|frombase64|tobase64|rundll32|http:|https:|system\.net\.webclient|downloadfile|downloadstring|bitstransfer|system\.net\.sockets|tcpclient|xmlhttp|AssemblyBuilderAccess|shellcode|rc4bytestream|disablerealtimemonitoring|wmiobject|wmimethod|remotewmi|wmic|gzipstream|::decompress|io\.compression|write-zip|encodedcommand|wscript\.shell|MSXML2\.XMLHTTP).*"
 
 $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
@@ -1920,6 +1920,101 @@ function Scan-Office-Trusted-Locations {
 }
 
 
+function Find-GPO-Scripts {
+    $base_key = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\State\Machine\Scripts"
+    $script_paths = New-Object -TypeName "System.Collections.ArrayList"
+    $homedrive = $env:HOMEDRIVE
+    $paths = @(
+        "$homedrive\Windows\System32\GroupPolicy\Machine\Scripts\psscripts.ini",
+        "$homedrive\Windows\System32\GroupPolicy\Machine\Scripts\scripts.ini",
+        "$homedrive\Windows\System32\GroupPolicy\User\Scripts\psscripts.ini",
+        "$homedrive\Windows\System32\GroupPolicy\User\Scripts\scripts.ini"
+    )
+    $path_lookup = @{
+        Startup = "$homedrive\Windows\System32\GroupPolicy\Machine\Scripts\Startup\"
+        Shutdown = "$homedrive\Windows\System32\GroupPolicy\Machine\Scripts\Shutdown\"
+        Logoff = "$homedrive\Windows\System32\GroupPolicy\User\Scripts\Logoff\"
+        Logon = "$homedrive\Windows\System32\GroupPolicy\User\Scripts\Logon\"
+    }
+
+    ForEach ($path in $paths){
+        # Skip non-existent files
+        if((Test-Path $path) -eq $false){
+            return
+        }
+        $content = Get-Content $path
+        $script_type = ""
+        ForEach ($line in $content){
+            if ($line.Trim() -eq ""){
+                continue
+            }
+            if ($line -eq "[Shutdown]"){
+                $script_type = "Shutdown"
+            } elseif ($line -eq "[Startup]"){
+                $script_type = "Startup"
+            } elseif ($line -eq "[Logon]"){
+                $script_type = "Logon"
+            } elseif ($line -eq "[Logoff]"){
+                $script_type = "Logoff"
+            } elseif ($line -match "\d{1,9}CmdLine="){
+                $cmdline = $line.Split("=", 2)[1]
+            } elseif ($line -match "\d{1,9}Parameters="){
+                $params = $line.Split("=", 2)[1]
+            }
+            if ($params -ne $null){
+                # Last line in each script descriptor is the Parameters
+                if ($script_type -eq "Shutdown" -or $script_type -eq "Startup"){
+                    $desc = "Machine $script_type Script"
+                } elseif ($script_type -eq "Logon" -or $script_paths -eq "Logoff"){
+                    $desc = "User $script_type Script"
+                }
+
+                $script_location = $cmdline
+                if ($cmdline -notmatch "[A-Za-z]{1}:\\.*"){
+                    $script_location = $path_lookup[$script_type]+$cmdline
+                }
+                $script_content_detection = $false
+                try {
+                    $script_content = Get-Content $script_location
+                    ForEach ($line_ in $script_content){
+                        if ($line_ -match $suspicious_terms -and $script_content_detection -eq $false){
+                            $detection = [PSCustomObject]@{
+                                Name = 'Suspicious Content in '+$desc
+                                Risk = 'High'
+                                Source = 'Windows GPO Scripts'
+                                Technique = "T1037: Boot or Logon Initialization Scripts"
+                                Meta = "File: "+$script_location+", Arguments: "+$params+", Suspicious Line: "+$line_
+                            }
+                            Write-Detection $detection
+                            $script_content_detection = $true
+                        }
+                    }
+                } catch {
+
+                }
+
+
+                if ($script_content_detection -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Review: '+$desc
+                        Risk = 'Medium'
+                        Source = 'Windows GPO Scripts'
+                        Technique = "T1037: Boot or Logon Initialization Scripts"
+                        Meta = "File: "+$script_location+", Arguments: "+$params
+                    }
+                    Write-Detection $detection
+                }
+
+                $cmdline = $null
+                $params = $null
+            }
+
+        }
+    }
+
+}
+
+
 
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
@@ -1982,6 +2077,7 @@ function Main {
     File-Association-Hijack
     Find-Suspicious-Certificates
     Scan-Office-Trusted-Locations
+    Find-GPO-Scripts
 }
 
 Main

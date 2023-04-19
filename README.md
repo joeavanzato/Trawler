@@ -39,10 +39,10 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * Services
 * Running Processes
 * Network Connections
-* WMI Event Consumers
-* Startup Items
-* BITS Jobs
-* Windows Accessibility Modifications
+* WMI Event Consumers (CommandLine/Script)
+* Startup Item Discovery
+* BITS Jobs Discovery
+* Windows Accessibility Feature Modifications
 * PowerShell Profile Existence
 * Office Add-Ins/Startup Items
 * SilentProcessExit Monitoring
@@ -65,9 +65,9 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * LSA Notification Hijacking
 * 'Office test' Usage
 * Office GlobalDotName Usage
-* Terminal Services DLL Hijacking
+* Terminal Services DLL Hijacking 
 * Autodial DLL Hijacking
-* Command AutoRun Processor
+* Command AutoRun Processor Abuse
 * Outlook OTM Hijacking
 * Trust Provider Hijacking
 * LNK Target Scanning (Suspicious Terms, Multiple Extensions, Multiple EXEs)
@@ -77,7 +77,8 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * PATH Binary Hijacking
 * Common File Association Hijacks and Suspicious Keywords
 * Suspicious Certificate Hunting
-* Office Trusted Location Addin Scanning
+* Office Trusted Location Addin Discovery/Scanning
+* GPO Script Discovery/Scanning
 
 TODO
 * Browser Extension Analysis
@@ -87,6 +88,7 @@ TODO
 
 Please be aware that some of these are (of course) more detected than others - for example, we are not detecting all possible registry modifications but rather inspecting certain keys for obvious changes and using that technique where no other technique is applicable.  For other items such as COM hijacking, we are inspecting all entries in the relevant registry key and bubbling them all up to the surface, having a much more complete detection surface.
 
+* T1037: Boot or Logon Initialization Scripts
 * T1037.001: Boot or Logon Initialization Scripts: Logon Script (Windows)
 * T1037.005: Boot or Logon Initialization Scripts: Startup Items
 * T1059: Command and Scripting Interpreter
