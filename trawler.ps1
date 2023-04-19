@@ -89,7 +89,7 @@ $suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|invoke|frombase64|tobas
 
 $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
-
+$office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", ".xlam", ".com"
 
 function Scheduled-Tasks {
     $tasks = Get-ScheduledTask  | Select-Object -Property State,Actions,Author,Date,Description,Principal,SecurityDescriptor,Settings,TaskName,TaskPath,Triggers,URI, @{Name="RunAs";Expression={ $_.principal.userid }} -ExpandProperty Actions | Select-Object *
@@ -695,7 +695,7 @@ function Office-Startup {
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
     ForEach ($user in $profile_names){
         $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
-        $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Select-Object * | Where-Object {$_.extension -in ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba"}
+        $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Select-Object * | Where-Object {$_.extension -in $office_addin_extensions}
         ForEach ($item in $items){
             $detection = [PSCustomObject]@{
                 Name = 'Potential Persistence via Office Startup Addin'
@@ -704,7 +704,7 @@ function Office-Startup {
                 Technique = "T1137.006: Office Application Startup: Add-ins"
                 Meta = "File: "+$item.FullName+", Last Write Time: "+$item.LastWriteTime
             }
-            Write-Detection $detection
+            #Write-Detection $detection - Removing this as it is a duplicate of the new Office Scanning Functionality which will cover the same checks
         }
         $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Outlook\VbaProject.OTM"
         if (Test-Path $path) {
@@ -1876,8 +1876,49 @@ function Find-Suspicious-Certificates {
             # Validated Certs that are still valid
         }
     }
-
 }
+
+function Scan-Office-Trusted-Locations {
+    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
+    $current_user = $env:USERNAME
+
+    if (Test-Path -Path "Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\16.0\Word\Security\Trusted Locations") {
+        $items = Get-ChildItem -Path "Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\16.0\Word\Security\Trusted Locations" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $possible_paths = New-Object -TypeName "System.Collections.ArrayList"
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.Path -ne $null){
+                $possible_paths.Add($data.Path) | Out-Null
+                if ($data.Path.Contains($current_user)){
+                    ForEach ($user in $profile_names){
+                        $new_path = $data.Path.replace($current_user, $user.Name)
+                        if ($possible_paths -notcontains $new_path) {
+                            $possible_paths.Add($new_path) | Out-Null
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ForEach ($p in $possible_paths){
+        if (Test-Path $p){
+            $items = Get-ChildItem -Path $p -File -ErrorAction SilentlyContinue | Select-Object * | Where-Object {$_.extension -in $office_addin_extensions}
+            ForEach ($item in $items){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Persistence via Office Startup Addin'
+                    Risk = 'Medium'
+                    Source = 'Office'
+                    Technique = "T1137.006: Office Application Startup: Add-ins"
+                    Meta = "File: "+$item.FullName+", Last Write Time: "+$item.LastWriteTime
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 
 
 function Write-Detection($det)  {
@@ -1940,6 +1981,7 @@ function Main {
     Find-PATH-Hijacks
     File-Association-Hijack
     Find-Suspicious-Certificates
+    Scan-Office-Trusted-Locations
 }
 
 Main
