@@ -77,12 +77,11 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * PATH Binary Hijacking
 * Common File Association Hijacks and Suspicious Keywords
 * Suspicious Certificate Hunting
+* Office Trusted Location Addin Scanning
 
 TODO
 * Browser Extension Analysis
 * Maybe: Temporary RID Hijacking (https://www.ired.team/offensive-security/persistence/rid-hijacking)
-* Improve Office Trusted Location Scanning (HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\16.0\Word\Security\Trusted Locations)
-* 
 
 ## MITRE Techniques Evaluated
 
