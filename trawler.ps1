@@ -2197,6 +2197,43 @@ function Find-GPO-Scripts {
 
 }
 
+function Check-TerminalProfiles {
+    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
+    $base_path = "$env:homedrive\Users\_USER_\AppData\Local\Packages\"
+    ForEach ($user in $profile_names){
+        $new_path = $base_path.replace("_USER_", $user.Name)
+        $new_path += "Microsoft.WindowsTerminal*"
+        $terminalDirs = Get-ChildItem $new_path -ErrorAction SilentlyContinue
+        ForEach ($dir in $terminalDirs){
+            if (Test-Path "$dir\LocalState\settings.json"){
+                $settings_data = Get-Content -Raw "$dir\LocalState\settings.json" | ConvertFrom-Json
+                if ($settings_data.startOnUserLogin -eq $null -or $settings_data.startOnUserLogin -ne $true){
+                    continue
+                }
+                $defaultGUID = $settings_data.defaultProfile
+                ForEach ($profile_list in $settings_data.profiles){
+                    ForEach ($profile in $profile_list.List){
+                        if ($profile.guid -eq $defaultGUID){
+                            if($profile.commandline){
+                                $exe = $profile.commandline
+                            } else {
+                                $exe = $profile.name
+                            }
+                            $detection = [PSCustomObject]@{
+                                Name = 'Windows Terminal launching command on login'
+                                Risk = 'Medium'
+                                Source = 'Terminal'
+                                Technique = "T1037: Boot or Logon Initialization Scripts"
+                                Meta = "File: $dir\LocalState\settings.json, Command: "+$exe
+                            }
+                            Write-Detection $detection
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 
 function Write-Detection($det)  {
@@ -2261,6 +2298,7 @@ function Main {
     Find-Suspicious-Certificates
     Scan-Office-Trusted-Locations
     Find-GPO-Scripts
+    Check-TerminalProfiles
 }
 
 Main
