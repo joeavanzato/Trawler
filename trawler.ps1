@@ -1607,6 +1607,35 @@ function Registry-Checks {
         }
     }
 
+    # App Path Hijacks
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"
+    if (Test-Path -Path "Registry::$path") {
+        $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq '(default)') {
+                    $key_basename = [regex]::Matches($item.Name, ".*\\(?<name>[^\\].*)").Groups.Captures.Value[1]
+                    $value_basename = [regex]::Matches($_.Value, ".*\\(?<name>[^\\].*)").Groups.Captures.Value[1]
+                    if ($key_basename -ne $null -and $value_basename -ne $null){
+                        $value_basename = $value_basename.Replace('"', "")
+                        if ($key_basename -ne $value_basename){
+                            $detection = [PSCustomObject]@{
+                                Name = 'Potential App Path Hijacking'
+                                Risk = 'Medium'
+                                Source = 'Registry'
+                                Technique = "T1546: Event Triggered Execution"
+                                Meta = "Key Location: "+$item.Name+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                            }
+                            Write-Detection $detection
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 function LNK-Scan {
