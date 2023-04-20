@@ -30,6 +30,10 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 <p align="center">
 <img src="sample2.PNG">
 </p>
+<p align="center">
+<img src="sample3.PNG">
+</p>
+
 
 
 ## What is inspected?
@@ -44,22 +48,22 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * BITS Jobs Discovery
 * Windows Accessibility Feature Modifications
 * PowerShell Profile Existence
-* Office Add-Ins/Startup Items
+* Office Addins from Trusted Locations
 * SilentProcessExit Monitoring
 * Winlogon Helper DLL Hijacking
 * Image File Execution Option Hijacking
 * RDP Shadowing
 * UAC Setting for Remote Sessions
-* Print Monitor DLL Hijacking
+* Print Monitor DLLs
 * LSA Security and Authentication Package Hijacking
-* Time Provider DLL Hijacking
-* Print Processor DLL Hijacking
-* Boot/Logon Active Setup Hijacking
+* Time Provider DLLs
+* Print Processor DLLs
+* Boot/Logon Active Setup
 * User Initialization Logon Script Hijacking
 * ScreenSaver Executable Hijacking
-* Netsh DLL Hijacking
-* AppCert DLL Hijacking
-* AppInit DLL Hijacking
+* Netsh DLLs
+* AppCert DLLs
+* AppInit DLLs
 * Application Shimming
 * COM Object Hijacking
 * LSA Notification Hijacking
@@ -77,12 +81,30 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * PATH Binary Hijacking
 * Common File Association Hijacks and Suspicious Keywords
 * Suspicious Certificate Hunting
-* Office Trusted Location Addin Discovery/Scanning
 * GPO Script Discovery/Scanning
 
 TODO
 * Browser Extension Analysis
-* Maybe: Temporary RID Hijacking (https://www.ired.team/offensive-security/persistence/rid-hijacking)
+* Maybe: RID Hijacking [https://www.ired.team/offensive-security/persistence/rid-hijacking][https://pentestlab.blog/2020/02/12/persistence-rid-hijacking/]
+* Inspection of HKLM\SYSTEM\CurrentControlSet\Services\\%NAME%\ Parameters, Performance and ImagePath for non-standard or suspicious locations [https://attack.mitre.org/techniques/T1574/011/]
+* NLP DLL 
+* AEDebug
+* WER Debuggers
+* Explorer On Load
+* startOnUserLogin Terminal
+* CHM Helper
+* GP Extensions
+* hhctrl.ocx
+* ServerLevelPlugin DNS Server DLL
+* LSA Extensions DLL
+* Explorer Tools
+* .NET DbgManagedDebugger
+* InitialProgram for TerminalServices
+* RDP WDS Startup
+* Telemetry Controller
+* AMSI Providers
+* PowerAutomate
+* Add Analysis/Remediation Guidance to each detection in the GitHub Wiki
 
 ## MITRE Techniques Evaluated
 

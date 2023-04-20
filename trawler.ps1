@@ -203,11 +203,13 @@ function Scheduled-Tasks {
             }
             Write-Detection $detection
         }
+        # TODO - Task contains domain-pattern
+
         # Task has suspicious terms
         $suspicious_keyword_regex = ".*(regsvr32.exe | downloadstring | mshta | frombase64 | tobase64 | EncodedCommand | DownloadFile | certutil | csc.exe | ieexec.exe | wmic.exe).*"
         if ($task.Execute -match $suspicious_keyword_regex -or $task.Arguments -match $suspicious_keyword_regex) {
             $detection = [PSCustomObject]@{
-                Name = 'Scheduled Task contains suspicious keywords.'
+                Name = 'Scheduled Task contains suspicious keywords'
                 Risk = 'High'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
@@ -445,6 +447,18 @@ function Services {
             $detection = [PSCustomObject]@{
                 Name = 'Service launching from powershell.exe'
                 Risk = 'Medium'
+                Source = 'Services'
+                Technique = "T1543.003: Create or Modify System Process: Windows Service"
+                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+            }
+            Write-Detection $detection
+        }
+
+        if ($service.PathName -match $suspicious_keyword_regex) {
+            # Service has a suspicious launch pattern
+            $detection = [PSCustomObject]@{
+                Name = 'Service launching with suspicious keywords'
+                Risk = 'High'
                 Source = 'Services'
                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
                 Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
@@ -744,14 +758,18 @@ function Registry-Checks {
         }
     }
 
-    # Winlogon Helper DLL Hijack
+    # Winlogon Helper DLL Hijacks
     $standard_winlogon_helper_dlls = @(
-        "C:\Windows\System32\userinit.exe," # Server 2019
+        "C:\Windows\System32\userinit.exe,"
+        "explorer.exe"
+        "sihost.exe"
+        "ShellAppRuntime.exe"
+        "mpnotify.exe"
     )
     if (Test-Path -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon") {
         $items = Get-ItemProperty -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
-            if ($_.Value -match '.*,.*' -and $_.Value -notin $standard_winlogon_helper_dlls) {
+            if ($_.Name -in 'Userinit','Shell','ShellInfrastructure','ShellAppRuntime','MPNotify' -and $_.Value -notin $standard_winlogon_helper_dlls) {
                 $detection = [PSCustomObject]@{
                     Name = 'Potential WinLogon Helper Persistence'
                     Risk = 'High'
@@ -1238,6 +1256,7 @@ function Registry-Checks {
             }
         }
     }
+    # TODO - Add HKLM COM Scanning
 
     # Folder Open Hijack
     if (Test-Path -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command") {
