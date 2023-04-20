@@ -1571,6 +1571,24 @@ function Registry-Checks {
             }
         }
     }
+    # WER Debuggers
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\Hangs"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -in 'Debugger','ReflectDebugger'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential WER Debugger Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
 
 }
 
