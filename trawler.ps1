@@ -1443,6 +1443,135 @@ function Registry-Checks {
             }
         }
     }
+
+    # NLP Development Platform Hijacks
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language") {
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride){
+                if ($data.StemmerDLLPathOverride -ne $null){
+                    $dll = $data.StemmerDLLPathOverride
+                } elseif ($data.WBDLLPathOverride -ne $null){
+                    $dll = $data.WBDLLPathOverride
+                }
+                $detection = [PSCustomObject]@{
+                    Name = 'DLL Override on Natural Language Development Platform'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1112: Modify Registry"
+                    Meta = "Registry Path: "+$item.Name+", DLL: "+$dll
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
+    # Debugger Hijacks
+    # AeDebug 32
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Debugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential AeDebug Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    # AeDebug 64
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Debugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential AeDebug Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    # .NET 32
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'DbgManagedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" PID %d APPDOM %d EXTEXT `"%s`" EVTHDL %d"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential .NET Debugger Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    # .NET 64
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'DbgManagedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" PID %d APPDOM %d EXTEXT `"%s`" EVTHDL %d"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential .NET Debugger Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    # Microsoft Script Debugger
+    $path = "HKEY_CLASSES_ROOT\CLSID\{834128A2-51F4-11D0-8F20-00805F2CD064}\LocalServer32"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq '@' -and ($_.Value -ne "`"$env:homedrive\Program Files(x86)\Microsoft Script Debugger\msscrdbg.exe`"" -or $_.Value -ne "`"$env:homedrive\Program Files\Microsoft Script Debugger\msscrdbg.exe`"")){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Microsoft Script Debugger Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    # Process Debugger
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{78A51822-51F4-11D0-8F20-00805F2CD064}\InprocServer32"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if (($_.Name -in '(default)' -and $_.Value -ne "$env:homedrive\Program Files\Common Files\Microsoft Shared\VS7Debug\pdm.dll") -or ($_.Name -eq '@' -and $_.Value -ne "`"$env:homedrive\WINDOWS\system32\pdm.dll`"")){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Process Debugger Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
 }
 
 function LNK-Scan {
