@@ -12176,7 +12176,7 @@ function Check-InternetSettingsLUIDll {
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
                 }
-                Write-Host $detection
+                Write-Detection $detection
             }
         }
     }
