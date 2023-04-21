@@ -12251,6 +12251,25 @@ function Check-BIDDll {
     }
 }
 
+function Check-WindowsUpdateTestDlls {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Test"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -in "EventerHookDll","AllowTestEngine","AlternateServiceStackDLLPath") {
+                $detection = [PSCustomObject]@{
+                    Name = 'Windows Update Test DLL Exists'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12321,6 +12340,7 @@ function Main {
     Check-InternetSettingsLUIDll
     Check-ErrorHandlerCMD
     Check-BIDDll
+    Check-WindowsUpdateTestDlls
 }
 
 Main
