@@ -30,6 +30,10 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 <p align="center">
 <img src="sample2.PNG">
 </p>
+<p align="center">
+<img src="sample3.PNG">
+</p>
+
 
 
 ## What is inspected?
@@ -44,22 +48,22 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * BITS Jobs Discovery
 * Windows Accessibility Feature Modifications
 * PowerShell Profile Existence
-* Office Add-Ins/Startup Items
+* Office Addins from Trusted Locations
 * SilentProcessExit Monitoring
 * Winlogon Helper DLL Hijacking
 * Image File Execution Option Hijacking
 * RDP Shadowing
 * UAC Setting for Remote Sessions
-* Print Monitor DLL Hijacking
+* Print Monitor DLLs
 * LSA Security and Authentication Package Hijacking
-* Time Provider DLL Hijacking
-* Print Processor DLL Hijacking
-* Boot/Logon Active Setup Hijacking
+* Time Provider DLLs
+* Print Processor DLLs
+* Boot/Logon Active Setup
 * User Initialization Logon Script Hijacking
 * ScreenSaver Executable Hijacking
-* Netsh DLL Hijacking
-* AppCert DLL Hijacking
-* AppInit DLL Hijacking
+* Netsh DLLs
+* AppCert DLLs
+* AppInit DLLs
 * Application Shimming
 * COM Object Hijacking
 * LSA Notification Hijacking
@@ -71,18 +75,35 @@ If you have examples, write-ups or ideas for additional detections or allow-list
 * Outlook OTM Hijacking
 * Trust Provider Hijacking
 * LNK Target Scanning (Suspicious Terms, Multiple Extensions, Multiple EXEs)
-* Commonly-Masqueraded Windows DLL Names in running process (eg. un-signed WptsExtensions.dll)
+* 'Phantom' Windows DLL Names loaded into running process (eg. un-signed WptsExtensions.dll)
 * Scanning Critical OS Directories for Unsigned EXEs/DLLs
 * Un-Quoted Service Path Hijacking
 * PATH Binary Hijacking
 * Common File Association Hijacks and Suspicious Keywords
 * Suspicious Certificate Hunting
-* Office Trusted Location Addin Discovery/Scanning
 * GPO Script Discovery/Scanning
+* NLP Development Platform DLL Overrides
+* AeDebug/.NET/Script/Process/WER Debug Replacements
+* Explorer 'Load'
+* Windows Terminal startOnUserLogin Hijacks
+* App Path Mismatches
+* Service DLL/ImagePath Mismatches
+* Non-Standard GPO Extension DLLs
+* Potential HKCR COM Hijacks
+* Non-Standard LSA Extensions
+* DNSServerLevelPluginDll Presence
+* Explorer\MyComputer Utility Hijack
+* Terminal Services InitialProgram Check
+* RDP Startup Programs
+* Microsoft Telemetry Commands
+* Non-Standard AMSI Providers
 
 TODO
 * Browser Extension Analysis
-* Maybe: Temporary RID Hijacking (https://www.ired.team/offensive-security/persistence/rid-hijacking)
+* Maybe: RID Hijacking [https://www.ired.team/offensive-security/persistence/rid-hijacking][https://pentestlab.blog/2020/02/12/persistence-rid-hijacking/]
+* Inspection of HKLM\SYSTEM\CurrentControlSet\Services\\%NAME%\ Parameters, Performance and ImagePath for non-standard or suspicious locations [https://attack.mitre.org/techniques/T1574/011/]
+* PowerAutomate
+* Add Analysis/Remediation Guidance to each detection in the GitHub Wiki
 
 ## MITRE Techniques Evaluated
 
@@ -91,6 +112,7 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1037: Boot or Logon Initialization Scripts
 * T1037.001: Boot or Logon Initialization Scripts: Logon Script (Windows)
 * T1037.005: Boot or Logon Initialization Scripts: Startup Items
+* T1055.001: Process Injection: Dynamic-link Library Injection
 * T1059: Command and Scripting Interpreter
 * T1071: Application Layer Protocol
 * T1098: Account Manipulation
@@ -128,3 +150,15 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1574: Hijack Execution Flow
 * T1574.007: Hijack Execution Flow: Path Interception by PATH Environment Variable
 * T1574.009: Hijack Execution Flow: Path Interception by Unquoted Path
+
+
+## References
+This tool would not exist without the amazing InfoSec community - the most notable references I used are provided below;
+
+* https://github.com/last-byte/PersistenceSniper
+* https://attack.mitre.org/tactics/TA0003/
+* https://persistence-info.github.io/
+* https://www.hexacorn.com/blog/
+* https://www.ired.team/
+* https://github.com/swisskyrepo/PayloadsAllTheThings
+
