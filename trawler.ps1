@@ -871,7 +871,9 @@ function Registry-Checks {
     $common_ssp_dlls = @(
 		"cloudAP", # Server 2016
 		"ctxauth", #citrix
+        "efslsaext.dll"
 		"kerberos",
+        "lsasrv.dll"
 		"msoidssp",
 		"msv1_0",
 		"negoexts",
@@ -934,6 +936,45 @@ function Registry-Checks {
                         Write-Detection $detection
                     }
                 }
+            }
+        }
+    }
+    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\LsaExtensionConfig\LsaSrv"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Extensions' -and $_.Value -ne '""') {
+                $packages = $_.Value.Split([System.Environment]::NewLine)
+                ForEach ($package in $packages){
+                    if ($package -notin $common_ssp_dlls){
+                        $detection = [PSCustomObject]@{
+                            Name = 'LSA Extensions Review'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
+                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+
+    # DNSServerLevelPluginDLL
+    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'ServerLevelPluginDll' -and $_.Value -ne '""') {
+                $detection = [PSCustomObject]@{
+                    Name = 'Review: DNS ServerLevelPluginDLL is active'
+                    Risk = 'Medium'
+                    Source = 'Registry'
+                    Technique = "T1055.001: Process Injection: Dynamic-link Library Injection"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                }
+                Write-Detection $detection
             }
         }
     }
