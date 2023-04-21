@@ -324,6 +324,7 @@ function Services {
 		'C:\Windows\System32\OpenSSH\ssh-agent.exe',
 		'C:\Windows\System32\PerceptionSimulation\PerceptionSimulationService.exe',
 		'C:\Windows\System32\RSoPProv.exe',
+         'C:\Windows\system32\svchost.exe -k rpcss'
 		'C:\Windows\System32\SearchIndexer.exe /Embedding',
 		'C:\Windows\System32\SecurityHealthService.exe',
 		'C:\Windows\System32\SensorDataService.exe',
@@ -356,6 +357,7 @@ function Services {
 		'C:\Windows\System32\svchost.exe -k GraphicsPerfSvcGroup',
 		'C:\Windows\System32\svchost.exe -k ICService -p',
 		'C:\Windows\System32\svchost.exe -k imgsvc',
+         'C:\Windows\system32\svchost.exe -k ICService',
 		'C:\Windows\System32\svchost.exe -k KpsSvcGroup',
 		'C:\Windows\System32\svchost.exe -k localService -p',
 		'C:\Windows\System32\svchost.exe -k LocalService -p',
@@ -406,7 +408,8 @@ function Services {
 		'C:\Windows\System32\vssvc.exe',
 		'C:\Windows\System32\wbem\WmiApSrv.exe',
 		'C:\Windows\SysWow64\perfhost.exe',
-		'C:\Windows\SysWOW64\XtuService.exe'    )
+		'C:\Windows\SysWOW64\XtuService.exe'
+    )
 
     $services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
 
@@ -1019,6 +1022,7 @@ function Registry-Checks {
         "$env:SYSTEMROOT\system32\sdclt.exe"
         "$env:SYSTEMROOT\system32\cleanmgr.exe /D %c"
         "$env:SYSTEMROOT\system32\dfrgui.exe"
+        "$env:SYSTEMROOT\system32\wbadmin.msc"
     )
     ForEach ($path in $paths){
         if (Test-Path -Path $path) {
@@ -9914,7 +9918,6 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{8F0C5675-AEEF-11d0-84F0-00C04FD43F8F}\InprocServer32" = "$homedrive\\Program Files\\Windows Mail\\msoe\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{8F380D56-7ADE-449b-A748-D0F9595DBA6D}\InprocServer32" = "$homedrive\\Windows\\System32\\SrhInproc\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{9042E1B1-8FD4-4008-89FE-4040CC74575A}\InProcServer32" = "$homedrive\\Windows\\system32\\wbem\\servercompprov\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{905FCFCB-7937-43CD-B0B1-95284CF8422E}\InprocServer32" = "$homedrive\\Windows\\System32\\SrhInproc\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{9068BF36-6F05-477E-B108-A4042237F884}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobedui\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{92F2118A-E813-4A4D-9DE2-F96A9DC02C53}\InprocServer32" = "$homedrive\\Windows\\System32\\NaturalLanguage6\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{936812D2-D700-407B-BDF6-D00ACD1CC047}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Devices\.Sensors\.dll"
@@ -10012,7 +10015,6 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{D7E10D43-6CB9-4a61-91F4-9C722C265CB3}\InprocServer32" = "$homedrive\\Windows\\System32\\SrhInproc\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{D85A2008-32B3-4747-8189-7FB809F3CFF1}\InProcServer32" = "$homedrive\\Windows\\System32\\PrintDialogs3D\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{D9581C03-9766-45A6-B970-1EABBE985986}\InprocServer32" = "$homedrive\\Windows\\System32\\NaturalLanguage6\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{d95b041d-fb4e-4886-b307-ef043d5bbc48}\InProcServer32" = "$homedrive\\Windows\\system32\\SettingsHandlers_nt\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{D9E859EA-9C2B-4916-9B39-BCF2BBD50B63}\InprocServer32" = "$homedrive\\Windows\\System32\\MSWB7\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{D9F1D595-2693-4F95-BFF8-A5BED203B77F}\InprocServer32" = "$homedrive\\Windows\\system32\\vssui\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{DC357AD1-94F3-4932-80D4-306B69004B46}\InProcServer32" = "$homedrive\\Windows\\System32\\shell32\.dll"
@@ -10073,6 +10075,29 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{FE285C8C-5360-41C1-A700-045501C740DE}\InProcServer32" = "$homedrive\\Windows\\System32\\ErrorDetailsUpdate\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{FE62FDE5-E0D8-4118-9FA3-45D31A5AEA0F}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobedui\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{FE6CBCD1-20A2-44F7-8A9C-BE3B161577A9}\InprocServer32" = "$homedrive\\Windows\\System32\\SrhInproc\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{11236C00-2897-4F09-BCAA-B2BBD094AA88}\InprocServer32" = "$homedrive\\Windows\\System32\\PrintWorkflowProxy\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{1E4CEC13-76BD-4ce2-8372-711CB6F10FD1}\InProcServer32" = "$homedrive\\Windows\\System32\\XpsFilt\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{2D1F4498-D1B9-48C6-B488-7C2453F58A78}\InProcServer32" = "$homedrive\\Windows\\System32\\daxexec\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{39142420-C9BB-402A-863F-3C9FDB55B5AB}\InProcServer32" = "$homedrive\\Windows\\System32\\usocore\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{3AF15AD7-76FF-4BE6-A15A-83D981D975A9}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Graphics\.Printing\.Workflow\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{3fe444e2-bda1-4581-a5d4-5f62e8f2ec56}\InProcServer32" = "$homedrive\\Windows\\System32\\DolbyHrtfEnc\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{44121072-A222-48f2-A58A-6D9AD51EBBE9}\InProcServer32" = "$homedrive\\Windows\\System32\\XPSSHHDR\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{45670FA8-ED97-4F44-BC93-305082590BFB}\InProcServer32" = "$homedrive\\Windows\\System32\\XPSSHHDR\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{53EBEA34-6911-462F-ABF0-CB64961CC4DF}\InProcServer32" = "$homedrive\\Windows\\System32\\UiaManager\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{5E46F84B-3520-4A35-877A-083A2F0B7F59}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobeplugins\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{658c9a86-2e6b-4989-8c11-80249907eda5}\InProcServer32" = "$homedrive\\Windows\\System32\\DolbyHrtfEnc\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{6A828F18-5556-48C8-A5C3-536202DF6F0D}\InProcServer32" = "$homedrive\\Windows\\System32\\UiaManager\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{6ee68766-738a-47fe-9531-fb7c0de21ccd}\InProcServer32" = "$homedrive\\Windows\\System32\\CoreShell\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{7DE95A91-6443-4749-AFC4-AC4EEDCD4421}\InProcServer32" = "$homedrive\\Windows\\System32\\twinui\.pcshell\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{905FCFCB-7937-43CD-B0B1-95284CF8422E}\InProcServer32" = "$homedrive\\Windows\\System32\\(Srh|SrhInproc)\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{9D3F2BEA-70EC-45C4-B6A5-A071E47185F1}\InProcServer32" = "$homedrive\\Windows\\System32\\usocore\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{A5A842A5-2F24-28BA-0237-FA857C65B593}\InProcServer32" = "$homedrive\\Windows\\System32\\StartTileData\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{AACA92BE-029D-4006-ADA0-725B506CF9B2}\InProcServer32" = "$homedrive\\Windows\\System32\\DolbyMATEnc\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{c82fa008-bce8-4ebc-89f4-5b0061861c6e}\InProcServer32" = "$homedrive\\Windows\\System32\\shell32\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{d2b3db04-b843-11e7-abc4-cec278b6b50a}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobeplugins\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{d95b041d-fb4e-4886-b307-ef043d5bbc48}\InProcServer32" = "$homedrive\\Windows\\System32\\SettingsHandlers_(User|nt)\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{EA7E2F2F-C713-4A10-8708-C9C40587BAD7}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobedui\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{FF658520-21A7-4AE1-A72A-D5A2D937138C}\InProcServer32" = "$homedrive\\Windows\\System32\\XPSSHHDR\.dll"
     }
 
     $path = "HKCR\CLSID"
