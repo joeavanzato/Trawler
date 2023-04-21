@@ -1766,6 +1766,39 @@ function Registry-Checks {
         }
     }
 
+    # AMSI Providers
+    $allowed_amsi_providers = @(
+        "{2781761E-28E0-4109-99FE-B9D127C57AFE}"
+    )
+
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\AMSI\Providers"
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object *
+        ForEach ($item in $items) {
+            if ($item.PSChildName -in $allowed_amsi_providers){
+                continue
+            }
+            $new_path = "Registry::HKLM\SOFTWARE\Classes\CLSID\"+$item.PSChildName+"\InprocServer32"
+            Write-Host $new_path
+            if (Test-Path $new_path){
+                $dll_data = Get-ItemProperty -Path $new_path
+                $dll_data.PSObject.Properties | ForEach-Object {
+                    if ($_.Name -in '(Default)'){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard AMSI Provider DLL'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1112: Modify Registry"
+                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+
+        }
+    }
+
     # App Path Hijacks
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"
     if (Test-Path -Path "Registry::$path") {
