@@ -1830,7 +1830,7 @@ function Registry-Checks {
 
 
     # GPO Extension DLLs
-    $homedir = $env:HOMEDRIVE
+    $homedrive = $env:HOMEDRIVE
     $gpo_dll_allowlist = @(
         "$homedrive\Windows\System32\TsUsbRedirectionGroupPolicyExtension.dll"
         "$homedrive\Windows\System32\cscobj.dll"
