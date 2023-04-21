@@ -12217,6 +12217,36 @@ function Check-ErrorHandlerCMD {
     }
 }
 
+function Check-BIDDll {
+    $paths = @(
+        "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\BidInterface\Loader"
+        "Registry::HKEY_LOCAL_MACHINE\software\Wow6432Node\Microsoft\BidInterface\Loader"
+
+    )
+    $expected_values = @(
+        "C:\Windows\Microsoft.NET\Framework\v2.0.50727\ADONETDiag.dll"
+        "C:\Windows\SYSTEM32\msdaDiag.dll"
+
+    )
+    ForEach ($path in $paths){
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq ":Path" -and $_.Value -notin $expected_values) {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Built-In Diagnostics (BID) DLL'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12286,6 +12316,7 @@ function Main {
     Check-PeerDistExtensionDll
     Check-InternetSettingsLUIDll
     Check-ErrorHandlerCMD
+    Check-BIDDll
 }
 
 Main
