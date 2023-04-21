@@ -1,5 +1,5 @@
 <p align="center">
-<img src="logo.png" height="300">
+<img src="logo.png" height="200">
 </p>
 <h1 align="center">
 Dredging Windows for Persistence 
@@ -29,7 +29,9 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercon
 
 Certain detections have allow-lists built-in to help remove noise from default Windows configurations (10/2016/2019/2022) - expected Scheduled Tasks, Services, etc.  Of course, it is always possible for attackers to hijack these directly and masquerade with great detail as a default OS process - take care to use multiple forms of analysis and detection when dealing with skillful adversaries.
 
-If you have examples, write-ups or ideas for additional detections or allow-list items, please feel free to submit an Issue or PR with relevant technical details/references - the code-base is a little messy right now and will be cleaned up over time.
+If you have examples or ideas for additional detections, please feel free to submit an Issue or PR with relevant technical details/references - the code-base is a little messy right now and will be cleaned up over time.
+
+Additionally, if you identify obvious false positives, please let me know by opening an issue or PR on GitHub!  The obvious culprits for this will be non-standard COMs, Services or Tasks.
 
 ## What separates this from something like PersistenceSniper?
 PersistenceSniper is an awesome tool - I've used it heavily in the past - but there are a few key points that differentiate these utilities
@@ -117,11 +119,13 @@ Overall, these tools are extremely similar but approach the problem from slightl
 * Non-Standard AMSI Providers
 
 TODO
-* Browser Extension Analysis
-* Maybe: RID Hijacking [https://www.ired.team/offensive-security/persistence/rid-hijacking][https://pentestlab.blog/2020/02/12/persistence-rid-hijacking/]
-* Inspection of HKLM\SYSTEM\CurrentControlSet\Services\\%NAME%\ Parameters, Performance and ImagePath for non-standard or suspicious locations [https://attack.mitre.org/techniques/T1574/011/]
-* PowerAutomate
-* Add Analysis/Remediation Guidance to each detection in the GitHub Wiki
+* Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
+* Browser Extension Analysis (?)
+* RID Hijacking [https://www.ired.team/offensive-security/persistence/rid-hijacking][https://pentestlab.blog/2020/02/12/persistence-rid-hijacking/]
+* PowerAutomate Checks
+* ShadowPad Indicators [https://www.secureworks.com/research/shadowpad-malware-analysis, https://www.hexacorn.com/blog/2023/02/25/beyond-good-ol-run-key-part-141/]
+* OBS Startup Script Scanning [https://www.hexacorn.com/blog/2023/04/14/beyond-good-ol-run-key-part-142/]
+* 
 
 ## MITRE Techniques Evaluated
 

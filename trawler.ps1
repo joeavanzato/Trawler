@@ -12140,6 +12140,26 @@ function Check-TerminalProfiles {
     }
 }
 
+function Check-PeerDistExtensionDll {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PeerDist\Extension"
+    $expected_value = "peerdist.dll"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq "PeerdistDllName" -and $_.Value -ne $expected_value) {
+                $detection = [PSCustomObject]@{
+                    Name = 'PeerDist DLL does not match expected value'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12206,6 +12226,7 @@ function Main {
     Scan-Office-Trusted-Locations
     Find-GPO-Scripts
     Check-TerminalProfiles
+    Check-PeerDistExtensionDll
 }
 
 Main
