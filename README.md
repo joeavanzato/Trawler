@@ -120,7 +120,9 @@ Overall, these tools are extremely similar but approach the problem from slightl
 * Internet Settings LUI Error DLL
 * PeerDist\Extension DLL
 * ErrorHandler.CMD Checks
-* 
+* Built-In Diagnostics DLL
+* MiniDumpAuxiliary DLLs
+* KnownManagedDebugger DLLs
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
@@ -129,6 +131,8 @@ TODO
 * PowerAutomate Checks
 * ShadowPad Indicators [https://www.secureworks.com/research/shadowpad-malware-analysis, https://www.hexacorn.com/blog/2023/02/25/beyond-good-ol-run-key-part-141/]
 * OBS Startup Script Scanning [https://www.hexacorn.com/blog/2023/04/14/beyond-good-ol-run-key-part-142/]
+* SQL Server Management Addins [https://www.hexacorn.com/blog/2019/09/28/beyond-good-ol-run-key-part-117/]
+* AutoPlay Handler Inspection [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\]
 * 
 
 ## MITRE Techniques Evaluated

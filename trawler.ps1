@@ -11432,7 +11432,6 @@ function Find-Debugger-Hijacks {
         }
     }
 
-
     # AeDebug 64
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug"
     if (Test-Path -Path "Registry::$path") {
@@ -11466,8 +11465,6 @@ function Find-Debugger-Hijacks {
             }
         }
     }
-
-
 
     # .NET 32
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework"
@@ -12307,6 +12304,69 @@ function Check-WindowsUpdateTestDlls {
     }
 }
 
+function Check-KnownManagedDebuggers {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\KnownManagedDebuggingDlls"
+    $allow_list = @(
+        "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
+        "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\mscordacwks\.dll"
+        "$env:homedrive\\Windows\\System32\\mrt_map\.dll"
+    )
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $matches_good = $false
+            ForEach ($allowed_item in $allow_list){
+                if ($_.Name -match $allowed_item){
+                    $matches_good = $true
+                    break
+                }
+            }
+            if ($matches_good -eq $false){
+                $detection = [PSCustomObject]@{
+                    Name = 'Non-Standard KnownManagedDebugging DLL'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, DLL: "+$_.Name
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-MiniDumpAuxiliaryDLLs {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpAuxiliaryDlls"
+    $allow_list = @(
+        "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\coreclr\.dll"
+        "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\(mscorwks|clr)\.dll"
+        "$env:homedrive\\Windows\\System32\\(chakra|jscript.*|mrt.*)\.dll"
+
+    )
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $matches_good = $false
+            ForEach ($allowed_item in $allow_list){
+                if ($_.Name -match $allowed_item){
+                    $matches_good = $true
+                    break
+                }
+            }
+            if ($matches_good -eq $false){
+                $detection = [PSCustomObject]@{
+                    Name = 'Non-Standard MiniDumpAuxiliary DLL'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, DLL: "+$_.Name
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12378,6 +12438,7 @@ function Main {
     Check-ErrorHandlerCMD
     Check-BIDDll
     Check-WindowsUpdateTestDlls
+    Check-KnownManagedDebuggers
 }
 
 Main
