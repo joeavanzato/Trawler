@@ -8079,7 +8079,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{ec57976f-0796-42b5-a699-6a24933a48bc}\InProcServer32" = "$homedrive\\Windows\\System32\\CastLaunch\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EC860C1A-CD41-4AA4-AC8E-75ABB7B46E21}\InProcServer32" = "$homedrive\\Windows\\System32\\PerceptionSimulation\\VirtualCameraManager\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EC8A7A18-FE68-403f-9625-CF63026F1BB4}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Devices\.Picker\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{EC8F67F0-A2DE-4868-98E6-EAAD214BCDC6}\InprocServer32" = "$homedrive\\Windows\\System32\\InputMethod\\(CHS|SHARED)\\ChsProxyDS\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{EC8F67F0-A2DE-4868-98E6-EAAD214BCDC6}\InprocServer32" = "$homedrive\\Windows\\System32\\InputMethod\\(CHS|SHARED)\\Ch(s|x)ProxyDS\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EC9846B3-2762-4A6B-A214-6ACB603462D2}\InprocServer32" = "$homedrive\\Windows\\System32\\FirewallAPI\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EC9BA17D-60B5-462B-A6D8-14B89057E22A}\InprocServer32" = "$homedrive\\Windows\\System32\\Dxtmsft\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{ecabafaa-7f19-11d2-978e-0000f8757e2a}\InprocServer32" = "$homedrive\\Windows\\System32\\comsvcs\.dll"
