@@ -644,6 +644,8 @@ function Modified-Windows-Accessibility-Feature {
 function PowerShell-Profiles {
     # PowerShell profiles may be abused by adversaries for persistence.
 
+    # TODO - Add check for 'suspicious' content
+
     # $PSHOME\Profile.ps1
     # $PSHOME\Microsoft.PowerShell_profile.ps1
     # $HOME\Documents\PowerShell\Profile.ps1
@@ -12180,6 +12182,41 @@ function Check-InternetSettingsLUIDll {
     }
 }
 
+function Check-ErrorHandlerCMD {
+    $path = "$env:homedrive\windows\Setup\Scripts\ErrorHandler.cmd"
+    if (Test-Path $path){
+
+        $script_content_detection = $false
+        try {
+            $script_content = Get-Content $path
+            ForEach ($line_ in $script_content){
+                if ($line_ -match $suspicious_terms -and $script_content_detection -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Suspicious Content in ErrorHandler.cmd'
+                        Risk = 'High'
+                        Source = 'Windows'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "File: $path, Suspicious Line: +$line_"
+                    }
+                    Write-Detection $detection
+                    $script_content_detection = $true
+                }
+            }
+        } catch {
+        }
+        if ($script_content_detection -eq $false){
+            $detection = [PSCustomObject]@{
+                Name = 'Review: ErrorHandler.cmd Existence'
+                Risk = 'High'
+                Source = 'Windows'
+                Technique = "T1574: Hijack Execution Flow"
+                Meta = "File Location: $path"
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12248,6 +12285,7 @@ function Main {
     Check-TerminalProfiles
     Check-PeerDistExtensionDll
     Check-InternetSettingsLUIDll
+    Check-ErrorHandlerCMD
 }
 
 Main

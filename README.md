@@ -117,6 +117,10 @@ Overall, these tools are extremely similar but approach the problem from slightl
 * RDP Startup Programs
 * Microsoft Telemetry Commands
 * Non-Standard AMSI Providers
+* Internet Settings LUI Error DLL
+* PeerDist\Extension DLL
+* ErrorHandler.CMD Checks
+* 
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
