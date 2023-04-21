@@ -12160,6 +12160,26 @@ function Check-PeerDistExtensionDll {
     }
 }
 
+function Check-InternetSettingsLUIDll {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\LUI"
+    $expected_value = "$env:systemroot\system32\wininetlui.dll!InternetErrorDlgEx"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq "0" -and $_.Value -ne $expected_value) {
+                $detection = [PSCustomObject]@{
+                    Name = 'InternetSettings LUI Error DLL does not match expected value'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                }
+                Write-Host $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12227,6 +12247,7 @@ function Main {
     Find-GPO-Scripts
     Check-TerminalProfiles
     Check-PeerDistExtensionDll
+    Check-InternetSettingsLUIDll
 }
 
 Main
