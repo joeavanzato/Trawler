@@ -10088,7 +10088,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{53EBEA34-6911-462F-ABF0-CB64961CC4DF}\InProcServer32" = "$homedrive\\Windows\\System32\\UiaManager\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{5E46F84B-3520-4A35-877A-083A2F0B7F59}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobeplugins\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{658c9a86-2e6b-4989-8c11-80249907eda5}\InProcServer32" = "$homedrive\\Windows\\System32\\DolbyHrtfEnc\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{6ee68766-738a-47fe-9531-fb7c0de21ccd}\InProcServer32" = "$homedrive\\Windows\\System32\\UiaManager\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{6A828F18-5556-48C8-A5C3-536202DF6F0D}\InProcServer32" = "$homedrive\\Windows\\System32\\UiaManager\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{6ee68766-738a-47fe-9531-fb7c0de21ccd}\InProcServer32" = "$homedrive\\Windows\\System32\\CoreShell\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{7DE95A91-6443-4749-AFC4-AC4EEDCD4421}\InProcServer32" = "$homedrive\\Windows\\System32\\twinui\.pcshell\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{905FCFCB-7937-43CD-B0B1-95284CF8422E}\InProcServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
@@ -10100,7 +10100,6 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{d95b041d-fb4e-4886-b307-ef043d5bbc48}\InProcServer32" = "$homedrive\\Windows\\System32\\SettingsHandlers_User\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EA7E2F2F-C713-4A10-8708-C9C40587BAD7}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobedui\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{FF658520-21A7-4AE1-A72A-D5A2D937138C}\InProcServer32" = "$homedrive\\Windows\\System32\\XPSSHHDR\.dll"
-
     }
 
     $path = "HKCR\CLSID"
