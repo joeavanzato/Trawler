@@ -12367,6 +12367,25 @@ function Check-MiniDumpAuxiliaryDLLs {
     }
 }
 
+function Check-Wow64LayerAbuse {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Wow64\x86"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -ne "(Default)"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Non-Standard Wow64\x86 DLL loaded into x86 process'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, Target Process Name: "+$_.Name+" Loaded DLL: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12439,6 +12458,7 @@ function Main {
     Check-BIDDll
     Check-WindowsUpdateTestDlls
     Check-KnownManagedDebuggers
+    Check-Wow64LayerAbuse
 }
 
 Main

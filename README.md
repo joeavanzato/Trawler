@@ -123,6 +123,7 @@ Overall, these tools are extremely similar but approach the problem from slightl
 * Built-In Diagnostics DLL
 * MiniDumpAuxiliary DLLs
 * KnownManagedDebugger DLLs
+* WOW64 Compatibility Layer DLLs
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
