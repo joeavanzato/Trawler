@@ -865,6 +865,36 @@ function Registry-Checks {
         }
     }
 
+    # Microsoft Telemetry Commands
+    $allowed_telemetry_commands = @(
+        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:DoScheduledTelemetryRun"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:DoScheduledTelemetryRun"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:UpdateAvStatus"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:devinv.dll -f:CreateDeviceInventory"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:pcasvc.dll -f:QueryEncapsulationSettings"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:invagent.dll -f:RunUpdate"
+    )
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController"
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.Command -ne $null){
+                if ($data.Command -notin $allowed_telemetry_commands){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Microsoft Telemetry Command'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1112: Modify Registry"
+                        Meta = "Registry Path: "+$item.Name+", Command: "+$data.Command
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+
 
     # LSA Security Package Review
     # TODO - Check DLL Modification/Creation times
@@ -1033,6 +1063,32 @@ function Registry-Checks {
                         Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
                     }
                     Write-Detection $detection
+                }
+            }
+        }
+    }
+
+    # RDP Startup Programs
+    $allowed_rdp_startups = @(
+        "rdpclip"
+    )
+    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\Wds\rdpwd"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'StartupPrograms' -and $_.Value -ne ""){
+                $packages = $_.Value.Split(",")
+                ForEach ($package in $packages){
+                    if ($package -notin $allowed_rdp_startups){
+                        $detection = [PSCustomObject]@{
+                            Name = 'TerminalServices InitialProgram Active'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1574: Hijack Execution Flow"
+                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                        }
+                        Write-Detection $detection
+                    }
                 }
             }
         }
