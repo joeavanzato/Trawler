@@ -11415,6 +11415,24 @@ function Find-Debugger-Hijacks {
             }
         }
     }
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential AeDebug Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
+
     # AeDebug 64
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug"
     if (Test-Path -Path "Registry::$path") {
@@ -11432,6 +11450,25 @@ function Find-Debugger-Hijacks {
             }
         }
     }
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential AeDebug Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
+
+
     # .NET 32
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework"
     if (Test-Path -Path "Registry::$path") {
