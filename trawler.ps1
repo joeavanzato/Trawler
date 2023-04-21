@@ -1019,6 +1019,7 @@ function Registry-Checks {
         "$env:SYSTEMROOT\system32\sdclt.exe"
         "$env:SYSTEMROOT\system32\cleanmgr.exe /D %c"
         "$env:SYSTEMROOT\system32\dfrgui.exe"
+        "$env:SYSTEMROOT\system32\wbadmin.msc"
     )
     ForEach ($path in $paths){
         if (Test-Path -Path $path) {
