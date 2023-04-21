@@ -11495,7 +11495,7 @@ function Find-Suspicious-Certificates {
         "Certum Trusted Network.*"
         "SSL\.com Root Certification.*"
         "Amazon Root.*"
-        '"VeriSign.*'
+        '\"VeriSign.*'
 
     )
     $date = Get-Date
@@ -11572,7 +11572,8 @@ function Find-Suspicious-Certificates {
 
 
         #$cert.SubjectName.Name
-        if ($cert_verification_status -ne $true -and $diff.Hours -ge 0){
+        # TODO - Maybe remove valid_signer from this later on if we care that much about 'valid' signer certs which failed validation
+        if ($cert_verification_status -ne $true -and $valid_signer -eq $false -and $diff.Hours -ge 0){
             # Invalid Certs that are still within valid range
             if ($cert.PSPath.Contains("\Root\")){
                 $detection = [PSCustomObject]@{
