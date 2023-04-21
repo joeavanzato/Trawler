@@ -12386,6 +12386,30 @@ function Check-Wow64LayerAbuse {
     }
 }
 
+function Check-EventViewerMSC {
+    $paths = @(
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Event Viewer"
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Event Viewer"
+    )
+    ForEach ($path in $paths){
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -in "MicrosoftRedirectionProgram","MicrosoftRedirectionProgramCommandLineParameters","MicrosoftRedirectionURL" -and $_.Value -notin "","http://go.microsoft.com/fwlink/events.asp"){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Event Viewer MSC Hijack'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Target Process Name: "+$_.Name+" Loaded DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.

@@ -124,6 +124,7 @@ Overall, these tools are extremely similar but approach the problem from slightl
 * MiniDumpAuxiliary DLLs
 * KnownManagedDebugger DLLs
 * WOW64 Compatibility Layer DLLs
+* EventViewer MSC Hijack
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
