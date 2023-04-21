@@ -10906,7 +10906,7 @@ function Service-Reg-Checks {
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BFE\Parameters" = "$homedrive\\Windows\\System32\\bfe\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BITS\Parameters" = "$homedrive\\Windows\\System32\\qmgr\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BluetoothUserService\Parameters" = "$homedrive\\Windows\\System32\\Microsoft\.Bluetooth\.UserService\.dll"
-        "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BrokerInfrastructure\Parameters" = "$homedrive\\Windows\\System32\\psmsrv\.dll"
+        "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BrokerInfrastructure\Parameters" = "$homedrive\\Windows\\System32\\(psmsrv|bisrv)\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BTAGService\Parameters" = "$homedrive\\Windows\\System32\\BTAGService\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BthAvctpSvc\Parameters" = "$homedrive\\Windows\\System32\\BthAvctpSvc\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\bthserv\Parameters" = "$homedrive\\Windows\\system32\\bthserv\.dll"
@@ -11067,7 +11067,7 @@ function Service-Reg-Checks {
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\upnphost\Parameters" = "$homedrive\\Windows\\System32\\upnphost\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UserDataSvc\Parameters" = "$homedrive\\Windows\\System32\\userdataservice\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UserManager\Parameters" = "$homedrive\\Windows\\System32\\usermgr\.dll"
-        "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UsoSvc\Parameters" = "$homedrive\\Windows\\system32\\usosvc\.dll"
+        "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\UsoSvc\Parameters" = "$homedrive\\Windows\\system32\\(usosvc|usocore)\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\VacSvc\Parameters" = "$homedrive\\Windows\\System32\\vac\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\VaultSvc\Parameters" = "$homedrive\\Windows\\System32\\vaultsvc\.dll"
         "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\vmicguestinterface\Parameters" = "$homedrive\\Windows\\System32\\icsvc\.dll"
@@ -11131,7 +11131,7 @@ function Service-Reg-Checks {
                                     Risk = 'Medium'
                                     Source = 'Services'
                                     Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                                    Meta = "Key: " + $service.Name + ", Value: " + $_.Value+" Regex Expected Locastion: "+$image_path_lookup[$service.Name]
+                                    Meta = "Key: " + $service.Name + ", Value: " + $_.Value+" Regex Expected Location: "+$image_path_lookup[$service.Name]
                                 }
                                 Write-Detection $detection
                         }
@@ -11154,7 +11154,7 @@ function Service-Reg-Checks {
                                     Risk = 'Medium'
                                     Source = 'Services'
                                     Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                                    Meta = "Key: " + $child_key.Name + ", Value: " + $_.Value+" Regex Expected Locastion: "+$service_dll_lookup[$child_key.Name]
+                                    Meta = "Key: " + $child_key.Name + ", Value: " + $_.Value+" Regex Expected Location: "+$service_dll_lookup[$child_key.Name]
                                 }
                                 Write-Detection $detection
                             }
