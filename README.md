@@ -117,6 +117,14 @@ Overall, these tools are extremely similar but approach the problem from slightl
 * RDP Startup Programs
 * Microsoft Telemetry Commands
 * Non-Standard AMSI Providers
+* Internet Settings LUI Error DLL
+* PeerDist\Extension DLL
+* ErrorHandler.CMD Checks
+* Built-In Diagnostics DLL
+* MiniDumpAuxiliary DLLs
+* KnownManagedDebugger DLLs
+* WOW64 Compatibility Layer DLLs
+* EventViewer MSC Hijack
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
@@ -125,6 +133,8 @@ TODO
 * PowerAutomate Checks
 * ShadowPad Indicators [https://www.secureworks.com/research/shadowpad-malware-analysis, https://www.hexacorn.com/blog/2023/02/25/beyond-good-ol-run-key-part-141/]
 * OBS Startup Script Scanning [https://www.hexacorn.com/blog/2023/04/14/beyond-good-ol-run-key-part-142/]
+* SQL Server Management Addins [https://www.hexacorn.com/blog/2019/09/28/beyond-good-ol-run-key-part-117/]
+* AutoPlay Handler Inspection [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\]
 * 
 
 ## MITRE Techniques Evaluated
@@ -175,12 +185,12 @@ Please be aware that some of these are (of course) more detected than others - f
 
 
 ## References
-This tool would not exist without the amazing InfoSec community - the most notable references I used are provided below;
+This tool would not exist without the amazing InfoSec community - the most notable references I used are provided below.
 
-* https://github.com/last-byte/PersistenceSniper
-* https://attack.mitre.org/tactics/TA0003/
-* https://persistence-info.github.io/
-* https://www.hexacorn.com/blog/
-* https://www.ired.team/
-* https://github.com/swisskyrepo/PayloadsAllTheThings
+* [PersistenceSniper](https://github.com/last-byte/PersistenceSniper)
+* [MITRE ATT&CK](https://attack.mitre.org/tactics/TA0003/)
+* [Persistence Info GitHub](https://persistence-info.github.io/)
+* [Hexacorn - Persistence Series](https://www.hexacorn.com/blog/2017/01/28/beyond-good-ol-run-key-all-parts/)
+* [IRED](https://www.ired.team/)
+* [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings)
 

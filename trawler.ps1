@@ -644,6 +644,8 @@ function Modified-Windows-Accessibility-Feature {
 function PowerShell-Profiles {
     # PowerShell profiles may be abused by adversaries for persistence.
 
+    # TODO - Add check for 'suspicious' content
+
     # $PSHOME\Profile.ps1
     # $PSHOME\Microsoft.PowerShell_profile.ps1
     # $HOME\Documents\PowerShell\Profile.ps1
@@ -11413,6 +11415,23 @@ function Find-Debugger-Hijacks {
             }
         }
     }
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential AeDebug Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
     # AeDebug 64
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug"
     if (Test-Path -Path "Registry::$path") {
@@ -11430,6 +11449,23 @@ function Find-Debugger-Hijacks {
             }
         }
     }
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential AeDebug Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
     # .NET 32
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework"
     if (Test-Path -Path "Registry::$path") {
@@ -11579,9 +11615,13 @@ function Process-Module-Scanning {
 			"EdgeGdi.dll",
 			"Msfte.dll",
 			"phoneinfo.dll",
+            "rpcss.dll",
+            "sapi_onecore.dll",
+            "spreview.exewdscore.dll",
 			"Tsmsisrv.dll",
 			"TSVIPSrv.dll",
 			"Ualapi.dll",
+            "UsoSelfhost.dll",
 			"wbemcomn.dll",
 			"WindowsCoreDeviceInfo.dll",
 			"windowsperformancerecordercontrol.dll",
@@ -12174,7 +12214,197 @@ function Check-InternetSettingsLUIDll {
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
                 }
-                Write-Host $detection
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-ErrorHandlerCMD {
+    $path = "$env:homedrive\windows\Setup\Scripts\ErrorHandler.cmd"
+    if (Test-Path $path){
+
+        $script_content_detection = $false
+        try {
+            $script_content = Get-Content $path
+            ForEach ($line_ in $script_content){
+                if ($line_ -match $suspicious_terms -and $script_content_detection -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Suspicious Content in ErrorHandler.cmd'
+                        Risk = 'High'
+                        Source = 'Windows'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "File: $path, Suspicious Line: +$line_"
+                    }
+                    Write-Detection $detection
+                    $script_content_detection = $true
+                }
+            }
+        } catch {
+        }
+        if ($script_content_detection -eq $false){
+            $detection = [PSCustomObject]@{
+                Name = 'Review: ErrorHandler.cmd Existence'
+                Risk = 'High'
+                Source = 'Windows'
+                Technique = "T1574: Hijack Execution Flow"
+                Meta = "File Location: $path"
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
+function Check-BIDDll {
+    $paths = @(
+        "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\BidInterface\Loader"
+        "Registry::HKEY_LOCAL_MACHINE\software\Wow6432Node\Microsoft\BidInterface\Loader"
+
+    )
+    $expected_values = @(
+        "C:\Windows\Microsoft.NET\Framework\v2.0.50727\ADONETDiag.dll"
+        "C:\Windows\SYSTEM32\msdaDiag.dll"
+
+    )
+    ForEach ($path in $paths){
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq ":Path" -and $_.Value -notin $expected_values) {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Built-In Diagnostics (BID) DLL'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-WindowsUpdateTestDlls {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Test"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -in "EventerHookDll","AllowTestEngine","AlternateServiceStackDLLPath") {
+                $detection = [PSCustomObject]@{
+                    Name = 'Windows Update Test DLL Exists'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-KnownManagedDebuggers {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\KnownManagedDebuggingDlls"
+    $allow_list = @(
+        "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
+        "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\mscordacwks\.dll"
+        "$env:homedrive\\Windows\\System32\\mrt_map\.dll"
+    )
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $matches_good = $false
+            ForEach ($allowed_item in $allow_list){
+                if ($_.Name -match $allowed_item){
+                    $matches_good = $true
+                    break
+                }
+            }
+            if ($matches_good -eq $false){
+                $detection = [PSCustomObject]@{
+                    Name = 'Non-Standard KnownManagedDebugging DLL'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, DLL: "+$_.Name
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-MiniDumpAuxiliaryDLLs {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpAuxiliaryDlls"
+    $allow_list = @(
+        "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\coreclr\.dll"
+        "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\(mscorwks|clr)\.dll"
+        "$env:homedrive\\Windows\\System32\\(chakra|jscript.*|mrt.*)\.dll"
+
+    )
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $matches_good = $false
+            ForEach ($allowed_item in $allow_list){
+                if ($_.Name -match $allowed_item){
+                    $matches_good = $true
+                    break
+                }
+            }
+            if ($matches_good -eq $false){
+                $detection = [PSCustomObject]@{
+                    Name = 'Non-Standard MiniDumpAuxiliary DLL'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, DLL: "+$_.Name
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-Wow64LayerAbuse {
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Wow64\x86"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -ne "(Default)"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Non-Standard Wow64\x86 DLL loaded into x86 process'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, Target Process Name: "+$_.Name+" Loaded DLL: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-EventViewerMSC {
+    $paths = @(
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Event Viewer"
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Event Viewer"
+    )
+    ForEach ($path in $paths){
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -in "MicrosoftRedirectionProgram","MicrosoftRedirectionProgramCommandLineParameters","MicrosoftRedirectionURL" -and $_.Value -notin "","http://go.microsoft.com/fwlink/events.asp"){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Event Viewer MSC Hijack'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Target Process Name: "+$_.Name+" Loaded DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
             }
         }
     }
@@ -12248,6 +12478,11 @@ function Main {
     Check-TerminalProfiles
     Check-PeerDistExtensionDll
     Check-InternetSettingsLUIDll
+    Check-ErrorHandlerCMD
+    Check-BIDDll
+    Check-WindowsUpdateTestDlls
+    Check-KnownManagedDebuggers
+    Check-Wow64LayerAbuse
 }
 
 Main
