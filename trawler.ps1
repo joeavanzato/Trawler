@@ -979,6 +979,35 @@ function Registry-Checks {
         }
     }
 
+    # Explorer Helper Utilities Hijack
+    $paths = @(
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\BackupPath"
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\cleanuppath"
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\DefragPath"
+    )
+    $allowlisted_explorer_util_paths = @(
+        "$env:SYSTEMROOT\system32\sdclt.exe"
+        "$env:SYSTEMROOT\system32\cleanmgr.exe /D %c"
+        "$env:SYSTEMROOT\system32\dfrgui.exe"
+    )
+    ForEach ($path in $paths){
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq '(Default)' -and $_.Value -ne '""' -and $_.Value -notin $allowlisted_explorer_util_paths) {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Explorer\MyComputer Utility Hijack'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+
     # Time Provider Review
     $standard_timeprovider_dll = @(
         "C:\Windows\System32\w32time.dll",
