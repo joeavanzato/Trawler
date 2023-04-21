@@ -1008,6 +1008,36 @@ function Registry-Checks {
         }
     }
 
+    # TerminalServices InitialProgram Hijack
+    $paths = @(
+        "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
+        "Registry::HKCU\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
+        "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp"
+    )
+    ForEach ($path in $paths){
+        if (Test-Path -Path $path) {
+            $finhert = $false
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'fInheritInitialProgram' -and $_.Value -eq "1"){
+                    $finherit = $true
+                }
+            }
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'InitialProgram' -and $_.Value -ne "" -and $finherit -eq $true){
+                    $detection = [PSCustomObject]@{
+                        Name = 'TerminalServices InitialProgram Active'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+
     # Time Provider Review
     $standard_timeprovider_dll = @(
         "C:\Windows\System32\w32time.dll",
