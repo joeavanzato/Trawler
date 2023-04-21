@@ -1359,7 +1359,7 @@ function Registry-Checks {
             }
         }
     }
-    # COM Hijacks
+    # Well-known COM Hijacks
     # shell32.dll Hijack
     if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32") {
         $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -1409,7 +1409,8 @@ function Registry-Checks {
                                 Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
                                 Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
                             }
-                            Write-Detection $detection
+                            #Write-Detection $detection
+                            # This is now handled by Check-COM-Hijacks along with HKLM and HKCR checks (which should be identical)
                         }
                     }
                 }
@@ -1417,7 +1418,6 @@ function Registry-Checks {
         }
     }
 
-    # TODO - Add HKLM COM Scanning
 
     # Folder Open Hijack
     if (Test-Path -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command") {
@@ -1435,9 +1435,6 @@ function Registry-Checks {
             }
         }
     }
-
-    # TODO - Inspect Parameters for https://attack.mitre.org/techniques/T1574/011/
-
 
 
     # T1556.002: Modify Authentication Process: Password Filter DLL
@@ -10100,6 +10097,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{FF658520-21A7-4AE1-A72A-D5A2D937138C}\InProcServer32" = "$homedrive\\Windows\\System32\\XPSSHHDR\.dll"
     }
 
+    # HKCR
     $path = "HKCR\CLSID"
     if (Test-Path -Path "Registry::$path") {
         $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -10125,6 +10123,114 @@ function Check-COM-Hijacks {
                                 }
                             }
                             if ($verified_match -ne $true -or $_.Value -match "$env:homedrive\\Users\\(public|administrator|guest).*"){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack'
+                                    Risk = 'High'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                }
+                                Write-Detection $detection
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    ## HKLM
+    $default_hklm_com_lookups = @{}
+    $default_hklm_com_server_lookups = @{}
+    ForEach ($hash in $default_hkcr_com_lookups.GetEnumerator()){
+        $new_name = ($hash.Name).Replace("HKEY_CLASSES_ROOT", "HKEY_LOCAL_MACHINE\SOFTWARE\Classes")
+        $default_hklm_com_lookups["$new_name"] = $hash.Value
+    }
+    ForEach ($hash in $server_2022_coms.GetEnumerator()){
+        $new_name = ($hash.Name).Replace("HKEY_CLASSES_ROOT", "HKEY_LOCAL_MACHINE\SOFTWARE\Classes")
+        $default_hklm_com_server_lookups["$new_name"] = $hash.Value
+    }
+
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID"
+    if (Test-Path -Path "Registry::$path") {
+        $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $children = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            ForEach ($child in $children){
+                $path = "Registry::"+$child.Name
+                $data = Get-Item -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                if ($data.Name -match '.*InprocServer32'){
+                    $datum = Get-ItemProperty $path
+                    $datum.PSObject.Properties | ForEach-Object {
+                        if ($_.Name -eq '(Default)'){
+                            $verified_match = $false
+                            if ($default_hklm_com_lookups.ContainsKey($data.Name)){
+                                if ($_.Value -match $default_hkcr_com_lookups[$data.Name]){
+                                    $verified_match = $true
+                                }
+                            }
+                            if ($default_hklm_com_server_lookups.ContainsKey($data.Name) -and $verified_match -ne $true){
+                                if ($_.Value -match $server_2022_coms[$data.Name]){
+                                    $verified_match = $true
+                                }
+                            }
+                            if ($verified_match -ne $true -or $_.Value -match "$env:homedrive\\Users\\(public|administrator|guest).*"){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack'
+                                    Risk = 'High'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                }
+                                Write-Detection $detection
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ## HKCU
+    $default_hkcu_com_lookups = @{}
+    $default_hkcu_com_server_lookups = @{}
+    ForEach ($hash in $default_hkcr_com_lookups.GetEnumerator()){
+        $new_name = ($hash.Name).Replace("HKEY_CLASSES_ROOT", "HKEY_CURRENT_USER\SOFTWARE\Classes")
+        $default_hkcu_com_lookups["$new_name"] = $hash.Value
+    }
+    ForEach ($hash in $server_2022_coms.GetEnumerator()){
+        $new_name = ($hash.Name).Replace("HKEY_CLASSES_ROOT", "HKEY_CURRENT_USER\SOFTWARE\Classes")
+        $default_hkcu_com_server_lookups["$new_name"] = $hash.Value
+    }
+
+    $path = "HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID"
+    if (Test-Path -Path "Registry::$path") {
+        $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $children = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            ForEach ($child in $children){
+                $path = "Registry::"+$child.Name
+                $data = Get-Item -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                if ($data.Name -match '.*InprocServer32'){
+                    $datum = Get-ItemProperty $path
+                    $datum.PSObject.Properties | ForEach-Object {
+                        if ($_.Name -eq '(Default)'){
+                            $verified_match = $false
+                            if ($default_hkcu_com_lookups.ContainsKey($data.Name)){
+                                if ($_.Value -match $default_hkcr_com_lookups[$data.Name]){
+                                    $verified_match = $true
+                                }
+                            }
+                            if ($default_hkcu_com_server_lookups.ContainsKey($data.Name) -and $verified_match -ne $true){
+                                if ($_.Value -match $server_2022_coms[$data.Name]){
+                                    $verified_match = $true
+                                }
+                            }
+                            if ($verified_match -ne $true -or $_.Value -match "$env:homedrive\\Users\\(public|administrator|guest).*"){
+
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack'
                                     Risk = 'High'
