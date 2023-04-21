@@ -183,12 +183,12 @@ Please be aware that some of these are (of course) more detected than others - f
 
 
 ## References
-This tool would not exist without the amazing InfoSec community - the most notable references I used are provided below;
+This tool would not exist without the amazing InfoSec community - the most notable references I used are provided below.
 
-* https://github.com/last-byte/PersistenceSniper
-* https://attack.mitre.org/tactics/TA0003/
-* https://persistence-info.github.io/
-* https://www.hexacorn.com/blog/
-* https://www.ired.team/
-* https://github.com/swisskyrepo/PayloadsAllTheThings
+* [PersistenceSniper](https://github.com/last-byte/PersistenceSniper)
+* [MITRE ATT&CK](https://attack.mitre.org/tactics/TA0003/)
+* [Persistence Info GitHub](https://persistence-info.github.io/)
+* [Hexacorn - Persistence Series](https://www.hexacorn.com/blog/2017/01/28/beyond-good-ol-run-key-all-parts/)
+* [IRED](https://www.ired.team/)
+* [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings)
 
