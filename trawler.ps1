@@ -95,6 +95,7 @@ function Scheduled-Tasks {
 
     $default_task_exe_paths = @(
 		'"%ProgramFiles%\Windows Media Player\wmpnscfg.exe"',
+        "%windir%\system32\appidpolicyconverter.exe",
 		"%SystemRoot%\System32\ClipRenew.exe",
 		"%SystemRoot%\System32\ClipUp.exe",
 		"%SystemRoot%\System32\drvinst.exe",
@@ -126,6 +127,7 @@ function Scheduled-Tasks {
 		"%windir%\System32\gatherNetworkInfo.vbs",
 		"%windir%\System32\LocationNotificationWindows.exe",
 		"%windir%\System32\lpremove.exe",
+        "%windir%\system32\MDMAgent.exe",
 		"%windir%\System32\ProvTool.exe",
 		"%windir%\System32\RAServer.exe",
 		"%windir%\System32\rundll32.exe",
@@ -156,7 +158,10 @@ function Scheduled-Tasks {
 		"C:\ProgramData\Microsoft\Windows Defender\Platform\*\MpCmdRun.exe",
 		'"C:\Windows\System32\MicTray64.exe"',
 		"C:\Windows\System32\sc.exe",
-		'"C:\Windows\System32\SynaMonApp.exe"'
+		'"C:\Windows\System32\SynaMonApp.exe"',
+        "%localappdata%\Microsoft\OneDrive\OneDriveStandaloneUpdater.exe",
+        "$env:homedrive\WINDOWS\system32\msfeedssync.exe"
+
     )
 
     $default_task_args = @(
