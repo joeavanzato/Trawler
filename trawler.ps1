@@ -329,6 +329,8 @@ function Services {
 		'C:\Windows\System32\OpenSSH\ssh-agent.exe',
 		'C:\Windows\System32\PerceptionSimulation\PerceptionSimulationService.exe',
 		'C:\Windows\System32\RSoPProv.exe',
+        "C:\WINDOWS\RtkBtManServ.exe",
+        "C:\Windows\runSW.exe",
          'C:\Windows\system32\svchost.exe -k rpcss'
 		'C:\Windows\System32\SearchIndexer.exe /Embedding',
 		'C:\Windows\System32\SecurityHealthService.exe',
@@ -416,6 +418,7 @@ function Services {
 		'C:\Windows\System32\wbem\WmiApSrv.exe',
 		'C:\Windows\SysWow64\perfhost.exe',
 		'C:\Windows\SysWOW64\XtuService.exe'
+        'C:\WINDOWS\system32\dllhost.exe /Processid:*'
     )
 
     $services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
