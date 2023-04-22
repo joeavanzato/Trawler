@@ -603,9 +603,34 @@ function Check-Startups {
             Risk = 'Low'
             Source = 'Startup'
             Technique = "T1037.005: Boot or Logon Initialization Scripts: Startup Items"
-            Meta = "Item Name: "+$item.Name+", Command: "+$item.Command+", Location: "+$item.Location+", User: "+$item.User
+            Meta = "Location: "+$item.Location+", Item Name: "+$item.Name+", Command: "+$item.Command+", User: "+$item.User
         }
         Write-Detection $detection
+    }
+
+    $paths = @(
+        "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
+        "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
+    )
+    ForEach ($path_ in $paths){
+        $path = "Registry::$path_"
+        if (Test-Path -Path $path) {
+            $item = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $item.PSObject.Properties | ForEach-Object {
+                if ($_.Name -ne "(Default)"){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Startup Item Review'
+                        Risk = 'Low'
+                        Source = 'Startup'
+                        Technique = "T1037.005: Boot or Logon Initialization Scripts: Startup Items"
+                        Meta = "Location: $path_, Item Name: "+$_.Name
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
     }
 }
 
