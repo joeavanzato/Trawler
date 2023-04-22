@@ -11895,7 +11895,12 @@ function Find-Suspicious-Certificates {
         "VeriSign Trust Network.*"
         "Microsoft Trust Network"
         "Thawte Timestamping CA"
-
+        "GeoTrust Primary Certification Authority.*"
+        "Certum CA"
+        "XBL Client IPsec Issuing CA"
+        "Network Solutions Certificate Authority"
+        "D-TRUST Root Class 3 CA.*"
+        "Hotspot 2.0 Trust Root CA.*"
     )
     $date = Get-Date
     ForEach ($cert in $certs){
