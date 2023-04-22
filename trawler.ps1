@@ -8,11 +8,7 @@
 	.PARAMETER outpath
 		The fully-qualified file-path where detection output should be stored as a CSV.
 	
-	.PARAMETER outputPath
-		A description of the outputPath parameter.
-	
 	.EXAMPLE
-		.\trawler.ps1
 		.\trawler.ps1 -outpath "C:\detections.csv"
 	
 	.OUTPUTS
@@ -29,11 +25,24 @@
 #>
 param
 (
-	[Parameter(Mandatory = $false,
-			   Position = 1,
-			   HelpMessage = 'Please provide the fully-qualified file-path where detection output should be stored as a CSV.')]
-	[string]$outpath = "$PSScriptRoot\detections.csv"
+	[Parameter(
+        Mandatory = $false,
+        HelpMessage = 'The fully-qualified file-path where detection output should be stored as a CSV, defaults to $PSScriptRoot\detections.csv')]
+	    [string]$outpath = "$PSScriptRoot\detections.csv",
+	[Parameter(
+        Mandatory = $false,
+        HelpMessage = 'Should a snapshot CSV be generated')]
+	    [switch]$snapshot,
+	[Parameter(
+        Mandatory = $false,
+        HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
+	    [string]$snapshotpath = "$PSScriptRoot\snapshot.csv"
 )
+if ($snapshot.IsPresent){
+    $snapshot = $true
+} else {
+    $snapshot = $false
+}
 
 function Get-ValidOutPath {
 	param (
@@ -49,17 +58,33 @@ function Get-ValidOutPath {
 	return $path
 }
 
-# TODO - Rearrange this functionality inside of Get-ValidOutPath if we want to halt execution prior to having a viable write path - unsure still.
-Try {
-    $outpath = Get-ValidOutPath -path $outpath
-    Write-Host "Using the following file path: $outpath"
-    [io.file]::OpenWrite($outpath).close()
-    $output_writable = $true
+function global:ValidatePaths {
+    Try {
+        $global:outpath = Get-ValidOutPath -path $outpath
+        Write-Host "Detection Output Path: $outpath"
+        [io.file]::OpenWrite($outpath).close()
+        $global:output_writable = $true
+    }
+    Catch {
+        Write-Warning "Unable to write to provided output path: $outpath"
+        $global:output_writable = $false
+    }
+    if ($snapshot){
+        Try {
+            $global:snapshotpath = Get-ValidOutPath -path $snapshotpath
+            Write-Host "Snapshot Output Path: $snapshotpath"
+            [io.file]::OpenWrite($snapshotpath).close()
+            Clear-Content $snapshotpath
+            $global:snapshotpath_writable = $true
+        }
+        Catch {
+            Write-Warning "Unable to write to provided snapshot path: $snapshotpath"
+            $global:snapshotpath_writable = $false
+        }
+    }
+
 }
-Catch {
-    Write-Warning "Unable to write to provided output path: $outpath"
-    $output_writable = $false
-}
+
 
 # TODO - JSON Output for more detail
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
@@ -172,6 +197,16 @@ function Check-ScheduledTasks {
     )
 
     ForEach ($task in $tasks){
+        if ($snapshot){
+            $message = [PSCustomObject]@{
+                Key = $task.TaskName
+                Value = $task.Execute
+                Source = 'Scheduled Tasks'
+            }
+            Write-Snapshot $message
+        }
+
+
         # Detection - Non-Standard Tasks
         ForEach ($i in $default_task_exe_paths){
             if ( $task.Execute -like $i) {
@@ -270,6 +305,15 @@ function Check-Users {
     $local_admins = Get-LocalGroupMember -Group "Administrators" | Select-Object *
     ForEach ($admin in $local_admins){
         $admin_user = Get-LocalUser -SID $admin.SID | Select-Object AccountExpires,Description,Enabled,FullName,PasswordExpires,UserMayChangePassword,PasswordLastSet,LastLogon,Name,SID,PrincipalSource
+        if ($snapshot){
+            $message = [PSCustomObject]@{
+                Key = $admin.name
+                Value = $admin.name
+                Source = 'Users'
+            }
+            Write-Snapshot $message
+        }
+
         $detection = [PSCustomObject]@{
             Name = 'Local Administrator Account'
             Risk = 'Medium'
@@ -424,6 +468,15 @@ function Check-Services {
     $services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
 
     ForEach ($service in $services){
+        if ($snapshot){
+            $message = [PSCustomObject]@{
+                Key = $service.Name
+                Value = $service.PathName
+                Source = 'Services'
+            }
+            Write-Snapshot $message
+        }
+
         # Detection - Non-Standard Tasks
         ForEach ($i in $default_service_exe_paths){
             if ( $service.PathName -like $i) {
@@ -485,6 +538,14 @@ function Check-Processes {
     # TODO - Check for processes spawned from netsh.dll
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
+        if ($snapshot){
+            $message = [PSCustomObject]@{
+                Key = $process.ProcessName
+                Value = $process.ExecutablePath
+                Source = 'Processes'
+            }
+            Write-Snapshot $message
+        }
         if ($process.CommandLine -match $ipv4_pattern -or $process.CommandLine -match $ipv6_pattern) {
             $detection = [PSCustomObject]@{
                 Name = 'IP Address Pattern detected in Process CommandLine'
@@ -530,7 +591,18 @@ function Check-Connections {
 		"steam"		
     )
     ForEach ($conn in $tcp_connections) {
+
         $proc = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue | Select-Object Name,Path
+
+        if ($snapshot){
+            $message = [PSCustomObject]@{
+                Key = $conn.RemoteAddress
+                Value = $conn.RemoteAddress
+                Source = 'Connections'
+            }
+            Write-Snapshot $message
+        }
+
         if ($conn.State -eq 'Listen' -and $conn.LocalPort -gt 1024){
             $detection = [PSCustomObject]@{
                 Name = 'Process Listening on Ephemeral Port'
@@ -573,6 +645,14 @@ function Check-WMIConsumers {
 
     ForEach ($consumer in $consumers) {
         if ($consumer.ScriptingEngine -ne $null) {
+            if ($snapshot){
+                $message = [PSCustomObject]@{
+                    Key = $consumer.Name
+                    Value = $consumer.ScriptFileName
+                    Source = 'WMI Consumers'
+                }
+                Write-Snapshot $message
+            }
             $detection = [PSCustomObject]@{
                 Name = 'WMI ActiveScript Consumer'
                 Risk = 'High'
@@ -583,6 +663,14 @@ function Check-WMIConsumers {
             Write-Detection $detection
         }
         if ($consumer.CommandLineTemplate -ne $null) {
+            if ($snapshot){
+                $message = [PSCustomObject]@{
+                    Key = $consumer.Name
+                    Value = $consumer.CommandLineTemplate
+                    Source = 'WMI Consumers'
+                }
+                Write-Snapshot $message
+            }
             $detection = [PSCustomObject]@{
                 Name = 'WMI CommandLine Consumer'
                 Risk = 'High'
@@ -598,6 +686,14 @@ function Check-WMIConsumers {
 function Check-Startups {
     $startups = Get-CimInstance -ClassName Win32_StartupCommand | Select-Object Command,Location,Name,User
     ForEach ($item in $startups) {
+        if ($snapshot){
+            $message = [PSCustomObject]@{
+                Key = $item.Name
+                Value = $item.Command
+                Source = 'Startup'
+            }
+            Write-Snapshot $message
+        }
         $detection = [PSCustomObject]@{
             Name = 'Startup Item Review'
             Risk = 'Low'
@@ -620,12 +716,20 @@ function Check-Startups {
             $item = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             $item.PSObject.Properties | ForEach-Object {
                 if ($_.Name -ne "(Default)"){
+                    if ($snapshot){
+                        $message = [PSCustomObject]@{
+                            Key = $_.Name
+                            Value = $_.Value
+                            Source = 'Startup'
+                        }
+                        Write-Snapshot $message
+                    }
                     $detection = [PSCustomObject]@{
                         Name = 'Startup Item Review'
                         Risk = 'Low'
                         Source = 'Startup'
                         Technique = "T1037.005: Boot or Logon Initialization Scripts: Startup Items"
-                        Meta = "Location: $path_, Item Name: "+$_.Name
+                        Meta = "Location: $path_, Item Name: "+$_.Name+", Command: "+$_.Value
                     }
                     Write-Detection $detection
                 }
@@ -635,14 +739,27 @@ function Check-Startups {
 }
 
 function Check-BITS {
-    $bits = Get-BitsTransfer | Select-Object JobId,DisplayName,TransferType,JobState,OwnerAccount
+    $bits = Get-BitsTransfer -AllUsers | Select-Object *
     ForEach ($item in $bits) {
+        if ($item.NotifyCmdLine -ne $null){
+            $cmd = $item.NotifyCmdLine
+        } else {
+            $cmd = ''
+        }
+        if ($snapshot){
+            $message = [PSCustomObject]@{
+                Key = $item.DisplayName
+                Value = $cmd
+                Source = 'Startup'
+            }
+            Write-Snapshot $message
+        }
         $detection = [PSCustomObject]@{
             Name = 'BITS Item Review'
             Risk = 'Low'
             Source = 'BITS'
             Technique = "T1197: BITS Jobs"
-            Meta = "Item Name: "+$item.DisplayName+", TransferType: "+$item.TransferType+", Job State: "+$item.JobState+", User: "+$item.OwnerAccount
+            Meta = "Item Name: "+$item.DisplayName+", TransferType: "+$item.TransferType+", Job State: "+$item.JobState+", User: "+$item.OwnerAccount+", Command: "+$cmd
         }
         Write-Detection $detection
     }
@@ -812,6 +929,8 @@ function Check-Registry-Checks {
 }
 
 function Check-COM-Hijacks {
+        # TODO - Consider NOT alerting when we don't have a 'known-good' entry for the CLSID in question
+        # Malware will typically target 'well-known' keys that are present in default versions of Windows - that should be enough for most situations and help to reduce noise.
         $default_hkcr_com_lookups = @{
         "HKEY_CLASSES_ROOT\CLSID\{0000002F-0000-0000-C000-000000000046}\InprocServer32" = "$homedrive\\Windows\\System32\\oleaut32\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{00000300-0000-0000-C000-000000000046}\InprocServer32" = "combase\.dll"
@@ -12754,6 +12873,17 @@ function Write-Detection($det)  {
     }
 }
 
+function Write-Snapshot($message){
+    # Snapshot acts as a custom allow-list for a specific gold-image or enterprise environment
+    # Run trawler once like '.\trawler.ps1 -snapshot' to generate 'snapshot.csv
+    # $message.key = Lookup component for allow-list hashtable
+    # $message.value = Lookup component for allow-list hashtable
+    # $message.source = Where are the K/V sourced from
+    if ($snapshotpath_writable){
+       $message | Export-CSV $snapshotpath -Append -NoTypeInformation -Encoding UTF8
+    }
+}
+
 function Logo {
     $logo = "
   __________  ___ _       ____    __________ 
@@ -12770,6 +12900,7 @@ function Logo {
 
 function Main {
     Logo
+    ValidatePaths
     Check-ScheduledTasks
     Check-Users
     Check-Services
