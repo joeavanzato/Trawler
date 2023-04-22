@@ -12504,6 +12504,26 @@ function Check-PolicyManager {
     }
 }
 
+function Check-SEMgrWallet {
+    # SEMgr Wallet
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\SEMgr\Wallet"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq "DllName" -and $_.Value -notin "","SEMgrSvc.dll"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential SEMgr Wallet DLL Hijack'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, Entry: "+$_.Name+" Loaded DLL: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12580,6 +12600,7 @@ function Main {
     Check-MicrosoftTelemetryCommands
     Check-ActiveSetup
     Check-UninstallStrings
+    Check-SEMgrWallet
 }
 
 Main
