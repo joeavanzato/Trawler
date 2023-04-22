@@ -90,7 +90,7 @@ $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
 $office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", ".xlam", ".com"
 
-function Scheduled-Tasks {
+function Check-ScheduledTasks {
     $tasks = Get-ScheduledTask  | Select-Object -Property State,Actions,Author,Date,Description,Principal,SecurityDescriptor,Settings,TaskName,TaskPath,Triggers,URI, @{Name="RunAs";Expression={ $_.principal.userid }} -ExpandProperty Actions | Select-Object *
 
     $default_task_exe_paths = @(
@@ -264,7 +264,7 @@ function Scheduled-Tasks {
     }
 }
 
-function Users {
+function Check-Users {
     # TODO - Catch error with outdated powershell versions that do not support Get-LocalGroupMember and use alternative gather mechanism
     # Find all local administrators and their last logon time as well as if they are enabled.
     $local_admins = Get-LocalGroupMember -Group "Administrators" | Select-Object *
@@ -282,7 +282,7 @@ function Users {
     
 }
 
-function Services {
+function Check-Services {
     $default_service_exe_paths = @(
 		'"C:\Program Files (x86)\Google\Update\GoogleUpdate.exe" /medsvc',
 		'"C:\Program Files (x86)\Google\Update\GoogleUpdate.exe" /svc',
@@ -481,7 +481,7 @@ function Services {
     }
 }
 
-function Processes {
+function Check-Processes {
     # TODO - Check for processes spawned from netsh.dll
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
@@ -511,7 +511,7 @@ function Processes {
     }
 }
 
-function Connections {
+function Check-Connections {
     $tcp_connections = Get-NetTCPConnection | Select-Object State,LocalAddress,LocalPort,OwningProcess,RemoteAddress,RemotePort
     $suspicious_ports = @(20,21,22,23,25,137,139,445,3389,443)
     $allow_listed_process_names = @(
@@ -568,7 +568,7 @@ function Connections {
     }
 }
 
-function WMI-Consumers {
+function Check-WMIConsumers {
     $consumers = Get-WMIObject -Namespace root\Subscription -Class __EventConsumer | Select-Object *
 
     ForEach ($consumer in $consumers) {
@@ -595,7 +595,7 @@ function WMI-Consumers {
     }
 }
 
-function Startups {
+function Check-Startups {
     $startups = Get-CimInstance -ClassName Win32_StartupCommand | Select-Object Command,Location,Name,User
     ForEach ($item in $startups) {
         $detection = [PSCustomObject]@{
@@ -609,7 +609,7 @@ function Startups {
     }
 }
 
-function BITS {
+function Check-BITS {
     $bits = Get-BitsTransfer | Select-Object JobId,DisplayName,TransferType,JobState,OwnerAccount
     ForEach ($item in $bits) {
         $detection = [PSCustomObject]@{
@@ -623,7 +623,7 @@ function BITS {
     }
 }
 
-function Modified-Windows-Accessibility-Feature {
+function Check-Modified-Windows-Accessibility-Feature {
     $files_to_check = @(
 		"C:\Program Files\Common Files\microsoft shared\ink\HID.dll"
 		"C:\Windows\System32\AtBroker.exe",
@@ -651,7 +651,7 @@ function Modified-Windows-Accessibility-Feature {
     }
 }
 
-function PowerShell-Profiles {
+function Check-PowerShell-Profiles {
     # PowerShell profiles may be abused by adversaries for persistence.
 
     # TODO - Add check for 'suspicious' content
@@ -720,7 +720,7 @@ function PowerShell-Profiles {
     }
 }
 
-function Office-Startup {
+function Check-Office-Startup {
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
     ForEach ($user in $profile_names){
         $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
@@ -749,595 +749,10 @@ function Office-Startup {
     }
 }
 
-function Registry-Checks {
-
-    # SilentProcessExit Persistence
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.MonitorProcess -ne $null){
-                if ($data.ReportingMode -eq $null){
-                    $data.ReportingMode = 'NA'
-                }
-                $detection = [PSCustomObject]@{
-                    Name = 'Process Launched on SilentProcessExit'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
-                    Meta = "Monitored Process: "+$item.Name+", Launched Process: "+$data.MonitorProcess+", Reporting Mode: "+$data.ReportingMode
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # Winlogon Helper DLL Hijacks
-    $standard_winlogon_helper_dlls = @(
-        "C:\Windows\System32\userinit.exe,"
-        "explorer.exe"
-        "sihost.exe"
-        "ShellAppRuntime.exe"
-        "mpnotify.exe"
-    )
-    if (Test-Path -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon") {
-        $items = Get-ItemProperty -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -in 'Userinit','Shell','ShellInfrastructure','ShellAppRuntime','MPNotify' -and $_.Value -notin $standard_winlogon_helper_dlls) {
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential WinLogon Helper Persistence'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1547.004: Boot or Logon Autostart Execution: Winlogon Helper DLL"
-                    Meta = "Key Location: HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe") {
-            $detection = [PSCustomObject]@{
-                Name = 'Potential utilman.exe Registry Persistence'
-                Risk = 'High'
-                Source = 'Registry'
-                Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
-                Meta = "Review Data for Key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe"
-            }
-            Write-Detection $detection
-    }
-
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe") {
-            $detection = [PSCustomObject]@{
-                Name = 'Potential sethc.exe Registry Persistence'
-                Risk = 'High'
-                Source = 'Registry'
-                Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
-                Meta = "Review Data for Key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe"
-            }
-            Write-Detection $detection
-    }
-
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'Shadow' -and ($_.Value -eq 4 -or $_.Value -eq 2)) {
-                $detection = [PSCustomObject]@{
-                    Name = 'RDP Shadowing without Consent is Enabled'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1098: Account Manipulation"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'LocalAccountTokenFilterPolicy' -and $_.Value -eq 1) {
-                $detection = [PSCustomObject]@{
-                    Name = 'UAC Disabled for Remote Sessions'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1112: Modify Registry"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    $standard_print_monitors = @(
-		"APMon.dll",
-		"AppMon.dll",
-		"FXSMON.dll",
-		"localspl.dll",
-		"tcpmon.dll",
-		"usbmon.dll",
-		"WSDMon.dll" # Server 2016
-    )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.Driver -ne $null){
-                if ($data.Driver -notin $standard_print_monitors){
-                    $detection = [PSCustomObject]@{
-                        Name = 'Non-Standard Print Monitor DLL'
-                        Risk = 'Medium'
-                        Source = 'Registry'
-                        Technique = "T1112: Modify Registry"
-                        Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
-
-    # LSA Security Package Review
-    # TODO - Check DLL Modification/Creation times
-    $common_ssp_dlls = @(
-		"cloudAP", # Server 2016
-		"ctxauth", #citrix
-        "efslsaext.dll"
-		"kerberos",
-        "lsasrv.dll"
-		"msoidssp",
-		"msv1_0",
-		"negoexts",
-		"pku2u",
-		"schannel",
-		"tspkg", # Server 2016
-		"wdigest" # Server 2016
-		"wsauth",
-		"wsauth" #vmware
-    )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
-                $packages = $_.Value.Split([System.Environment]::NewLine)
-                ForEach ($package in $packages){
-                    if ($package -notin $common_ssp_dlls){
-                        $detection = [PSCustomObject]@{
-                            Name = 'LSA Security Package Review'
-                            Risk = 'Medium'
-                            Source = 'Registry'
-                            Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
-                        }
-                        Write-Detection $detection
-                    }
-                }
-            }
-            if ($_.Name -eq 'Authentication Packages' -and $_.Value -ne '""') {
-                $packages = $_.Value.Split([System.Environment]::NewLine)
-                ForEach ($package in $packages){
-                    if ($package -notin $common_ssp_dlls){
-                        $detection = [PSCustomObject]@{
-                            Name = 'LSA Authentication Package Review'
-                            Risk = 'Medium'
-                            Source = 'Registry'
-                            Technique = "T1547.002: Boot or Logon Autostart Execution: Authentication Packages"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
-                        }
-                        Write-Detection $detection
-                    }
-                }
-            }
-        }
-    }
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
-                $packages = $_.Value.Split([System.Environment]::NewLine)
-                ForEach ($package in $packages){
-                    if ($package -notin $common_ssp_dlls){
-                        $detection = [PSCustomObject]@{
-                            Name = 'LSA Security Package Review'
-                            Risk = 'Medium'
-                            Source = 'Registry'
-                            Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
-                        }
-                        Write-Detection $detection
-                    }
-                }
-            }
-        }
-    }
-    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\LsaExtensionConfig\LsaSrv"
-    if (Test-Path -Path $path) {
-        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'Extensions' -and $_.Value -ne '""') {
-                $packages = $_.Value.Split([System.Environment]::NewLine)
-                ForEach ($package in $packages){
-                    if ($package -notin $common_ssp_dlls){
-                        $detection = [PSCustomObject]@{
-                            Name = 'LSA Extensions Review'
-                            Risk = 'Medium'
-                            Source = 'Registry'
-                            Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
-                        }
-                        Write-Detection $detection
-                    }
-                }
-            }
-        }
-    }
-
-    # DNSServerLevelPluginDLL
-    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters"
-    if (Test-Path -Path $path) {
-        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'ServerLevelPluginDll' -and $_.Value -ne '""') {
-                $detection = [PSCustomObject]@{
-                    Name = 'Review: DNS ServerLevelPluginDLL is active'
-                    Risk = 'Medium'
-                    Source = 'Registry'
-                    Technique = "T1055.001: Process Injection: Dynamic-link Library Injection"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # Explorer Helper Utilities Hijack
-    $paths = @(
-        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\BackupPath"
-        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\cleanuppath"
-        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\DefragPath"
-    )
-    $allowlisted_explorer_util_paths = @(
-        "$env:SYSTEMROOT\system32\sdclt.exe"
-        "$env:SYSTEMROOT\system32\cleanmgr.exe /D %c"
-        "$env:SYSTEMROOT\system32\dfrgui.exe"
-        "$env:SYSTEMROOT\system32\wbadmin.msc"
-    )
-    ForEach ($path in $paths){
-        if (Test-Path -Path $path) {
-            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            $items.PSObject.Properties | ForEach-Object {
-                if ($_.Name -eq '(Default)' -and $_.Value -ne '""' -and $_.Value -notin $allowlisted_explorer_util_paths) {
-                    $detection = [PSCustomObject]@{
-                        Name = 'Explorer\MyComputer Utility Hijack'
-                        Risk = 'Medium'
-                        Source = 'Registry'
-                        Technique = "T1574: Hijack Execution Flow"
-                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
-    # TerminalServices InitialProgram Hijack
-    $paths = @(
-        "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
-        "Registry::HKCU\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
-        "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp"
-    )
-    ForEach ($path in $paths){
-        if (Test-Path -Path $path) {
-            $finhert = $false
-            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            $items.PSObject.Properties | ForEach-Object {
-                if ($_.Name -eq 'fInheritInitialProgram' -and $_.Value -eq "1"){
-                    $finherit = $true
-                }
-            }
-            $items.PSObject.Properties | ForEach-Object {
-                if ($_.Name -eq 'InitialProgram' -and $_.Value -ne "" -and $finherit -eq $true){
-                    $detection = [PSCustomObject]@{
-                        Name = 'TerminalServices InitialProgram Active'
-                        Risk = 'Medium'
-                        Source = 'Registry'
-                        Technique = "T1574: Hijack Execution Flow"
-                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
-    # RDP Startup Programs
-    $allowed_rdp_startups = @(
-        "rdpclip"
-    )
-    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\Wds\rdpwd"
-    if (Test-Path -Path $path) {
-        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'StartupPrograms' -and $_.Value -ne ""){
-                $packages = $_.Value.Split(",")
-                ForEach ($package in $packages){
-                    if ($package -notin $allowed_rdp_startups){
-                        $detection = [PSCustomObject]@{
-                            Name = 'TerminalServices InitialProgram Active'
-                            Risk = 'Medium'
-                            Source = 'Registry'
-                            Technique = "T1574: Hijack Execution Flow"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
-                        }
-                        Write-Detection $detection
-                    }
-                }
-            }
-        }
-    }
-
-    # Time Provider Review
-    $standard_timeprovider_dll = @(
-        "C:\Windows\System32\w32time.dll",
-        "C:\Windows\System32\vmictimeprovider.dll"
-    )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.DllName -ne $null){
-                if ($standard_timeprovider_dll -notcontains $data.DllName){
-                    $detection = [PSCustomObject]@{
-                        Name = 'Non-Standard Time Providers DLL'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1547.003: Boot or Logon Autostart Execution: Time Providers"
-                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.DllName
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
-    # T1547.012 - Boot or Logon Autostart Execution: Print Processors
-    $standard_print_processors = @(
-        "winprint.dll"
-    )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.Driver -ne $null){
-                if ($standard_print_processors -notcontains $data.Driver){
-                    $detection = [PSCustomObject]@{
-                        Name = 'Non-Standard Print Processor DLL'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
-                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.Driver -ne $null){
-                if ($standard_print_processors -notcontains $data.Driver){
-                    $detection = [PSCustomObject]@{
-                        Name = 'Non-Standard Print Processor DLL'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
-                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
-    # T1037.001 - Boot or Logon Initialization Scripts: Logon Script (Windows)
-    if (Test-Path -Path "Registry::HKCU\Environment\UserInitMprLogonScript") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\Environment\UserInitMprLogonScript" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Potential Persistence via Logon Initialization Script'
-                Risk = 'Medium'
-                Source = 'Registry'
-                Technique = "T1037.001: Boot or Logon Initialization Scripts: Logon Script (Windows)"
-                Meta = "Key Location: HKCU\Environment\UserInitMprLogonScript, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-            }
-            Write-Detection $detection
-        }
-    }
+function Check-Registry-Checks {
 
     #TODO - Inspect File Command Extensions to hunt for anomalies
     # https://attack.mitre.org/techniques/T1546/001/
-
-
-    # T1546.002 - Event Triggered Execution: Screensaver
-    if (Test-Path -Path "Registry::HKCU\Control Panel\Desktop") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq "SCRNSAVE.exe") {
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Persistence via ScreenSaver Executable Hijack'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546.002: Event Triggered Execution: Screensaver"
-                    Meta = "Key Location: HKCU\Control Panel\Desktop, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # T1546.007 - Event Triggered Execution: Netsh Helper DLL
-    $standard_netsh_dlls = @(
-		"authfwcfg.dll",
-		"dhcpcmonitor.dll",
-		"dot3cfg.dll",
-		"fwcfg.dll",
-		"hnetmon.dll",
-		"ifmon.dll",
-		"netiohlp.dll",
-		"netprofm.dll",
-		"nettrace.dll",
-		"nshhttp.dll",
-		"nshipsec.dll",
-		"nshwfp.dll",
-		"p2pnetsh.dll",
-		"peerdistsh.dll",
-		"rasmontr.dll",
-		"rpcnsh.dll",
-		"WcnNetsh.dll",
-		"whhelper.dll",
-		"wlancfg.dll",
-		"wshelper.dll",
-		"wwancfg.dll"
-    )
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh") {
-        $items = Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Value -notin $standard_netsh_dlls) {
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Persistence via Netsh Helper DLL Hijack'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546.007: Event Triggered Execution: Netsh Helper DLL"
-                    Meta = "Key Location: HKLM\SOFTWARE\Microsoft\Netsh, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # AppCertDLL
-    $standard_appcert_dlls = @()
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Value -notin $standard_appcert_dlls) {
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Persistence via AppCertDLL Hijack'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546.009: Event Triggered Execution: AppCert DLLs"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # AppInit DLLs
-
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'AppInit_DLLs' -and $_.Value -ne '') {
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential AppInit DLL Persistence'
-                    Risk = 'Medium'
-                    Source = 'Registry'
-                    Technique = "T1546.010: Event Triggered Execution: AppInit DLLs"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }      
-                Write-Detection $detection
-            }
-        }
-    }
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'AppInit_DLLs' -and $_.Value -ne '') {
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential AppInit DLL Persistence'
-                    Risk = 'Medium'
-                    Source = 'Registry'
-                    Technique = "T1546.010: Event Triggered Execution: AppInit DLLs"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }      
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # Shims
-    # TODO - Also check HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Custom
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Potential Application Shimming Persistence'
-                Risk = 'High'
-                Source = 'Registry'
-                Technique = "T1546.011: Event Triggered Execution: Application Shimming"
-                Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-            }      
-            Write-Detection $detection
-        }
-    }
-
-    # IFEO Injection
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options") {
-        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.Debugger -ne $null){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Image File Execution Option Debugger Injection'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
-                    Meta = "Registry Path: "+$item.Name+", Debugger: "+$data.Debugger
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-    # Well-known COM Hijacks
-    # shell32.dll Hijack
-    if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Potential shell32.dll Hijack for Persistence'
-                Risk = 'High'
-                Source = 'Registry'
-                Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-            }      
-            Write-Detection $detection
-        }
-    }
-    # WBEM Subsystem
-    if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Potential WBEM Subsystem Hijack for Persistence'
-                Risk = 'High'
-                Source = 'Registry'
-                Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-            }      
-            Write-Detection $detection
-        }
-    }
 
     # COM Object Hijack Scan
     if (Test-Path -Path "Registry::HKCU\SOFTWARE\Classes\CLSID") {
@@ -1368,364 +783,6 @@ function Registry-Checks {
         }
     }
 
-
-    # Folder Open Hijack
-    if (Test-Path -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'DelegateExecute') {
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Folder Open Hijack for Persistence'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                    Meta = "Key Location: HKCU\Software\Classes\Folder\shell\open\command, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }      
-                Write-Detection $detection
-            }
-        }
-    }
-
-
-    # T1556.002: Modify Authentication Process: Password Filter DLL
-    # TODO - Check DLL Modification/Creation times
-    $standard_lsa_notification_packages = @(
-		"rassfm", # Windows Server 2019 AWS Lightsail
-		"scecli" # Windows 10/Server
-    )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq "Notification Packages") {
-                $packages = $_.Value.Split([System.Environment]::NewLine)
-                ForEach ($package in $packages){
-                    if ($package -notin $standard_lsa_notification_packages){
-                        $detection = [PSCustomObject]@{
-                            Name = 'Potential Exploitation via Password Filter DLL'
-                            Risk = 'High'
-                            Source = 'Registry'
-                            Technique = "T1556.002: Modify Authentication Process: Password Filter DLL"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                        }
-                        Write-Detection $detection
-                    }
-                }
-            }
-        }
-    }
-
-    # Office test Persistence
-    if (Test-Path -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Persistence via Office test\Special\Perf Key'
-                Risk = 'Very High'
-                Source = 'Office'
-                Technique = "T1137.002: Office Application Startup: Office Test"
-                Meta = "Key Location: HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf: "+$_.Name+", Entry Value: "+$_.Value
-            }      
-            Write-Detection $detection
-        }
-    }
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Persistence via Office test\Special\Perf Key'
-                Risk = 'Very High'
-                Source = 'Office'
-                Technique = "T1137.002: Office Application Startup: Office Test"
-                Meta = "Key Location: HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-            }      
-            Write-Detection $detection
-        }
-    }
-
-    # Office GlobalDotName Hijack
-    $office_versions = @(14.0,15.0,16.0)
-    ForEach ($version in $office_versions){
-        if (Test-Path -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options") {
-            $items = Get-ItemProperty -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            $items.PSObject.Properties | ForEach-Object {
-                if ($_.Name -eq "GlobalDotName"){
-                    $detection = [PSCustomObject]@{
-                        Name = 'Persistence via Office GlobalDotName'
-                        Risk = 'Very High'
-                        Source = 'Office'
-                        Technique = "T1137.001: Office Application Office Template Macros"
-                        Meta = "Key Location: HKCU\software\microsoft\office\$version.0\word\options, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                    }      
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
-    # Terminal Services DLL
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'ServiceDll' -and $_.Value -ne 'C:\Windows\System32\termsrv.dll'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Hijacking of Terminal Services DLL'
-                    Risk = 'Very High'
-                    Source = 'Registry'
-                    Technique = "T1505.005: Server Software Component: Terminal Services DLL"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }      
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # Autodial DLL
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'AutodialDLL' -and $_.Value -ne 'C:\Windows\System32\rasadhlp.dll'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Hijacking of Autodial DLL'
-                    Risk = 'Very High'
-                    Source = 'Registry'
-                    Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-    # Command AutoRun Processor
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'AutoRun'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Hijacking of Command AutoRun Processor'
-                    Risk = 'Very High'
-                    Source = 'Registry'
-                    Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-    if (Test-Path -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'AutoRun'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Hijacking of Command AutoRun Processor'
-                    Risk = 'Very High'
-                    Source = 'Registry'
-                    Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: HKCU\SOFTWARE\Microsoft\Command Processor, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # Trust Provider Hijacking
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'Dll' -and $_.Value -ne 'C:\Windows\System32\WindowsPowerShell\v1.0\pwrshsip.dll'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Hijacking of Trust Provider'
-                    Risk = 'Very High'
-                    Source = 'Registry'
-                    Technique = "T1553: Subvert Trust Controls"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-            if ($_.Name -eq 'FuncName' -and $_.Value -ne 'PsVerifyHash'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Hijacking of Trust Provider'
-                    Risk = 'Very High'
-                    Source = 'Registry'
-                    Technique = "T1553: Subvert Trust Controls"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # NLP Development Platform Hijacks
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride){
-                if ($data.StemmerDLLPathOverride -ne $null){
-                    $dll = $data.StemmerDLLPathOverride
-                } elseif ($data.WBDLLPathOverride -ne $null){
-                    $dll = $data.WBDLLPathOverride
-                }
-                $detection = [PSCustomObject]@{
-                    Name = 'DLL Override on Natural Language Development Platform'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1112: Modify Registry"
-                    Meta = "Registry Path: "+$item.Name+", DLL: "+$dll
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # Windows Load Key
-    $path = "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows"
-    if (Test-Path -Path "Registry::$path") {
-        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $item.PSObject.Properties | ForEach-Object {
-            if ($_.Name -in 'Load'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Windows Load Hijacking'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
-
-    # AMSI Providers
-    $allowed_amsi_providers = @(
-        "{2781761E-28E0-4109-99FE-B9D127C57AFE}"
-    )
-
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\AMSI\Providers"
-    if (Test-Path -Path $path) {
-        $items = Get-ChildItem -Path $path | Select-Object *
-        ForEach ($item in $items) {
-            if ($item.PSChildName -in $allowed_amsi_providers){
-                continue
-            }
-            $new_path = "Registry::HKLM\SOFTWARE\Classes\CLSID\"+$item.PSChildName+"\InprocServer32"
-            Write-Host $new_path
-            if (Test-Path $new_path){
-                $dll_data = Get-ItemProperty -Path $new_path
-                $dll_data.PSObject.Properties | ForEach-Object {
-                    if ($_.Name -in '(Default)'){
-                        $detection = [PSCustomObject]@{
-                            Name = 'Non-Standard AMSI Provider DLL'
-                            Risk = 'High'
-                            Source = 'Registry'
-                            Technique = "T1112: Modify Registry"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                        }
-                        Write-Detection $detection
-                    }
-                }
-            }
-
-        }
-    }
-
-    # App Path Hijacks
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"
-    if (Test-Path -Path "Registry::$path") {
-        $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            $data.PSObject.Properties | ForEach-Object {
-                if ($_.Name -eq '(default)') {
-                    $key_basename = [regex]::Matches($item.Name, ".*\\(?<name>[^\\].*)").Groups.Captures.Value[1]
-                    $value_basename = [regex]::Matches($_.Value, ".*\\(?<name>[^\\].*)").Groups.Captures.Value[1]
-                    if ($key_basename -ne $null -and $value_basename -ne $null){
-                        $value_basename = $value_basename.Replace('"', "")
-                        if ($key_basename -ne $value_basename){
-                            $detection = [PSCustomObject]@{
-                                Name = 'Potential App Path Hijacking - Executable Name does not match Registry Key'
-                                Risk = 'Medium'
-                                Source = 'Registry'
-                                Technique = "T1546: Event Triggered Execution"
-                                Meta = "Key Location: "+$item.Name+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                            }
-                            Write-Detection $detection
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-    # GPO Extension DLLs
-    $homedrive = $env:HOMEDRIVE
-    $gpo_dll_allowlist = @(
-        "$homedrive\Windows\System32\TsUsbRedirectionGroupPolicyExtension.dll"
-        "$homedrive\Windows\System32\cscobj.dll"
-        "$homedrive\Windows\System32\dskquota.dll"
-        "$homedrive\Windows\System32\gpprefcl.dll"
-        "$homedrive\Windows\System32\gpscript.dll"
-        "$homedrive\Windows\System32\iedkcs32.dll"
-        "$homedrive\Windows\System32\polstore.dll"
-        "$homedrive\Windows\System32\srchadmin.dll"
-        "$homedrive\Windows\System32\tsworkspace.dll"
-        "$homedrive\Windows\system32\domgmt.dll"
-        "$homedrive\Windows\system32\gpprnext.dll"
-        "AppManagementConfiguration.dll"
-        "WorkFoldersGPExt.dll"
-        "appmgmts.dll"
-        "auditcse.dll"
-        "dggpext.dll"
-        "dmenrollengine.dll"
-        "dot3gpclnt.dll"
-        "fdeploy.dll"
-        "gptext.dll"
-        "hvsigpext.dll"
-        "pwlauncher.dll"
-        "scecli.dll"
-        "wlgpclnt.dll"
-    )
-
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\GPExtensions"
-    if (Test-Path -Path "Registry::$path") {
-        $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            $data.PSObject.Properties | ForEach-Object {
-                if ($_.Name -eq 'DllName' -and $_.Value -notin $gpo_dll_allowlist) {
-                    $detection = [PSCustomObject]@{
-                        Name = 'Review: Non-Standard GPO Extension DLL'
-                        Risk = 'Medium'
-                        Source = 'Windows GPO Extensions'
-                        Technique = "T1484.001: Domain Policy Modification: Group Policy Modification"
-                        Meta = "Key: "+$item.Name+", DLL: "+$_.Value
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
-    # .CHM File DLL Load
-    $path = "HKEY_CURRENT_USER\Software\Microsoft\HtmlHelp Author"
-    if (Test-Path -Path "Registry::$path") {
-        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $item.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'location'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential CHM DLL Hijack'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
-            }
-        }
-    }
 
 }
 
@@ -11402,7 +10459,7 @@ function Service-Reg-Checks {
     }
 }
 
-function Find-Debugger-Hijacks {
+function Check-Debugger-Hijacks {
 
     # Debugger Hijacks
     # AeDebug 32
@@ -11560,7 +10617,7 @@ function Find-Debugger-Hijacks {
     }
 }
 
-function LNK-Scan {
+function Check-LNK {
     $current_date = Get-Date
     $WScript = New-Object -ComObject WScript.Shell
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
@@ -11612,7 +10669,7 @@ function LNK-Scan {
     }
 }
 
-function Process-Module-Scanning {
+function Check-Process-Modules {
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
 
@@ -11670,7 +10727,7 @@ function Process-Module-Scanning {
     }
 }
 
-function Scan-Windows-Unsigned-Files {
+function Check-Windows-Unsigned-Files {
     $scan_paths = @(
     'C:\Windows',
     'C:\Windows\System32',
@@ -11700,7 +10757,7 @@ function Scan-Windows-Unsigned-Files {
     }
 }
 
-function Find-Service-Hijacks {
+function Check-Service-Hijacks {
     $services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
     ForEach ($service in $services){
         if ($service.PathName -match '".*"[\s]?.*') {
@@ -11734,7 +10791,7 @@ function Find-Service-Hijacks {
     }
 }
 
-function Find-PATH-Hijacks {
+function Check-PATH-Hijacks {
     $system32_path = $env:windir+'\system32'
     $system32_bins = Get-ChildItem -File -Path $system32_path  -ErrorAction SilentlyContinue | Where-Object { $_.extension -in ".exe" } | Select-Object Name
     $sys32_bins = New-Object -TypeName "System.Collections.ArrayList"
@@ -11772,7 +10829,7 @@ function Find-PATH-Hijacks {
     }
 }
 
-function File-Association-Hijack {
+function Check-Association-Hijack {
 
     $homedrive = $env:HOMEDRIVE
     $value_regex_lookup = @{
@@ -11863,7 +10920,7 @@ function File-Association-Hijack {
     }
 }
 
-function Find-Suspicious-Certificates {
+function Check-Suspicious-Certificates {
     $certs = Get-ChildItem -path cert:\ -Recurse | Select-Object *
     # PSPath,DnsNameList,SendAsTrustedIssuer,PolicyId,Archived,FriendlyName,IssuerName,NotAfter,NotBefore,HasPrivateKey,SerialNumber,SubjectName,Version,Issuer,Subject
     $wellknown_ca = @(
@@ -12026,7 +11083,7 @@ function Find-Suspicious-Certificates {
     }
 }
 
-function Scan-Office-Trusted-Locations {
+function Check-Office-Trusted-Locations {
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
     $current_user = $env:USERNAME
 
@@ -12067,7 +11124,7 @@ function Scan-Office-Trusted-Locations {
     }
 }
 
-function Find-GPO-Scripts {
+function Check-GPO-Scripts {
     $base_key = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\State\Machine\Scripts"
     $script_paths = New-Object -TypeName "System.Collections.ArrayList"
     $homedrive = $env:HOMEDRIVE
@@ -12636,6 +11693,1017 @@ function Check-WERRuntimeExceptionHandlers {
     }
 }
 
+function Check-SilentProcessExitMonitoring {
+    # SilentProcessExit Persistence
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit") {
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.MonitorProcess -ne $null){
+                if ($data.ReportingMode -eq $null){
+                    $data.ReportingMode = 'NA'
+                }
+                $detection = [PSCustomObject]@{
+                    Name = 'Process Launched on SilentProcessExit'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
+                    Meta = "Monitored Process: "+$item.Name+", Launched Process: "+$data.MonitorProcess+", Reporting Mode: "+$data.ReportingMode
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-WinlogonHelperDLLs {
+    # Winlogon Helper DLL Hijacks
+    $standard_winlogon_helper_dlls = @(
+        "C:\Windows\System32\userinit.exe,"
+        "explorer.exe"
+        "sihost.exe"
+        "ShellAppRuntime.exe"
+        "mpnotify.exe"
+    )
+    if (Test-Path -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon") {
+        $items = Get-ItemProperty -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -in 'Userinit','Shell','ShellInfrastructure','ShellAppRuntime','MPNotify' -and $_.Value -notin $standard_winlogon_helper_dlls) {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential WinLogon Helper Persistence'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1547.004: Boot or Logon Autostart Execution: Winlogon Helper DLL"
+                    Meta = "Key Location: HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-UtilmanHijack {
+    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe") {
+            $detection = [PSCustomObject]@{
+                Name = 'Potential utilman.exe Registry Persistence'
+                Risk = 'High'
+                Source = 'Registry'
+                Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
+                Meta = "Review Data for Key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe"
+            }
+            Write-Detection $detection
+    }
+}
+
+function Check-SethcHijack {
+    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe") {
+            $detection = [PSCustomObject]@{
+                Name = 'Potential sethc.exe Registry Persistence'
+                Risk = 'High'
+                Source = 'Registry'
+                Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
+                Meta = "Review Data for Key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe"
+            }
+            Write-Detection $detection
+    }
+}
+
+function Check-RDPShadowConsent {
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Shadow' -and ($_.Value -eq 4 -or $_.Value -eq 2)) {
+                $detection = [PSCustomObject]@{
+                    Name = 'RDP Shadowing without Consent is Enabled'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1098: Account Manipulation"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-RemoteUACSetting {
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'LocalAccountTokenFilterPolicy' -and $_.Value -eq 1) {
+                $detection = [PSCustomObject]@{
+                    Name = 'UAC Disabled for Remote Sessions'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1112: Modify Registry"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-PrintMonitorDLLs {
+    $standard_print_monitors = @(
+		"APMon.dll",
+		"AppMon.dll",
+		"FXSMON.dll",
+		"localspl.dll",
+		"tcpmon.dll",
+		"usbmon.dll",
+		"WSDMon.dll" # Server 2016
+    )
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors") {
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.Driver -ne $null){
+                if ($data.Driver -notin $standard_print_monitors){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Print Monitor DLL'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1112: Modify Registry"
+                        Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-LSA {
+    # LSA Security Package Review
+    # TODO - Check DLL Modification/Creation times
+    $common_ssp_dlls = @(
+		"cloudAP", # Server 2016
+		"ctxauth", #citrix
+        "efslsaext.dll"
+		"kerberos",
+        "lsasrv.dll"
+		"msoidssp",
+		"msv1_0",
+		"negoexts",
+		"pku2u",
+		"schannel",
+		"tspkg", # Server 2016
+		"wdigest" # Server 2016
+		"wsauth",
+		"wsauth" #vmware
+    )
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
+                $packages = $_.Value.Split([System.Environment]::NewLine)
+                ForEach ($package in $packages){
+                    if ($package -notin $common_ssp_dlls){
+                        $detection = [PSCustomObject]@{
+                            Name = 'LSA Security Package Review'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
+                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+            if ($_.Name -eq 'Authentication Packages' -and $_.Value -ne '""') {
+                $packages = $_.Value.Split([System.Environment]::NewLine)
+                ForEach ($package in $packages){
+                    if ($package -notin $common_ssp_dlls){
+                        $detection = [PSCustomObject]@{
+                            Name = 'LSA Authentication Package Review'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1547.002: Boot or Logon Autostart Execution: Authentication Packages"
+                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
+                $packages = $_.Value.Split([System.Environment]::NewLine)
+                ForEach ($package in $packages){
+                    if ($package -notin $common_ssp_dlls){
+                        $detection = [PSCustomObject]@{
+                            Name = 'LSA Security Package Review'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
+                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\LsaExtensionConfig\LsaSrv"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Extensions' -and $_.Value -ne '""') {
+                $packages = $_.Value.Split([System.Environment]::NewLine)
+                ForEach ($package in $packages){
+                    if ($package -notin $common_ssp_dlls){
+                        $detection = [PSCustomObject]@{
+                            Name = 'LSA Extensions Review'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
+                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+
+    # T1556.002: Modify Authentication Process: Password Filter DLL
+    # TODO - Check DLL Modification/Creation times
+    $standard_lsa_notification_packages = @(
+		"rassfm", # Windows Server 2019 AWS Lightsail
+		"scecli" # Windows 10/Server
+    )
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq "Notification Packages") {
+                $packages = $_.Value.Split([System.Environment]::NewLine)
+                ForEach ($package in $packages){
+                    if ($package -notin $standard_lsa_notification_packages){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Potential Exploitation via Password Filter DLL'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1556.002: Modify Authentication Process: Password Filter DLL"
+                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+}
+
+function Check-DNSServerLevelPluginDLL {
+    # DNSServerLevelPluginDLL
+    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'ServerLevelPluginDll' -and $_.Value -ne '""') {
+                $detection = [PSCustomObject]@{
+                    Name = 'Review: DNS ServerLevelPluginDLL is active'
+                    Risk = 'Medium'
+                    Source = 'Registry'
+                    Technique = "T1055.001: Process Injection: Dynamic-link Library Injection"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-ExplorerHelperUtilities {
+    # Explorer Helper Utilities Hijack
+    $paths = @(
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\BackupPath"
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\cleanuppath"
+        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\DefragPath"
+    )
+    $allowlisted_explorer_util_paths = @(
+        "$env:SYSTEMROOT\system32\sdclt.exe"
+        "$env:SYSTEMROOT\system32\cleanmgr.exe /D %c"
+        "$env:SYSTEMROOT\system32\dfrgui.exe"
+        "$env:SYSTEMROOT\system32\wbadmin.msc"
+    )
+    ForEach ($path in $paths){
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq '(Default)' -and $_.Value -ne '""' -and $_.Value -notin $allowlisted_explorer_util_paths) {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Explorer\MyComputer Utility Hijack'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-TerminalServicesInitialProgram {
+    # TerminalServices InitialProgram Hijack
+    $paths = @(
+        "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
+        "Registry::HKCU\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
+        "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp"
+    )
+    ForEach ($path in $paths){
+        if (Test-Path -Path $path) {
+            $finhert = $false
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'fInheritInitialProgram' -and $_.Value -eq "1"){
+                    $finherit = $true
+                }
+            }
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'InitialProgram' -and $_.Value -ne "" -and $finherit -eq $true){
+                    $detection = [PSCustomObject]@{
+                        Name = 'TerminalServices InitialProgram Active'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-RDPStartupPrograms {
+    # RDP Startup Programs
+    $allowed_rdp_startups = @(
+        "rdpclip"
+    )
+    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\Wds\rdpwd"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'StartupPrograms' -and $_.Value -ne ""){
+                $packages = $_.Value.Split(",")
+                ForEach ($package in $packages){
+                    if ($package -notin $allowed_rdp_startups){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard RDP Startup Program'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1574: Hijack Execution Flow"
+                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+}
+
+function Check-TimeProviderDLLs {
+    # Time Provider Review
+    $standard_timeprovider_dll = @(
+        "C:\Windows\System32\w32time.dll",
+        "C:\Windows\System32\vmictimeprovider.dll"
+    )
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders") {
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.DllName -ne $null){
+                if ($standard_timeprovider_dll -notcontains $data.DllName){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Time Providers DLL'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1547.003: Boot or Logon Autostart Execution: Time Providers"
+                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.DllName
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-PrintProcessorDLLs {
+    # T1547.012 - Boot or Logon Autostart Execution: Print Processors
+    $standard_print_processors = @(
+        "winprint.dll"
+    )
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors") {
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.Driver -ne $null){
+                if ($standard_print_processors -notcontains $data.Driver){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Print Processor DLL'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
+                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors") {
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.Driver -ne $null){
+                if ($standard_print_processors -notcontains $data.Driver){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Print Processor DLL'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
+                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-UserInitMPRScripts {
+    # T1037.001 - Boot or Logon Initialization Scripts: Logon Script (Windows)
+    if (Test-Path -Path "Registry::HKCU\Environment\UserInitMprLogonScript") {
+        $items = Get-ItemProperty -Path "Registry::HKCU\Environment\UserInitMprLogonScript" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $detection = [PSCustomObject]@{
+                Name = 'Potential Persistence via Logon Initialization Script'
+                Risk = 'Medium'
+                Source = 'Registry'
+                Technique = "T1037.001: Boot or Logon Initialization Scripts: Logon Script (Windows)"
+                Meta = "Key Location: HKCU\Environment\UserInitMprLogonScript, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
+function Check-ScreenSaverEXE {
+    # T1546.002 - Event Triggered Execution: Screensaver
+    if (Test-Path -Path "Registry::HKCU\Control Panel\Desktop") {
+        $items = Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq "SCRNSAVE.exe") {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Persistence via ScreenSaver Executable Hijack'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546.002: Event Triggered Execution: Screensaver"
+                    Meta = "Key Location: HKCU\Control Panel\Desktop, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-NetSHDLLs {
+    # T1546.007 - Event Triggered Execution: Netsh Helper DLL
+    $standard_netsh_dlls = @(
+		"authfwcfg.dll",
+		"dhcpcmonitor.dll",
+		"dot3cfg.dll",
+		"fwcfg.dll",
+		"hnetmon.dll",
+		"ifmon.dll",
+		"netiohlp.dll",
+		"netprofm.dll",
+		"nettrace.dll",
+		"nshhttp.dll",
+		"nshipsec.dll",
+		"nshwfp.dll",
+		"p2pnetsh.dll",
+		"peerdistsh.dll",
+		"rasmontr.dll",
+		"rpcnsh.dll",
+		"WcnNetsh.dll",
+		"whhelper.dll",
+		"wlancfg.dll",
+		"wshelper.dll",
+		"wwancfg.dll"
+    )
+    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh") {
+        $items = Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Value -notin $standard_netsh_dlls) {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Persistence via Netsh Helper DLL Hijack'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546.007: Event Triggered Execution: Netsh Helper DLL"
+                    Meta = "Key Location: HKLM\SOFTWARE\Microsoft\Netsh, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-AppCertDLLs {
+    # AppCertDLL
+    $standard_appcert_dlls = @()
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Value -notin $standard_appcert_dlls) {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Persistence via AppCertDLL Hijack'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546.009: Event Triggered Execution: AppCert DLLs"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-AppInitDLLs {
+    # AppInit DLLs
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'AppInit_DLLs' -and $_.Value -ne '') {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential AppInit DLL Persistence'
+                    Risk = 'Medium'
+                    Source = 'Registry'
+                    Technique = "T1546.010: Event Triggered Execution: AppInit DLLs"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'AppInit_DLLs' -and $_.Value -ne '') {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential AppInit DLL Persistence'
+                    Risk = 'Medium'
+                    Source = 'Registry'
+                    Technique = "T1546.010: Event Triggered Execution: AppInit DLLs"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
+}
+
+function Check-ApplicationShims {
+    # Shims
+    # TODO - Also check HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Custom
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $detection = [PSCustomObject]@{
+                Name = 'Potential Application Shimming Persistence'
+                Risk = 'High'
+                Source = 'Registry'
+                Technique = "T1546.011: Event Triggered Execution: Application Shimming"
+                Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
+function Check-IFEO {
+    # IFEO Injection
+    if (Test-Path -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options") {
+        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.Debugger -ne $null){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Image File Execution Option Debugger Injection'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
+                    Meta = "Registry Path: "+$item.Name+", Debugger: "+$data.Debugger
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-FolderOpen {
+    # Folder Open Hijack
+    if (Test-Path -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command") {
+        $items = Get-ItemProperty -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'DelegateExecute') {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Folder Open Hijack for Persistence'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                    Meta = "Key Location: HKCU\Software\Classes\Folder\shell\open\command, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-WellKnownCOM {
+    # Well-known COM Hijacks
+    # shell32.dll Hijack
+    if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32") {
+        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $detection = [PSCustomObject]@{
+                Name = 'Potential shell32.dll Hijack for Persistence'
+                Risk = 'High'
+                Source = 'Registry'
+                Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+            }
+            Write-Detection $detection
+        }
+    }
+    # WBEM Subsystem
+    if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32") {
+        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $detection = [PSCustomObject]@{
+                Name = 'Potential WBEM Subsystem Hijack for Persistence'
+                Risk = 'High'
+                Source = 'Registry'
+                Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
+function Check-Officetest {
+    # Office test Persistence
+    if (Test-Path -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $detection = [PSCustomObject]@{
+                Name = 'Persistence via Office test\Special\Perf Key'
+                Risk = 'Very High'
+                Source = 'Office'
+                Technique = "T1137.002: Office Application Startup: Office Test"
+                Meta = "Key Location: HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf: "+$_.Name+", Entry Value: "+$_.Value
+            }
+            Write-Detection $detection
+        }
+    }
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $detection = [PSCustomObject]@{
+                Name = 'Persistence via Office test\Special\Perf Key'
+                Risk = 'Very High'
+                Source = 'Office'
+                Technique = "T1137.002: Office Application Startup: Office Test"
+                Meta = "Key Location: HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
+function Check-OfficeGlobalDotName {
+    # Office GlobalDotName Hijack
+    $office_versions = @(14.0,15.0,16.0)
+    ForEach ($version in $office_versions){
+        if (Test-Path -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options") {
+            $items = Get-ItemProperty -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq "GlobalDotName"){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Persistence via Office GlobalDotName'
+                        Risk = 'Very High'
+                        Source = 'Office'
+                        Technique = "T1137.001: Office Application Office Template Macros"
+                        Meta = "Key Location: HKCU\software\microsoft\office\$version.0\word\options, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-TerminalServicesDLL {
+    # Terminal Services DLL
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'ServiceDll' -and $_.Value -ne 'C:\Windows\System32\termsrv.dll'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Terminal Services DLL'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1505.005: Server Software Component: Terminal Services DLL"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-AutoDialDLL {
+    # Autodial DLL
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'AutodialDLL' -and $_.Value -ne 'C:\Windows\System32\rasadhlp.dll'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Autodial DLL'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-CommandAutoRunProcessors {
+    # Command AutoRun Processor
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'AutoRun'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Command AutoRun Processor'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+    if (Test-Path -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor") {
+        $items = Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'AutoRun'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Command AutoRun Processor'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: HKCU\SOFTWARE\Microsoft\Command Processor, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-TrustProviderDLL {
+    # Trust Provider Hijacking
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}") {
+        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'Dll' -and $_.Value -ne 'C:\Windows\System32\WindowsPowerShell\v1.0\pwrshsip.dll'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Trust Provider'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1553: Subvert Trust Controls"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+            if ($_.Name -eq 'FuncName' -and $_.Value -ne 'PsVerifyHash'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Hijacking of Trust Provider'
+                    Risk = 'Very High'
+                    Source = 'Registry'
+                    Technique = "T1553: Subvert Trust Controls"
+                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-NaturalLanguageDevelopmentDLLs {
+    # NLP Development Platform Hijacks
+    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language") {
+        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride){
+                if ($data.StemmerDLLPathOverride -ne $null){
+                    $dll = $data.StemmerDLLPathOverride
+                } elseif ($data.WBDLLPathOverride -ne $null){
+                    $dll = $data.WBDLLPathOverride
+                }
+                $detection = [PSCustomObject]@{
+                    Name = 'DLL Override on Natural Language Development Platform'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1112: Modify Registry"
+                    Meta = "Registry Path: "+$item.Name+", DLL: "+$dll
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-WindowsLoadKey {
+    # Windows Load Key
+    $path = "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -in 'Load'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential Windows Load Hijacking'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-AMSIProviders {
+    # AMSI Providers
+    $allowed_amsi_providers = @(
+        "{2781761E-28E0-4109-99FE-B9D127C57AFE}"
+    )
+
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\AMSI\Providers"
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object *
+        ForEach ($item in $items) {
+            if ($item.PSChildName -in $allowed_amsi_providers){
+                continue
+            }
+            $new_path = "Registry::HKLM\SOFTWARE\Classes\CLSID\"+$item.PSChildName+"\InprocServer32"
+            Write-Host $new_path
+            if (Test-Path $new_path){
+                $dll_data = Get-ItemProperty -Path $new_path
+                $dll_data.PSObject.Properties | ForEach-Object {
+                    if ($_.Name -in '(Default)'){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard AMSI Provider DLL'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1112: Modify Registry"
+                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+function Check-AppPaths {
+    # App Path Hijacks
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"
+    if (Test-Path -Path "Registry::$path") {
+        $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq '(default)') {
+                    $key_basename = [regex]::Matches($item.Name, ".*\\(?<name>[^\\].*)").Groups.Captures.Value[1]
+                    $value_basename = [regex]::Matches($_.Value, ".*\\(?<name>[^\\].*)").Groups.Captures.Value[1]
+                    if ($key_basename -ne $null -and $value_basename -ne $null){
+                        $value_basename = $value_basename.Replace('"', "")
+                        if ($key_basename -ne $value_basename){
+                            $detection = [PSCustomObject]@{
+                                Name = 'Potential App Path Hijacking - Executable Name does not match Registry Key'
+                                Risk = 'Medium'
+                                Source = 'Registry'
+                                Technique = "T1546: Event Triggered Execution"
+                                Meta = "Key Location: "+$item.Name+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                            }
+                            Write-Detection $detection
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+function Check-GPOExtensions {
+    # GPO Extension DLLs
+    $homedrive = $env:HOMEDRIVE
+    $gpo_dll_allowlist = @(
+        "$homedrive\Windows\System32\TsUsbRedirectionGroupPolicyExtension.dll"
+        "$homedrive\Windows\System32\cscobj.dll"
+        "$homedrive\Windows\System32\dskquota.dll"
+        "$homedrive\Windows\System32\gpprefcl.dll"
+        "$homedrive\Windows\System32\gpscript.dll"
+        "$homedrive\Windows\System32\iedkcs32.dll"
+        "$homedrive\Windows\System32\polstore.dll"
+        "$homedrive\Windows\System32\srchadmin.dll"
+        "$homedrive\Windows\System32\tsworkspace.dll"
+        "$homedrive\Windows\system32\domgmt.dll"
+        "$homedrive\Windows\system32\gpprnext.dll"
+        "AppManagementConfiguration.dll"
+        "WorkFoldersGPExt.dll"
+        "appmgmts.dll"
+        "auditcse.dll"
+        "dggpext.dll"
+        "dmenrollengine.dll"
+        "dot3gpclnt.dll"
+        "fdeploy.dll"
+        "gptext.dll"
+        "hvsigpext.dll"
+        "pwlauncher.dll"
+        "scecli.dll"
+        "wlgpclnt.dll"
+    )
+
+    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\GPExtensions"
+    if (Test-Path -Path "Registry::$path") {
+        $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'DllName' -and $_.Value -notin $gpo_dll_allowlist) {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Review: Non-Standard GPO Extension DLL'
+                        Risk = 'Medium'
+                        Source = 'Windows GPO Extensions'
+                        Technique = "T1484.001: Domain Policy Modification: Group Policy Modification"
+                        Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-HTMLHelpDLL {
+    # .CHM File DLL Load
+    $path = "HKEY_CURRENT_USER\Software\Microsoft\HtmlHelp Author"
+    if (Test-Path -Path "Registry::$path") {
+        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $item.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq 'location'){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential CHM DLL Hijack'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12677,30 +12745,30 @@ function Logo {
 
 function Main {
     Logo
-    Scheduled-Tasks
-    Users
-    services
-    Processes
-    Connections
-    WMI-Consumers
-    Startups
-    BITS
-    Modified-Windows-Accessibility-Feature
-    Find-Debugger-Hijacks
-    PowerShell-Profiles
-    Office-Startup
-    Registry-Checks
+    Check-ScheduledTasks
+    Check-Users
+    Check-Services
+    Check-Processes
+    Check-Connections
+    Check-WMIConsumers
+    Check-Startups
+    Check-BITS
+    Check-Modified-Windows-Accessibility-Feature
+    Check-Debugger-Hijacks
+    Check-PowerShell-Profiles
+    Check-Office-Startup
+    #Check-Registry-Checks
     Check-COM-Hijacks
     Service-Reg-Checks
-    LNK-Scan
-    Process-Module-Scanning
-    Scan-Windows-Unsigned-Files
-    Find-Service-Hijacks
-    Find-PATH-Hijacks
-    File-Association-Hijack
-    Find-Suspicious-Certificates
-    Scan-Office-Trusted-Locations
-    Find-GPO-Scripts
+    Check-LNK
+    Check-Process-Modules
+    Check-Windows-Unsigned-Files
+    Check-Service-Hijacks
+    Check-PATH-Hijacks
+    Check-Association-Hijack
+    Check-Suspicious-Certificates
+    Check-Office-Trusted-Locations
+    Check-GPO-Scripts
     Check-TerminalProfiles
     Check-PeerDistExtensionDll
     Check-InternetSettingsLUIDll
@@ -12714,6 +12782,41 @@ function Main {
     Check-UninstallStrings
     Check-SEMgrWallet
     Check-WERRuntimeExceptionHandlers
+    Check-SilentProcessExitMonitoring
+    Check-WinlogonHelperDLLs
+    Check-UtilmanHijack
+    Check-SethcHijack
+    Check-RDPShadowConsent
+    Check-RemoteUACSetting
+    Check-PrintMonitorDLLs
+    Check-LSA
+    Check-DNSServerLevelPluginDLL
+    Check-ExplorerHelperUtilities
+    Check-TerminalServicesInitialProgram
+    Check-RDPStartupPrograms
+    Check-TimeProviderDLLs
+    Check-PrintProcessorDLLs
+    Check-UserInitMPRScripts
+    Check-ScreenSaverEXE
+    Check-NetSHDLLs
+    Check-AppCertDLLs
+    Check-AppInitDLLs
+    Check-ApplicationShims
+    Check-IFEO
+    Check-FolderOpen
+    Check-WellKnownCOM
+    Check-Officetest
+    Check-OfficeGlobalDotName
+    Check-TerminalServicesDLL
+    Check-AutoDialDLL
+    Check-CommandAutoRunProcessors
+    Check-TrustProviderDLL
+    Check-NaturalLanguageDevelopmentDLLs
+    Check-WindowsLoadKey
+    Check-AMSIProviders
+    Check-AppPaths
+    Check-GPOExtensions
+    Check-HTMLHelpDLL
 }
 
 Main
