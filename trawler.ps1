@@ -10229,7 +10229,7 @@ function Check-COM-Hijacks {
                             if ($verified_match -ne $true -or $_.Value -match "$env:homedrive\\Users\\(public|administrator|guest).*"){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack'
-                                    Risk = 'High'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
@@ -10283,7 +10283,7 @@ function Check-COM-Hijacks {
                             if ($verified_match -ne $true -or $_.Value -match "$env:homedrive\\Users\\(public|administrator|guest).*"){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack'
-                                    Risk = 'High'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
@@ -10337,7 +10337,7 @@ function Check-COM-Hijacks {
 
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack'
-                                    Risk = 'High'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
