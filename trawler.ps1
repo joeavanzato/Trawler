@@ -12459,6 +12459,51 @@ function Check-UninstallStrings {
     }
 }
 
+function Check-PolicyManager {
+    # PolicyManager
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default"
+    $allow_listed_values = @(
+        "%SYSTEMROOT%\system32\PolicyManagerPrecheck.dll"
+        "%SYSTEMROOT%\system32\hascsp.dll"
+    )
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $items_ = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            ForEach ($subkey in $items_){
+                $subpath = "Registry::"+$subkey.Name
+                $data = Get-ItemProperty -Path $subpath | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                if ($data.PreCheckDLLPath -ne $null){
+                    if ($data.PreCheckDLLPath -notin $allow_listed_values){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard Policy Manager DLL'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Path: "+$subkey.Name+", Entry Name: PreCheckDLLPath, DLL: "+$data.PreCheckDLLPath
+                        }
+                        Write-Detection $detection
+                    }
+                }
+                if ($data.transportDllPath -ne $null){
+                    if ($data.transportDllPath -notin $allow_listed_values){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard Policy Manager DLL'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Path: "+$subkey.Name+", Entry Name: transportDllPath, DLL: "+$data.transportDllPath
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.

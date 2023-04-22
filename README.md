@@ -126,6 +126,7 @@ Overall, these tools are extremely similar but approach the problem from slightl
 * WOW64 Compatibility Layer DLLs
 * EventViewer MSC Hijack
 * Uninstall Strings Scan
+* PolicyManager DLLs
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
