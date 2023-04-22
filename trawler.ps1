@@ -12524,6 +12524,46 @@ function Check-SEMgrWallet {
     }
 }
 
+function Check-WERRuntimeExceptionHandlers {
+    # Windows Error Reporting Exception Helpers
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules"
+    $allowed_entries = @(
+        "$env:homedrive\\Program Files \(x86\)\\Microsoft\\Edge\\Application\\.*\\msedge_wer\.dll"
+        "$env:homedrive\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\c2r64werhandler\.dll"
+        "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
+        "$env:homedrive\\Program Files\\Google\\Chrome\\Application\\.*\\chrome_wer\.dll"
+        "$env:homedrive\\Program Files\\Microsoft Office\\root\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\OFFICE.*\\msowercrash\.dll"
+        "$env:homedrive\\Program Files\\Microsoft Visual Studio\\.*\\Community\\common7\\ide\\VsWerHandler\.dll"
+        "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\mscordacwks\.dll"
+        "$env:homedrive\\Windows\\System32\\iertutil.dll"
+        "$env:homedrive\\Windows\\System32\\msiwer.dll"
+        "$env:homedrive\\Windows\\System32\\wbiosrvc.dll"
+
+    )
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $verified_match = $false
+            ForEach ($entry in $allowed_entries){
+                if ($_.Name -match $entry -and $verified_match -eq $false){
+                    $verified_match = $true
+                }
+            }
+
+            if ($_.Name -ne "(Default)" -and $verified_match -eq $false){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential WER Helper Hijack'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, DLL: "+$_.Name
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12601,6 +12641,7 @@ function Main {
     Check-ActiveSetup
     Check-UninstallStrings
     Check-SEMgrWallet
+    Check-WERRuntimeExceptionHandlers
 }
 
 Main
