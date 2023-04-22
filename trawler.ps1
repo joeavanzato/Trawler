@@ -11884,7 +11884,10 @@ function Find-Suspicious-Certificates {
         "Certum Trusted Network.*"
         "SSL\.com Root Certification.*"
         "Amazon Root.*"
-        '\"VeriSign.*'
+        '"VeriSign.*'
+        "VeriSign Trust Network.*"
+        "Microsoft Trust Network"
+        "Thawte Timestamping CA"
 
     )
     $date = Get-Date
