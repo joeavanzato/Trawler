@@ -378,6 +378,7 @@ function Services {
 		'C:\Windows\System32\svchost.exe -k netsvcs',
 		'C:\Windows\System32\svchost.exe -k NetworkService -p',
 		'C:\Windows\System32\svchost.exe -k NetworkService',
+        'C:\Windows\System32\svchost.exe -k NetworkServiceAndNoImpersonation'
 		'C:\Windows\System32\svchost.exe -k NetworkServiceAndNoImpersonation -p',
 		'C:\Windows\System32\svchost.exe -k NetworkServiceNetworkRestricted -p',
 		'C:\Windows\System32\svchost.exe -k NetworkServiceNetworkRestricted',
@@ -400,6 +401,7 @@ function Services {
 		'C:\Windows\System32\svchost.exe -k WepHostSvcGroup',
 		'C:\Windows\System32\svchost.exe -k WerSvcGroup',
 		'C:\Windows\System32\svchost.exe -k wsappx -p',
+        'C:\Windows\system32\svchost.exe -k wcssvc'
 		'C:\Windows\System32\svchost.exe -k wsappx',
 		'C:\Windows\System32\svchost.exe -k wusvcs -p',
 		'C:\Windows\System32\TieringEngineService.exe',
@@ -870,36 +872,6 @@ function Registry-Checks {
         }
     }
 
-    # Microsoft Telemetry Commands
-    $allowed_telemetry_commands = @(
-        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:DoScheduledTelemetryRun"
-        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:DoScheduledTelemetryRun"
-        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:UpdateAvStatus"
-        "$env:systemroot\system32\CompatTelRunner.exe -m:devinv.dll -f:CreateDeviceInventory"
-        "$env:systemroot\system32\CompatTelRunner.exe -m:pcasvc.dll -f:QueryEncapsulationSettings"
-        "$env:systemroot\system32\CompatTelRunner.exe -m:invagent.dll -f:RunUpdate"
-    )
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController"
-    if (Test-Path -Path $path) {
-        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.Command -ne $null){
-                if ($data.Command -notin $allowed_telemetry_commands){
-                    $detection = [PSCustomObject]@{
-                        Name = 'Non-Standard Microsoft Telemetry Command'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1112: Modify Registry"
-                        Meta = "Registry Path: "+$item.Name+", Command: "+$data.Command
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
 
     # LSA Security Package Review
     # TODO - Check DLL Modification/Creation times
@@ -1161,38 +1133,6 @@ function Registry-Checks {
                         Source = 'Registry'
                         Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
                         Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
-                    }
-                    Write-Detection $detection
-                }
-            }
-        }
-    }
-
-    # T1547.014 - Boot or Logon Autostart Execution: Active Setup
-    $standard_stubpaths = @(
-		"/UserInstall",
-		'"C:\Program Files\Windows Mail\WinMail.exe" OCInstallUserConfigOE', # Server 2016
-		"C:\Windows\System32\ie4uinit.exe -UserConfig", # 10
-		"C:\Windows\System32\Rundll32.exe C:\Windows\System32\mscories.dll,Install", # 10
-		'"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenAdmin', # Server 2019
-		'"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenUser', # Server 2019
-		"C:\Windows\System32\unregmp2.exe /FirstLogon", # 10
-		"C:\Windows\System32\unregmp2.exe /ShowWMP", # 10
-		"U"
-    )
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components") {
-        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        ForEach ($item in $items) {
-            $path = "Registry::"+$item.Name
-            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.StubPath -ne $null){
-                if ($standard_stubpaths -notcontains $data.StubPath -and $data.StubPath -notmatch ".*(\\Program Files\\Google\\Chrome\\Application\\.*chrmstp.exe|Microsoft\\Edge\\Application\\.*\\Installer\\setup.exe).*"){
-                    $detection = [PSCustomObject]@{
-                        Name = 'Non-Standard StubPath Executed on User Logon'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1547.014: Boot or Logon Autostart Execution: Active Setup"
-                        Meta = "Registry Path: "+$item.Name+", StubPath: "+$data.StubPath
                     }
                     Write-Detection $detection
                 }
@@ -11884,7 +11824,10 @@ function Find-Suspicious-Certificates {
         "Certum Trusted Network.*"
         "SSL\.com Root Certification.*"
         "Amazon Root.*"
-        '\"VeriSign.*'
+        '"VeriSign.*'
+        "VeriSign Trust Network.*"
+        "Microsoft Trust Network"
+        "Thawte Timestamping CA"
 
     )
     $date = Get-Date
@@ -12410,6 +12353,217 @@ function Check-EventViewerMSC {
     }
 }
 
+function Check-MicrosoftTelemetryCommands {
+    # Microsoft Telemetry Commands
+    $allowed_telemetry_commands = @(
+        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:DoScheduledTelemetryRun"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:DoScheduledTelemetryRun"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:UpdateAvStatus"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:devinv.dll -f:CreateDeviceInventory"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:pcasvc.dll -f:QueryEncapsulationSettings"
+        "$env:systemroot\system32\CompatTelRunner.exe -m:invagent.dll -f:RunUpdate"
+        "$env:systemroot\Windows\system32\CompatTelRunner.exe -m:generaltel.dll -f:DoCensusRun"
+
+    )
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController"
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.Command -ne $null){
+                if ($data.Command -notin $allowed_telemetry_commands){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Microsoft Telemetry Command'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1112: Modify Registry"
+                        Meta = "Registry Path: "+$item.Name+", Command: "+$data.Command
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-ActiveSetup {
+    # T1547.014 - Boot or Logon Autostart Execution: Active Setup
+    $standard_stubpaths = @(
+		"/UserInstall",
+		'"C:\Program Files\Windows Mail\WinMail.exe" OCInstallUserConfigOE', # Server 2016
+		"$env:homedrive\Windows\System32\ie4uinit.exe -UserConfig", # 10
+		"$env:homedrive\Windows\System32\Rundll32.exe C:\Windows\System32\mscories.dll,Install", # 10
+		'"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenAdmin', # Server 2019
+		'"C:\Windows\System32\rundll32.exe" "C:\Windows\System32\iesetup.dll",IEHardenUser', # Server 2019
+		"$env:homedrive\Windows\System32\unregmp2.exe /FirstLogon", # 10
+		"$env:homedrive\Windows\System32\unregmp2.exe /ShowWMP", # 10
+        "$env:homedrive\Windows\System32\ie4uinit.exe -EnableTLS",
+        "$env:homedrive\Windows\System32\ie4uinit.exe -DisableSSL3"
+		"U"
+    )
+    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components") {
+        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.StubPath -ne $null){
+                if ($standard_stubpaths -notcontains $data.StubPath -and $data.StubPath -notmatch ".*(\\Program Files\\Google\\Chrome\\Application\\.*chrmstp.exe|Microsoft\\Edge\\Application\\.*\\Installer\\setup.exe).*"){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard StubPath Executed on User Logon'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1547.014: Boot or Logon Autostart Execution: Active Setup"
+                        Meta = "Registry Path: "+$item.Name+", StubPath: "+$data.StubPath
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-UninstallStrings {
+    # Uninstall Hijacks
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.UninstallString -ne $null){
+                if ($data.UninstallString -match $suspicious_terms){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Uninstall String with Suspicious Keywords'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "Application: "+$item.Name+", Uninstall String: "+$data.UninstallString
+                    }
+                    Write-Detection $detection
+                }
+            }
+            if ($data.QuietUninstallString -ne $null){
+                if ($data.QuietUninstallString -match $suspicious_terms){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Uninstall String with Suspicious Keywords'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "Application: "+$item.Name+", Uninstall String: "+$data.QuietUninstallString
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-PolicyManager {
+    # PolicyManager
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default"
+    $allow_listed_values = @(
+        "%SYSTEMROOT%\system32\PolicyManagerPrecheck.dll"
+        "%SYSTEMROOT%\system32\hascsp.dll"
+    )
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $items_ = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            ForEach ($subkey in $items_){
+                $subpath = "Registry::"+$subkey.Name
+                $data = Get-ItemProperty -Path $subpath | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                if ($data.PreCheckDLLPath -ne $null){
+                    if ($data.PreCheckDLLPath -notin $allow_listed_values){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard Policy Manager DLL'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Path: "+$subkey.Name+", Entry Name: PreCheckDLLPath, DLL: "+$data.PreCheckDLLPath
+                        }
+                        Write-Detection $detection
+                    }
+                }
+                if ($data.transportDllPath -ne $null){
+                    if ($data.transportDllPath -notin $allow_listed_values){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard Policy Manager DLL'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Path: "+$subkey.Name+", Entry Name: transportDllPath, DLL: "+$data.transportDllPath
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+function Check-SEMgrWallet {
+    # SEMgr Wallet
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\SEMgr\Wallet"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            if ($_.Name -eq "DllName" -and $_.Value -notin "","SEMgrSvc.dll"){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential SEMgr Wallet DLL Hijack'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, Entry: "+$_.Name+" Loaded DLL: "+$_.Value
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-WERRuntimeExceptionHandlers {
+    # Windows Error Reporting Exception Helpers
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules"
+    $allowed_entries = @(
+        "$env:homedrive\\Program Files \(x86\)\\Microsoft\\Edge\\Application\\.*\\msedge_wer\.dll"
+        "$env:homedrive\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\c2r64werhandler\.dll"
+        "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
+        "$env:homedrive\\Program Files\\Google\\Chrome\\Application\\.*\\chrome_wer\.dll"
+        "$env:homedrive\\Program Files\\Microsoft Office\\root\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\OFFICE.*\\msowercrash\.dll"
+        "$env:homedrive\\Program Files\\Microsoft Visual Studio\\.*\\Community\\common7\\ide\\VsWerHandler\.dll"
+        "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\mscordacwks\.dll"
+        "$env:homedrive\\Windows\\System32\\iertutil.dll"
+        "$env:homedrive\\Windows\\System32\\msiwer.dll"
+        "$env:homedrive\\Windows\\System32\\wbiosrvc.dll"
+
+    )
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items.PSObject.Properties | ForEach-Object {
+            $verified_match = $false
+            ForEach ($entry in $allowed_entries){
+                if ($_.Name -match $entry -and $verified_match -eq $false){
+                    $verified_match = $true
+                }
+            }
+
+            if ($_.Name -ne "(Default)" -and $verified_match -eq $false){
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential WER Helper Hijack'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1574: Hijack Execution Flow"
+                    Meta = "Key Location: $path, DLL: "+$_.Name
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12483,6 +12637,11 @@ function Main {
     Check-WindowsUpdateTestDlls
     Check-KnownManagedDebuggers
     Check-Wow64LayerAbuse
+    Check-MicrosoftTelemetryCommands
+    Check-ActiveSetup
+    Check-UninstallStrings
+    Check-SEMgrWallet
+    Check-WERRuntimeExceptionHandlers
 }
 
 Main
