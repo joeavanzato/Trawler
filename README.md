@@ -139,11 +139,12 @@ TODO
 * OBS Startup Script Scanning [https://www.hexacorn.com/blog/2023/04/14/beyond-good-ol-run-key-part-142/]
 * SQL Server Management Addins [https://www.hexacorn.com/blog/2019/09/28/beyond-good-ol-run-key-part-117/]
 * AutoPlay Handler Inspection [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\]
-* 
+* HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\Pending\SPReviewEnabler
+* OCSetup [https://www.hexacorn.com/blog/2019/11/09/beyond-good-ol-run-key-part-122/]
 
 ## MITRE Techniques Evaluated
 
-Please be aware that some of these are (of course) more detected than others - for example, we are not detecting all possible registry modifications but rather inspecting certain keys for obvious changes and using that technique where no other technique is applicable.  For other items such as COM hijacking, we are inspecting all entries in the relevant registry key and bubbling them all up to the surface, having a much more complete detection surface.
+Please be aware that some of these are (of course) more detected than others - for example, we are not detecting all possible registry modifications but rather inspecting certain keys for obvious changes and using the generic MITRE technique "Modify Registry" where no other technique is applicable.  For other items such as COM hijacking, we are inspecting all entries in the relevant registry section, checking against 'known-good' patterns and bubbling up unknown or mismatched values, resulting in a much more complete detection surface for that particular technique.
 
 * T1037: Boot or Logon Initialization Scripts
 * T1037.001: Boot or Logon Initialization Scripts: Logon Script (Windows)
