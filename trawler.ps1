@@ -12600,17 +12600,17 @@ function Check-WERRuntimeExceptionHandlers {
     # Windows Error Reporting Exception Helpers
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules"
     $allowed_entries = @(
-        "$env:homedrive\\Program Files \(x86\)\\Microsoft\\Edge\\Application\\.*\\msedge_wer\.dll"
-        "$env:homedrive\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\c2r64werhandler\.dll"
-        "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
-        "$env:homedrive\\Program Files\\Google\\Chrome\\Application\\.*\\chrome_wer\.dll"
-        "$env:homedrive\\Program Files\\Microsoft Office\\root\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\OFFICE.*\\msowercrash\.dll"
-        "$env:homedrive\\Program Files\\Microsoft Visual Studio\\.*\\Community\\common7\\ide\\VsWerHandler\.dll"
+        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Microsoft\\Edge\\Application\\.*\\msedge_wer\.dll"
+        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Common Files\\Microsoft Shared\\ClickToRun\\c2r64werhandler\.dll"
+        "$env:homedrive\\(Program Files|Program Files\(x86\))\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
+        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Google\\Chrome\\Application\\.*\\chrome_wer\.dll"
+        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Microsoft Office\\root\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\OFFICE.*\\msowercrash\.dll"
+        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Microsoft Visual Studio\\.*\\Community\\common7\\ide\\VsWerHandler\.dll"
         "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\mscordacwks\.dll"
         "$env:homedrive\\Windows\\System32\\iertutil.dll"
         "$env:homedrive\\Windows\\System32\\msiwer.dll"
         "$env:homedrive\\Windows\\System32\\wbiosrvc.dll"
-
+        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Mozilla Firefox\\mozwer.dll"
     )
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
