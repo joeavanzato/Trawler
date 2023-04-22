@@ -2732,7 +2732,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{22F1B05B-F983-4CC7-A5F6-67BC2701E29A}\InProcServer32" = "$homedrive\\Windows\\System32\\(twinui|twinui\.appcore)\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{22ff30d1-a59e-4580-9190-da3042ceca64}\InProcServer32" = "$homedrive\\Windows\\system32\\WwanConn\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{23170F69-40C1-278A-1000-000100020000}\InprocServer32" = "$homedrive\\Program Files\\7-Zip\\7-zip\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{233664b0-0367-11cf-abc4-02608c9e7553}\InprocServer32" = "$homedrive\\Program Files (x86)\\BraveSoftware\\Update\\.*\\psmachine.*\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{23331F43-1908-4637-940B-1EA31F4E92A1}\InprocServer32" = "$homedrive\\Program Files (x86)\\BraveSoftware\\Update\\.*\\psmachine.*\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{233664b0-0367-11cf-abc4-02608c9e7553}\InprocServer32" = "$homedrive\\Windows\\system32\\activeds\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{23445657-8A4C-11e5-998D-B4B52FE06611}\InprocServer32" = "$homedrive\\Windows\\System32\\trie\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{23571E11-E545-4DD8-A337-B89BF44B10DF}\InprocServer32" = "$homedrive\\Windows\\System32\\SensorsApi\.dll"
