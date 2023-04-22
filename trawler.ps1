@@ -12423,6 +12423,42 @@ function Check-ActiveSetup {
     }
 }
 
+function Check-UninstallStrings {
+    # Uninstall Hijacks
+    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            if ($data.UninstallString -ne $null){
+                if ($data.UninstallString -match $suspicious_terms){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Uninstall String with Suspicious Keywords'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "Application: "+$item.Name+", Uninstall String: "+$data.UninstallString
+                    }
+                    Write-Detection $detection
+                }
+            }
+            if ($data.QuietUninstallString -ne $null){
+                if ($data.QuietUninstallString -match $suspicious_terms){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Uninstall String with Suspicious Keywords'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "Application: "+$item.Name+", Uninstall String: "+$data.QuietUninstallString
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -12498,6 +12534,7 @@ function Main {
     Check-Wow64LayerAbuse
     Check-MicrosoftTelemetryCommands
     Check-ActiveSetup
+    Check-UninstallStrings
 }
 
 Main
