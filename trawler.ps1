@@ -73,7 +73,7 @@ function Get-ValidOutPath {
 function ValidatePaths {
     Try {
         $script:outpath = Get-ValidOutPath -path $outpath
-        Write-Host "Detection Output Path: $outpath"
+        Write-Message "Detection Output Path: $outpath"
         [io.file]::OpenWrite($outpath).close()
         $script:output_writable = $true
     }
@@ -84,7 +84,7 @@ function ValidatePaths {
     if ($snapshot){
         Try {
             $script:snapshotpath = Get-ValidOutPath -path $snapshotpath
-            Write-Host "Snapshot Output Path: $snapshotpath"
+            Write-Message "Snapshot Output Path: $snapshotpath"
             [io.file]::OpenWrite($snapshotpath).close()
             Clear-Content $snapshotpath
             $script:snapshotpath_writable = $true
@@ -105,7 +105,6 @@ function ValidatePaths {
 # TODO - ntshrui.dll - https://www.mandiant.com/resources/blog/malware-persistence-windows-registry
 # TODO - Add file metadata for detected files (COM Hijacks, etc)
 # TODO - Add more suspicious paths for running processes
-# TODO - Refactor allow-listing to an abstract function
 
 # TODO - Refactor this using proper regex
 $suspicious_process_paths = @(
@@ -220,25 +219,16 @@ function Check-ScheduledTasks {
         # If we are loading a snapshot allowlist
         # TODO - Compare Task Arguments for Changes
         if ($loadsnapshot){
-            # If the allowlist contains the curren task name
-            if ($allowtable_scheduledtask.ContainsKey($task.TaskName)){
-                # Skip if the taskname matches the executable path
-                if ($allowtable_scheduledtask[$task.TaskName] -eq $task.Execute){
-                    continue
-                # Skip if both the hashtable entry and the executable path are null
-                } elseif ($allowtable_scheduledtask[$task.TaskName] -eq "" -and $task.Execute -eq $null) {
-                    continue
-                } else {
-                    $detection = [PSCustomObject]@{
-                        Name = 'Allowlisted Schedule Task Mismatch'
-                        Risk = 'Medium'
-                        Source = 'Scheduled Tasks'
-                        Technique = "T1053: Scheduled Task/Job"
-                        Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
-                    }
-                    Write-Detection $detection
-                    continue
-                }
+            $detection = [PSCustomObject]@{
+                    Name = 'Allowlisted Schedule Task Mismatch'
+                    Risk = 'Medium'
+                    Source = 'Scheduled Tasks'
+                    Technique = "T1053: Scheduled Task/Job"
+                    Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+            }
+            $result = Check-IfAllowed $allowtable_scheduledtask $task.TaskName $task.Execute $detection
+            if ($result){
+                continue
             }
         }
 
@@ -352,8 +342,8 @@ function Check-Users {
             Write-Snapshot $message
         }
         if ($loadsnapshot){
-            # If the allowlist contains the curren task name
-            if ($allowlist_users.Contains($admin.name)){
+            $result = Check-IfAllowed $allowlist_users $admin.name $admin.name
+            if ($result){
                 continue
             }
         }
@@ -523,25 +513,16 @@ function Check-Services {
         }
 
         if ($loadsnapshot){
-            # If the allowlist contains the curren task name
-            if ($allowtable_services.ContainsKey($service.Name)){
-                # Skip if the taskname matches the executable path
-                if ($allowtable_services[$service.Name] -eq $service.PathName){
-                    continue
-                # Skip if both the hashtable entry and the executable path are null
-                } elseif ($allowtable_services[$service.Name] -eq "" -and $service.PathName -eq $null) {
-                    continue
-                } else {
-                    $detection = [PSCustomObject]@{
-                        Name = 'Allowlisted Service Mismatch'
-                        Risk = 'Medium'
-                        Source = 'Services'
-                        Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                        Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
-                    }
-                    Write-Detection $detection
-                    continue
-                }
+            $detection = [PSCustomObject]@{
+                Name = 'Allowlisted Service Mismatch'
+                Risk = 'Medium'
+                Source = 'Services'
+                Technique = "T1543.003: Create or Modify System Process: Windows Service"
+                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+            }
+            $result = Check-IfAllowed $allowtable_services $service.Name $service.PathName $detection
+            if ($result){
+                continue
             }
         }
 
@@ -616,8 +597,8 @@ function Check-Processes {
             Write-Snapshot $message
         }
         if ($loadsnapshot){
-            # If the allowlist contains the curren task name
-            if ($allowlist_process_exes.Contains($process.ExecutablePath)){
+            $result = Check-IfAllowed $allowlist_process_exes $process.ProcessName $process.ExecutablePath
+            if ($result){
                 continue
             }
         }
@@ -680,9 +661,10 @@ function Check-Connections {
             }
             Write-Snapshot $message
         }
+
         if ($loadsnapshot){
-            # If the allowlist contains the curren task name
-            if ($allowlist_remote_addresses.Contains($conn.RemoteAddress)){
+            $result = Check-IfAllowed $allowlist_remote_addresses $conn.RemoteAddress $conn.RemoteAddress
+            if ($result){
                 continue
             }
         }
@@ -730,31 +712,21 @@ function Check-WMIConsumers {
 
     ForEach ($consumer in $consumers) {
         if ($loadsnapshot){
-            # If the allowlist contains the curren consumer name
-            if ($allowtable_wmi_consumers.ContainsKey($consumer.Name)){
-                if ($consumer.CommandLineTemplate -ne $null){
-                    $val_ = $consumer.CommandLineTemplate
-                } elseif ($consumer.ScriptFileName -ne $null) {
-                    $val_ = $consumer.ScriptFileName
-                }
-
-                # Skip if the commandlinetemplate or scriptfilename matches the value
-                if ($allowtable_wmi_consumers[$consumer.Name] -eq $val_){
-                    continue
-                # Skip if both the hashtable entry and both of the possible arugments are null
-                } elseif ($allowtable_wmi_consumers[$consumer.Name] -eq "" -and $val_ -eq $null) {
-                    continue
-                } else {
-                    $detection = [PSCustomObject]@{
-                        Name = 'Allowlisted WMI Consumer Mismatch'
-                        Risk = 'Medium'
-                        Source = 'Services'
-                        Technique = "T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription"
-                        Meta = "Consumer Name: "+ $consumer.Name+", Consumer Value: "+ $allowtable_wmi_consumers[$consumer.Name]
-                    }
-                    Write-Detection $detection
-                    continue
-                }
+            if ($consumer.CommandLineTemplate -ne $null){
+                $val_ = $consumer.CommandLineTemplate
+            } elseif ($consumer.ScriptFileName -ne $null) {
+                $val_ = $consumer.ScriptFileName
+            }
+            $detection = [PSCustomObject]@{
+                Name = 'Allowlisted WMI Consumer Mismatch'
+                Risk = 'Medium'
+                Source = 'Services'
+                Technique = "T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription"
+                Meta = "Consumer Name: "+ $consumer.Name+", Consumer Value: "+ $val_
+            }
+            $result = Check-IfAllowed $allowtable_wmi_consumers $consumer.Name $val_ $detection
+            if ($result){
+                continue
             }
         }
         if ($consumer.ScriptingEngine -ne $null) {
@@ -801,8 +773,8 @@ function Check-Startups {
     $startups = Get-CimInstance -ClassName Win32_StartupCommand | Select-Object Command,Location,Name,User
     ForEach ($item in $startups) {
         if ($loadsnapshot){
-            # If the allowlist contains the curren task name
-            if ($allowlist_startup_commands.Contains($item.Command)){
+            $result = Check-IfAllowed $allowlist_startup_commands $item.Command $item.Command
+            if ($result){
                 continue
             }
         }
@@ -881,22 +853,16 @@ function Check-BITS {
             Write-Snapshot $message
         }
         if ($loadsnapshot){
-            if ($allowtable_bits.ContainsKey($item.DisplayName)){
-                if ($allowtable_bits[$item.DisplayName] -eq $cmd){
-                    continue
-                } elseif ($allowtable_bits[$item.DisplayName] -eq "" -and $cmd -eq "") {
-                    continue
-                } else {
-                    $detection = [PSCustomObject]@{
-                        Name = 'Allowlisted BITS Job Mismatch'
-                        Risk = 'Medium'
-                        Source = 'BITS'
-                        Technique = "T1197: BITS Jobs"
-                        Meta = "Item Name: "+$item.DisplayName+", TransferType: "+$item.TransferType+", Job State: "+$item.JobState+", User: "+$item.OwnerAccount+", Command: "+$cmd
-                    }
-                    Write-Detection $detection
-                    continue
-                }
+            $detection = [PSCustomObject]@{
+                Name = 'Allowlisted BITS Job Mismatch'
+                Risk = 'Medium'
+                Source = 'BITS'
+                Technique = "T1197: BITS Jobs"
+                Meta = "Item Name: "+$item.DisplayName+", TransferType: "+$item.TransferType+", Job State: "+$item.JobState+", User: "+$item.OwnerAccount+", Command: "+$cmd
+            }
+            $result = Check-IfAllowed $allowtable_bits $item.DisplayName $cmd $detection
+            if ($result){
+                continue
             }
         }
         $detection = [PSCustomObject]@{
@@ -1011,7 +977,7 @@ function Check-PowerShell-Profiles {
     }
 }
 
-function Check-Office-Startup {
+function Check-Outlook-Startup {
     Write-Message "Checking Outlook Macros"
     # allowlist_officeaddins
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
@@ -1042,7 +1008,7 @@ function Check-Office-Startup {
             }
             #Write-Detection $detection - Removing this as it is a duplicate of the new Office Scanning Functionality which will cover the same checks
         }
-        $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Outlook\VbaProject.OTM"
+        $path = "$env:homedrive\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Outlook\VbaProject.OTM"
         if (Test-Path $path) {
             if ($snapshot){
                 $message = [PSCustomObject]@{
@@ -1054,7 +1020,8 @@ function Check-Office-Startup {
             }
             if ($loadsnapshot){
                 # If the allowlist contains the curren task name
-                if ($allowlist_outlookstartup.Contains($item.FullName)){
+                $result = Check-IfAllowed $allowlist_outlookstartup $path $item.FullName
+                if ($result){
                     continue
                 }
             }
@@ -1071,7 +1038,7 @@ function Check-Office-Startup {
 }
 
 function Check-Registry-Checks {
-
+    # DEPRECATED FUNCTION
     #TODO - Inspect File Command Extensions to hunt for anomalies
     # https://attack.mitre.org/techniques/T1546/001/
 
@@ -1109,7 +1076,7 @@ function Check-Registry-Checks {
 }
 
 function Check-COM-Hijacks {
-        Write-Message "Checking Component Object Models"
+        Write-Message "Checking COM Classes"
         # TODO - Consider NOT alerting when we don't have a 'known-good' entry for the CLSID in question
         # Malware will typically target 'well-known' keys that are present in default versions of Windows - that should be enough for most situations and help to reduce noise.
         $default_hkcr_com_lookups = @{
@@ -9605,6 +9572,19 @@ function Check-COM-Hijacks {
                                 }
                                 Write-Snapshot $message
                             }
+                            if ($loadsnapshot){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack'
+                                    Risk = 'Medium'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                }
+                                $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
+                                if ($result){
+                                    continue
+                                }
+                            }
                             $verified_match = $false
                             if ($default_hkcr_com_lookups.ContainsKey($data.Name)){
                                 if ($_.Value -match $default_hkcr_com_lookups[$data.Name]){
@@ -9667,6 +9647,19 @@ function Check-COM-Hijacks {
                                 }
                                 Write-Snapshot $message
                             }
+                            if ($loadsnapshot){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack'
+                                    Risk = 'Medium'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                }
+                                $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
+                                if ($result){
+                                    continue
+                                }
+                            }
                             $verified_match = $false
                             if ($default_hklm_com_lookups.ContainsKey($data.Name)){
                                 if ($_.Value -match $default_hkcr_com_lookups[$data.Name]){
@@ -9727,6 +9720,19 @@ function Check-COM-Hijacks {
                                     Source = 'COM'
                                 }
                                 Write-Snapshot $message
+                            }
+                            if ($loadsnapshot){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack'
+                                    Risk = 'Medium'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                }
+                                $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
+                                if ($result){
+                                    continue
+                                }
                             }
                             $verified_match = $false
                             if ($default_hkcu_com_lookups.ContainsKey($data.Name)){
@@ -13716,7 +13722,7 @@ function Write-Detection($det)  {
     } else {
         $fg_color = 'Yellow'
     }
-    Write-Host [+] New Detection: $det.Name - Risk: $det.Risk -ForegroundColor $fg_color
+    Write-Host [!] Detection: $det.Name - Risk: $det.Risk -ForegroundColor $fg_color
     Write-Host [%] $det.Meta -ForegroundColor White
     if ($output_writable){
        $det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
@@ -13803,7 +13809,7 @@ function Read-Snapshot(){
         } elseif ($item.Source -eq "Debuggers"){
             # Using Name and Debugger File Path
             $allowtable_debuggers[$item.Key] = $item.Value
-            $allowlist_debuggers.Add($item.Value)
+            $allowlist_debuggers.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "Outlook"){
             # Using DLL Name as value
             $allowlist_outlookstartup.Add($item.Value) | Out-Null
@@ -13862,6 +13868,25 @@ function Read-Snapshot(){
     }
 }
 
+function Check-IfAllowed($allowmap, $key, $val, $det){
+    if ($allowmap.GetType().Name -eq "Hashtable"){
+        if ($allowmap.ContainsKey($key)){
+            if ($allowmap[$key] -eq $val){
+                return $true
+            } elseif ($allowmap[$key] -eq "" -and ($val -eq $null -or $val -eq "")) {
+                return $true
+            } else {
+                Write-Detection $det
+                return $true
+            }
+        }
+    } elseif ($allowmap.GetType().Name -eq "ArrayList"){
+        if ($allowmap.Contains($key) -or $allowmap.Contains($val)){
+            return $true
+        }
+    }
+}
+
 function Logo {
     $logo = "
   __________  ___ _       ____    __________ 
@@ -13882,21 +13907,21 @@ function Main {
     if ($loadsnapshot -ne $null -and $snapshot -eq $false){
         Read-Snapshot
     }
-    #Check-ScheduledTasks
-    #Check-Users
-    #Check-Services
-    #Check-Processes
-    #Check-Connections
-    #Check-WMIConsumers
-    #Check-Startups
-    #Check-BITS
-    #Check-Modified-Windows-Accessibility-Feature
-    #Check-Debugger-Hijacks
-    #Check-PowerShell-Profiles
-    Check-Office-Startup
+<#    Check-ScheduledTasks
+    Check-Users
+    Check-Services
+    Check-Processes
+    Check-Connections
+    Check-WMIConsumers
+    Check-Startups
+    Check-BITS
+    Check-Modified-Windows-Accessibility-Feature
+    Check-Debugger-Hijacks
+    Check-PowerShell-Profiles
+    Check-Outlook-Startup  #>
     ###Check-Registry-Checks
-    <#Check-COM-Hijacks
-    Service-Reg-Checks
+    Check-COM-Hijacks
+    <#Service-Reg-Checks
     Check-LNK
     Check-Process-Modules
     Check-Windows-Unsigned-Files
