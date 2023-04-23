@@ -12,6 +12,9 @@
     .PARAMETER snapshot
 		If specified, tells trawler to capture a persistence snapshot
 
+    .PARAMETER hide
+		If specified, tells trawler to suppress detection output to console
+
 	.PARAMETER snapshotpath
 		The fully-qualified file-path where snapshot output should be stored - defaults to $PSScriptRoot\snapshot.csv
 
@@ -45,6 +48,10 @@ param
 	    [switch]$snapshot,
 	[Parameter(
         Mandatory = $false,
+        HelpMessage = 'Suppress Detection Output to Console')]
+	    [switch]$hide,
+	[Parameter(
+        Mandatory = $false,
         HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
 	    [string]$snapshotpath = "$PSScriptRoot\snapshot.csv",
 	[Parameter(
@@ -56,6 +63,11 @@ if ($snapshot.IsPresent){
     $snapshot = $true
 } else {
     $snapshot = $false
+}
+if ($hide.IsPresent){
+    $hide_console_output = $true
+} else {
+    $hide_console_output = $false
 }
 
 function Get-ValidOutPath {
@@ -11213,7 +11225,7 @@ function Check-LNK {
 }
 
 function Check-Process-Modules {
-    Write-Message "Checking Loaded DLLs"
+    Write-Message "Checking 'Phantom' DLLs"
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
 
@@ -11249,6 +11261,12 @@ function Check-Process-Modules {
                             Source = 'Modules'
                         }
                         Write-Snapshot $message
+                    }
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_modules $module.FileName $module.FileName
+                        if ($result){
+                            continue
+                        }
                     }
                     $signature = Get-AuthenticodeSignature $module.FileName
                     if ($signature.Status -ne 'Valid'){
@@ -11287,6 +11305,7 @@ function Check-Windows-Unsigned-Files {
     'C:\Windows\System'
     'C:\Windows\temp'
     )
+    #allowlist_unsignedfiles
     ForEach ($path in $scan_paths)
     {
         $files = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Where-Object { $_.extension -in ".dll", ".exe" } | Select-Object *
@@ -11303,6 +11322,12 @@ function Check-Windows-Unsigned-Files {
                         Source = 'UnsignedWindows'
                     }
                     Write-Snapshot $message
+                }
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_unsignedfiles $file.FullName $file.FullName
+                    if ($result){
+                        continue
+                    }
                 }
                 $detection = [PSCustomObject]@{
                     Name = 'Unsigned DLL/EXE present in critical OS directory'
@@ -13747,8 +13772,10 @@ function Write-Detection($det)  {
     } else {
         $fg_color = 'Yellow'
     }
-    Write-Host [!] Detection: $det.Name - Risk: $det.Risk -ForegroundColor $fg_color
-    Write-Host [%] $det.Meta -ForegroundColor White
+    if ($hide_console_output -eq $false){
+        Write-Host [!] Detection: $det.Name - Risk: $det.Risk -ForegroundColor $fg_color
+        Write-Host [%] $det.Meta -ForegroundColor White
+    }
     if ($output_writable){
        $det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
     }
@@ -13932,11 +13959,11 @@ function Main {
     if ($loadsnapshot -ne $null -and $snapshot -eq $false){
         Read-Snapshot
     }
-<#    Check-ScheduledTasks
+    Check-ScheduledTasks
     Check-Users
     Check-Services
     Check-Processes
-    Check-Connections
+    #Check-Connections
     Check-WMIConsumers
     Check-Startups
     Check-BITS
@@ -13947,10 +13974,10 @@ function Main {
     ###Check-Registry-Checks
     #Check-COM-Hijacks
     Service-Reg-Checks
-    <#Check-LNK
+    Check-LNK
     Check-Process-Modules
     Check-Windows-Unsigned-Files
-    Check-Service-Hijacks
+    <#Check-Service-Hijacks
     Check-PATH-Hijacks
     Check-Association-Hijack
     Check-Suspicious-Certificates
