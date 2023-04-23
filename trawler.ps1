@@ -682,6 +682,20 @@ function Check-Connections {
         }
 
         if ($conn.State -eq 'Listen' -and $conn.LocalPort -gt 1024){
+            if ($snapshot){
+                $message = [PSCustomObject]@{
+                    Key = $proc.Name
+                    Value = $proc.Path
+                    Source = 'ProcessConnections'
+                }
+                Write-Snapshot $message
+            }
+            if ($loadsnapshot){
+                $result = Check-IfAllowed $allowlist_listeningprocs $proc.Name $proc.Path
+                if ($result){
+                    continue
+                }
+            }
             $detection = [PSCustomObject]@{
                 Name = 'Process Listening on Ephemeral Port'
                 Risk = 'Very Low'
@@ -11897,6 +11911,7 @@ function Check-GPO-Scripts {
 }
 
 function Check-TerminalProfiles {
+    # TODO - Snapshot/Allowlist specific exes
     Write-Message "Checking Terminal Profiles"
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
     $base_path = "$env:homedrive\Users\_USER_\AppData\Local\Packages\"
@@ -12038,6 +12053,12 @@ function Check-BIDDll {
                         }
                         Write-Snapshot $message
                     }
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_biddll $path $_.Value
+                        if ($result){
+                            continue
+                        }
+                    }
                     $match = $false
                     ForEach ($val in $expected_values){
                         if ($_.Value -match $val){
@@ -12062,6 +12083,7 @@ function Check-BIDDll {
 }
 
 function Check-WindowsUpdateTestDlls {
+    # TODO - Snapshot/Allowlist DLLs
     Write-Message "Checking Windows Update Test"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Test"
     if (Test-Path -Path $path) {
@@ -12075,6 +12097,12 @@ function Check-WindowsUpdateTestDlls {
                         Source = 'WinUpdateTestDLL'
                     }
                     Write-Snapshot $message
+                }
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_winupdatetest $path $_.Value
+                    if ($result){
+                        continue
+                    }
                 }
                 $detection = [PSCustomObject]@{
                     Name = 'Windows Update Test DLL Exists'
@@ -12107,6 +12135,12 @@ function Check-KnownManagedDebuggers {
                     Source = 'KnownManagedDebuggers'
                 }
                 Write-Snapshot $message
+            }
+            if ($loadsnapshot){
+                $result = Check-IfAllowed $allowlist_knowndebuggers $path $_.Name
+                if ($result){
+                    continue
+                }
             }
             $matches_good = $false
             ForEach ($allowed_item in $allow_list){
@@ -12149,7 +12183,12 @@ function Check-MiniDumpAuxiliaryDLLs {
                 }
                 Write-Snapshot $message
             }
-
+            if ($loadsnapshot){
+                $result = Check-IfAllowed $allowlist_minidumpauxdlls $path $_.Name
+                if ($result){
+                    continue
+                }
+            }
             $matches_good = $false
             ForEach ($allowed_item in $allow_list){
                 if ($_.Name -match $allowed_item){
@@ -12186,6 +12225,12 @@ function Check-Wow64LayerAbuse {
                     }
                     Write-Snapshot $message
                 }
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_WOW64Compat $_.Name $_.Value
+                    if ($result){
+                        continue
+                    }
+                }
                 $detection = [PSCustomObject]@{
                     Name = 'Non-Standard Wow64\x86 DLL loaded into x86 process'
                     Risk = 'High'
@@ -12217,6 +12262,12 @@ function Check-EventViewerMSC {
                             Source = 'MSCHijack'
                         }
                         Write-Snapshot $message
+                    }
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_MSCHijack $_.Name $_.Value
+                        if ($result){
+                            continue
+                        }
                     }
                     $detection = [PSCustomObject]@{
                         Name = 'Event Viewer MSC Hijack'
@@ -12260,6 +12311,12 @@ function Check-MicrosoftTelemetryCommands {
                             Source = 'TelemetryCommands'
                         }
                         Write-Snapshot $message
+                    }
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_telemetry $item.Name $data.Command
+                        if ($result){
+                            continue
+                        }
                     }
                     $detection = [PSCustomObject]@{
                         Name = 'Non-Standard Microsoft Telemetry Command'
@@ -12306,6 +12363,12 @@ function Check-ActiveSetup {
                         }
                         Write-Snapshot $message
                     }
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_activesetup $item.Name $data.StubPath
+                        if ($result){
+                            continue
+                        }
+                    }
                     $detection = [PSCustomObject]@{
                         Name = 'Non-Standard StubPath Executed on User Logon'
                         Risk = 'High'
@@ -12328,6 +12391,7 @@ function Check-UninstallStrings {
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            #allowtable_uninstallstrings
             if ($data.UninstallString -ne $null){
                 if ($data.UninstallString -match $suspicious_terms){
                     if ($snapshot){
@@ -12337,6 +12401,19 @@ function Check-UninstallStrings {
                             Source = 'UninstallString'
                         }
                         Write-Snapshot $message
+                    }
+                    if ($loadsnapshot){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Allowlist Mismatch: Uninstall String with Suspicious Keywords'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Application: "+$item.Name+", Uninstall String: "+$data.UninstallString
+                        }
+                        $result = Check-IfAllowed $allowtable_uninstallstrings $item.Name $data.UninstallString $detection
+                        if ($result){
+                            continue
+                        }
                     }
                     $detection = [PSCustomObject]@{
                         Name = 'Uninstall String with Suspicious Keywords'
@@ -12354,9 +12431,22 @@ function Check-UninstallStrings {
                         $message = [PSCustomObject]@{
                             Key = $item.Name
                             Value = $data.QuietUninstallString
-                            Source = 'UninstallString'
+                            Source = 'QuietUninstallString'
                         }
                         Write-Snapshot $message
+                    }
+                    if ($loadsnapshot){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Allowlist Mismatch: Uninstall String with Suspicious Keywords'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Application: "+$item.Name+", Uninstall String: "+$data.UninstallString
+                        }
+                        $result = Check-IfAllowed $allowtable_quietuninstallstrings $item.Name $data.QuietUninstallString $detection
+                        if ($result){
+                            continue
+                        }
                     }
                     $detection = [PSCustomObject]@{
                         Name = 'Uninstall String with Suspicious Keywords'
@@ -12388,6 +12478,12 @@ function Check-PolicyManager {
                 $subpath = "Registry::"+$subkey.Name
                 $data = Get-ItemProperty -Path $subpath | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
                 if ($data.PreCheckDLLPath -ne $null){
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_policymanagerdlls $subkey.Name $data.PreCheckDLLPath
+                        if ($result){
+                            continue
+                        }
+                    }
                     if ($data.PreCheckDLLPath -notin $allow_listed_values){
                         if ($snapshot){
                             $message = [PSCustomObject]@{
@@ -12396,6 +12492,12 @@ function Check-PolicyManager {
                                 Source = 'PolicyManagerPreCheck'
                             }
                             Write-Snapshot $message
+                        }
+                        if ($loadsnapshot){
+                            $result = Check-IfAllowed $allowlist_activesetup $item.Name $data.StubPath
+                            if ($result){
+                                continue
+                            }
                         }
                         $detection = [PSCustomObject]@{
                             Name = 'Non-Standard Policy Manager DLL'
@@ -12408,6 +12510,12 @@ function Check-PolicyManager {
                     }
                 }
                 if ($data.transportDllPath -ne $null){
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_policymanagerdlls $subkey.Name $data.transportDllPath
+                        if ($result){
+                            continue
+                        }
+                    }
                     if ($data.transportDllPath -notin $allow_listed_values){
                         if ($snapshot){
                             $message = [PSCustomObject]@{
@@ -12496,6 +12604,12 @@ function Check-WERRuntimeExceptionHandlers {
                         Source = 'WERHandlers'
                     }
                     Write-Snapshot $message
+                }
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_werhandlers $path $_.Name
+                    if ($result){
+                        continue
+                    }
                 }
                 $detection = [PSCustomObject]@{
                     Name = 'Potential WER Helper Hijack'
@@ -12690,6 +12804,19 @@ function Check-PrintMonitorDLLs {
                         Source = 'PrintMonitors'
                     }
                     Write-Snapshot $message
+                }
+                if ($loadsnapshot){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Allowlist Mismatch: Non-Standard Print Monitor DLL'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1112: Modify Registry"
+                        Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
+                    }
+                    $result = Check-IfAllowed $allowtable_printmonitors $item.Name $data.Driver $detection
+                    if ($result){
+                        continue
+                    }
                 }
                 if ($data.Driver -notin $standard_print_monitors){
                     $detection = [PSCustomObject]@{
@@ -13061,6 +13188,19 @@ function Check-PrintProcessorDLLs {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.Driver -ne $null){
+                if ($loadsnapshot){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Allowlist Mismatch: Non-Standard Print Processor DLL'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
+                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
+                    }
+                    $result = Check-IfAllowed $allowtable_printprocessors $item.Name $data.Driver $detection
+                    if ($result){
+                        continue
+                    }
+                }
                 if ($standard_print_processors -notcontains $data.Driver){
                     if ($snapshot){
                         $message = [PSCustomObject]@{
@@ -13088,6 +13228,12 @@ function Check-PrintProcessorDLLs {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             if ($data.Driver -ne $null){
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowtable_printprocessors $item.Name $data.Driver
+                    if ($result){
+                        continue
+                    }
+                }
                 if ($standard_print_processors -notcontains $data.Driver){
                     if ($snapshot){
                         $message = [PSCustomObject]@{
@@ -13597,6 +13743,12 @@ function Check-NaturalLanguageDevelopmentDLLs {
                     }
                     Write-Snapshot $message
                 }
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_nlpdlls $item.Name $dll
+                    if ($result){
+                        continue
+                    }
+                }
                 $detection = [PSCustomObject]@{
                     Name = 'DLL Override on Natural Language Development Platform'
                     Risk = 'High'
@@ -13704,6 +13856,19 @@ function Check-AppPaths {
                                 }
                                 Write-Snapshot $message
                             }
+                            if ($loadsnapshot){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Allowlist Mismatch: Potential App Path Hijacking - Executable Name does not match Registry Key'
+                                    Risk = 'Medium'
+                                    Source = 'Registry'
+                                    Technique = "T1546: Event Triggered Execution"
+                                    Meta = "Key Location: "+$item.Name+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                                }
+                                $result = Check-IfAllowed $allowtable_apppaths $item.Name $_.Value $detection
+                                if ($result){
+                                    continue
+                                }
+                            }
                             $detection = [PSCustomObject]@{
                                 Name = 'Potential App Path Hijacking - Executable Name does not match Registry Key'
                                 Risk = 'Medium'
@@ -13765,6 +13930,12 @@ function Check-GPOExtensions {
                             Source = 'GPOExtensions'
                         }
                         Write-Snapshot $message
+                    }
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_gpoextensions $item.Name $_.Value
+                        if ($result){
+                            continue
+                        }
                     }
                     $detection = [PSCustomObject]@{
                         Name = 'Review: Non-Standard GPO Extension DLL'
@@ -13878,14 +14049,46 @@ function Read-Snapshot(){
     $script:allowlist_nlpdlls = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowtable_apppaths = @{}
     $script:allowlist_gpoextensions = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_biddll = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_winupdatetest = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_minidumpauxdlls = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_WOW64Compat = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_MSCHijack = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_telemetry = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_activesetup = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_uninstallstrings = @{}
+    $script:allowtable_quietuninstallstrings = @{}
+    $script:allowlist_policymanagerdlls = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_listeningprocs = New-Object -TypeName "System.Collections.ArrayList"
     ForEach ($item in $csv_data){
         if ($item.Source -eq "Scheduled Tasks"){
             # Using scheduled task name and exe path
             # TODO - Incorporate Task Arguments
             $allowtable_scheduledtask[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Users"){
-            # Using username
             $allowlist_users.Add($item.Key) | Out-Null
+        } elseif ($item.Source -eq "BIDDLL"){
+            $allowlist_biddll.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "ProcessConnections"){
+            $allowlist_listeningprocs.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "PolicyManagerPreCheck" -or $item.Source -eq "PolicyManagerTransport"){
+            $allowlist_policymanagerdlls.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "WinUpdateTestDLL"){
+            $allowlist_winupdatetest.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "ActiveSetup"){
+            $allowlist_activesetup.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "MiniDumpAuxiliaryDLL"){
+            $allowlist_minidumpauxdlls.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "WOW64Compat"){
+            $allowlist_WOW64Compat.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "MSCHijack"){
+            $allowlist_MSCHijack.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "TelemetryCommands"){
+            $allowlist_telemetry.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "UninstallString"){
+            $allowtable_uninstallstrings[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "QuietUninstallString"){
+            $allowtable_quietuninstallstrings[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Services"){
             # Using Service Name and Full Path
             $allowtable_services[$item.Key] = $item.Value
@@ -13956,7 +14159,7 @@ function Read-Snapshot(){
         } elseif ($item.Source -eq "NLPDlls"){
             # Using DLL path
             $allowlist_nlpdlls.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "NLPDlls"){
+        } elseif ($item.Source -eq "AppPaths"){
             # Using Reg Key and associated value
             $allowtable_apppaths[$item.Key] = $item.Value
         } elseif ($item.Source -eq "GPOExtensions"){
@@ -14010,7 +14213,7 @@ function Main {
     Check-Users
     Check-Services
     Check-Processes
-    #Check-Connections
+    Check-Connections
     Check-WMIConsumers
     Check-Startups
     Check-BITS
@@ -14019,18 +14222,18 @@ function Main {
     Check-PowerShell-Profiles
     Check-Outlook-Startup
     ###Check-Registry-Checks
-    #Check-COM-Hijacks
+    Check-COM-Hijacks
     Service-Reg-Checks
     Check-LNK
-    #Check-Process-Modules
-    #Check-Windows-Unsigned-Files
+    Check-Process-Modules
+    Check-Windows-Unsigned-Files
     Check-Service-Hijacks
     Check-PATH-Hijacks
     Check-Association-Hijack
     Check-Suspicious-Certificates
     Check-Office-Trusted-Locations
     Check-GPO-Scripts
-    <#Check-TerminalProfiles
+    Check-TerminalProfiles
     Check-PeerDistExtensionDll
     Check-InternetSettingsLUIDll
     Check-ErrorHandlerCMD
@@ -14040,6 +14243,7 @@ function Main {
     Check-Wow64LayerAbuse
     Check-MicrosoftTelemetryCommands
     Check-ActiveSetup
+    Check-PolicyManager
     Check-UninstallStrings
     Check-SEMgrWallet
     Check-WERRuntimeExceptionHandlers
@@ -14077,7 +14281,7 @@ function Main {
     Check-AMSIProviders
     Check-AppPaths
     Check-GPOExtensions
-    Check-HTMLHelpDLL#>
+    Check-HTMLHelpDLL
 }
 
 Main
