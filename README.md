@@ -43,6 +43,15 @@ PersistenceSniper is an awesome tool - I've used it heavily in the past - but th
 
 Overall, these tools are extremely similar but approach the problem from slightly different angles - PersistenceSniper provides all information back to the analyst for review while Trawler tries to limit what is returned to only results that are likely to be potential adversary persistence mechanisms.  As such, there is a possibility for false-negatives with trawler if an adversary completely mimics an allow-listed item.
 
+## Tuning to your environment
+Trawler supports loading an allow-list from a 'snapshot' - to do this requires two steps.
+1. Run '.\trawler.ps1 -snapshot' on a "Golden Image" representing the servers in your environment - once complete, in addition to the standard 'detections.csv' a file named 'snapshots.csv' will be generated
+2. This file can then be used as input to trawler when running on other hosts and the data will be loaded dynamically as an allow-list for each appropriate detection
+   1. '.\trawler.ps1' -loadsnapshot "path\to\snapshot.csv"
+
+That's it - all relevant detections will then draw from the snapshot file as an allow-list to reduce noise and identify any potential changes to the base image that may have occurred.
+
+
 ## Example Images
 <p align="center">
 <img src="sample.PNG">
