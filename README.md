@@ -42,7 +42,7 @@ Additionally, if you identify obvious false positives, please let me know by ope
 -loadsnapshot : Define the path for an existing snapshot file to load as an allow-list reference
 ```
 
-## What separates this from something like PersistenceSniper?
+## What separates this from PersistenceSniper?
 PersistenceSniper is an awesome tool - I've used it heavily in the past - but there are a few key points that differentiate these utilities
 * trawler is (currently) a local utility - it would be pretty straight-forward to wrap it in a loop and use WinRM/PowerShell Sessions to execute it on remote hosts though
 * trawler implements allow-listing for many 'noisy' detections to help remove expected detections from default configurations of Windows (10/2016/2019/2022) and these are constantly being updated
@@ -61,7 +61,6 @@ Trawler supports loading an allow-list from a 'snapshot' - to do this requires t
 
 That's it - all relevant detections will then draw from the snapshot file as an allow-list to reduce noise and identify any potential changes to the base image that may have occurred.
 
-
 ## Example Images
 <p align="center">
 <img src="sample.PNG">
@@ -72,8 +71,6 @@ That's it - all relevant detections will then draw from the snapshot file as an 
 <p align="center">
 <img src="sample3.PNG">
 </p>
-
-
 
 ## What is inspected?
 
