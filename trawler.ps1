@@ -332,6 +332,7 @@ function Check-Users {
     $local_admins = Get-LocalGroupMember -Group "Administrators" | Select-Object *
     ForEach ($admin in $local_admins){
         $admin_user = Get-LocalUser -SID $admin.SID | Select-Object AccountExpires,Description,Enabled,FullName,PasswordExpires,UserMayChangePassword,PasswordLastSet,LastLogon,Name,SID,PrincipalSource
+
         if ($snapshot){
             $message = [PSCustomObject]@{
                 Key = $admin.name
@@ -339,6 +340,12 @@ function Check-Users {
                 Source = 'Users'
             }
             Write-Snapshot $message
+        }
+        if ($loadsnapshot){
+            # If the allowlist contains the curren task name
+            if ($allowlist_users.Contains($admin.name)){
+                continue
+            }
         }
 
         $detection = [PSCustomObject]@{
@@ -13523,9 +13530,15 @@ function Read-Snapshot(){
     }
     $csv_data = Import-CSV $loadsnapshot
     $global:allowtable_scheduledtask = @{}
+    $global:allowlist_users = New-Object -TypeName "System.Collections.ArrayList"
+    $global:allowtable_services = @{}
     ForEach ($item in $csv_data){
         if ($item.Source -eq "Scheduled Tasks"){
             $allowtable_scheduledtask[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "Users"){
+            $allowlist_users.Add($item.Key) | Out-Null
+        } elseif ($item.Source -eq "Services"){
+            $allowtable_services[$item.Key] = $item.Value
         }
     }
 
@@ -13552,8 +13565,8 @@ function Main {
         Read-Snapshot
     }
     Check-ScheduledTasks
-    <#Check-Users
-    Check-Services
+    Check-Users
+    <#Check-Services
     Check-Processes
     Check-Connections
     Check-WMIConsumers
@@ -13563,7 +13576,7 @@ function Main {
     Check-Debugger-Hijacks
     Check-PowerShell-Profiles
     Check-Office-Startup
-    #Check-Registry-Checks
+    ###Check-Registry-Checks
     Check-COM-Hijacks
     Service-Reg-Checks
     Check-LNK
