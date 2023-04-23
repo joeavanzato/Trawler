@@ -210,6 +210,7 @@ function Check-ScheduledTasks {
             Write-Snapshot $message
         }
         # If we are loading a snapshot allowlist
+        # TODO - Compare Task Arguments for Changes
         if ($loadsnapshot){
             # If the allowlist contains the curren task name
             if ($allowtable_scheduledtask.ContainsKey($task.TaskName)){
@@ -509,6 +510,29 @@ function Check-Services {
                 Source = 'Services'
             }
             Write-Snapshot $message
+        }
+
+        if ($loadsnapshot){
+            # If the allowlist contains the curren task name
+            if ($allowtable_services.ContainsKey($service.Name)){
+                # Skip if the taskname matches the executable path
+                if ($allowtable_services[$service.Name] -eq $service.PathName){
+                    continue
+                # Skip if both the hashtable entry and the executable path are null
+                } elseif ($allowtable_services[$service.Name] -eq "" -and $service.PathName -eq $null) {
+                    continue
+                } else {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Allowlisted Service Mismatch'
+                        Risk = 'Medium'
+                        Source = 'Services'
+                        Technique = "T1543.003: Create or Modify System Process: Windows Service"
+                        Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+                    }
+                    Write-Detection $detection
+                    continue
+                }
+            }
         }
 
         # Detection - Non-Standard Tasks
@@ -13566,8 +13590,8 @@ function Main {
     }
     Check-ScheduledTasks
     Check-Users
-    <#Check-Services
-    Check-Processes
+    Check-Services
+    <#Check-Processes
     Check-Connections
     Check-WMIConsumers
     Check-Startups
