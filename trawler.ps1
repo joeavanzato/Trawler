@@ -98,16 +98,14 @@ function ValidatePaths {
 }
 
 
-# TODO - JSON Output for more detail
+# TODO - JSON Detection Outputto easily encapsulate more details
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
-# TODO - Scanning Microsoft Office Trusted Locations for non-standard templates/add-ins
-# TODO - Scanning File Extension Associations for potential threats
 # TODO - Browser Extension Analysis
-# TODO - Installed Certificate Scanning
 # TODO - Temporary RID Hijacking
 # TODO - ntshrui.dll - https://www.mandiant.com/resources/blog/malware-persistence-windows-registry
 # TODO - Add file metadata for detected files (COM Hijacks, etc)
 # TODO - Add more suspicious paths for running processes
+# TODO - Refactor allow-listing to an abstract function
 
 # TODO - Refactor this using proper regex
 $suspicious_process_paths = @(
@@ -913,6 +911,7 @@ function Check-BITS {
 }
 
 function Check-Modified-Windows-Accessibility-Feature {
+    # TODO - Consider allow-listing here
     Write-Message "Checking Accessibility Binaries"
     $files_to_check = @(
 		"C:\Program Files\Common Files\microsoft shared\ink\HID.dll"
@@ -945,6 +944,7 @@ function Check-PowerShell-Profiles {
     # PowerShell profiles may be abused by adversaries for persistence.
 
     # TODO - Add check for 'suspicious' content
+    # TODO - Consider allow-listing here
 
     # $PSHOME\Profile.ps1
     # $PSHOME\Microsoft.PowerShell_profile.ps1
@@ -1012,7 +1012,8 @@ function Check-PowerShell-Profiles {
 }
 
 function Check-Office-Startup {
-    Write-Message "Checking Office Add-Ins"
+    Write-Message "Checking Outlook Macros"
+    # allowlist_officeaddins
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
     ForEach ($user in $profile_names){
         $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
@@ -1021,10 +1022,16 @@ function Check-Office-Startup {
             if ($snapshot){
                 $message = [PSCustomObject]@{
                     Key = $item.FullName
-                    Value = ''
+                    Value = $item.FullName
                     Source = 'Office'
                 }
                 Write-Snapshot $message
+            }
+            if ($loadsnapshot){
+                # If the allowlist contains the curren task name
+                if ($allowlist_outlookstartup.Contains($item.FullName)){
+                    continue
+                }
             }
             $detection = [PSCustomObject]@{
                 Name = 'Potential Persistence via Office Startup Addin'
@@ -1040,10 +1047,16 @@ function Check-Office-Startup {
             if ($snapshot){
                 $message = [PSCustomObject]@{
                     Key = $path
-                    Value = ''
-                    Source = 'Office'
+                    Value = $item.FullName
+                    Source = 'Outlook'
                 }
                 Write-Snapshot $message
+            }
+            if ($loadsnapshot){
+                # If the allowlist contains the curren task name
+                if ($allowlist_outlookstartup.Contains($item.FullName)){
+                    continue
+                }
             }
             $detection = [PSCustomObject]@{
                 Name = 'Potential Persistence via Outlook Application Startup'
@@ -10813,6 +10826,34 @@ function Service-Reg-Checks {
 
 function Check-Debugger-Hijacks {
     Write-Message "Checking Debuggers"
+
+    function Check-Debugger-Hijack-Allowlist ($key,$val){
+        if ($loadsnapshot){
+            if ($allowtable_debuggers.ContainsKey($path)){
+                if ($allowtable_debuggers[$path] -eq $_.Value){
+                    return $true
+                } elseif ($allowtable_debuggers[$path] -eq "" -and $_.Value -eq "") {
+                    return $true
+                } else {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Allowlisted Debugger Mismatch'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
+                    return $true
+                }
+            }
+            if ($allowlist_debuggers.Contains($val)){
+                return $true
+            }
+        }
+        return $false
+    }
+    # TODO - Rearrange this code to use an array of paths and key names
+    # allowtable_debuggers
     # Debugger Hijacks
     # AeDebug 32
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug"
@@ -10827,6 +10868,9 @@ function Check-Debugger-Hijacks {
                         Source = 'Debuggers'
                     }
                     Write-Snapshot $message
+                }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
                 }
             }
             if ($_.Name -eq 'Debugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
@@ -10853,6 +10897,9 @@ function Check-Debugger-Hijacks {
                         Source = 'Debuggers'
                     }
                     Write-Snapshot $message
+                }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
                 }
             }
             if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
@@ -10882,6 +10929,9 @@ function Check-Debugger-Hijacks {
                     }
                     Write-Snapshot $message
                 }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
+                }
             }
             if ($_.Name -eq 'Debugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
                 $detection = [PSCustomObject]@{
@@ -10907,6 +10957,9 @@ function Check-Debugger-Hijacks {
                         Source = 'Debuggers'
                     }
                     Write-Snapshot $message
+                }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
                 }
             }
             if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
@@ -10936,6 +10989,9 @@ function Check-Debugger-Hijacks {
                     }
                     Write-Snapshot $message
                 }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
+                }
             }
             if ($_.Name -eq 'DbgManagedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" PID %d APPDOM %d EXTEXT `"%s`" EVTHDL %d"){
                 $detection = [PSCustomObject]@{
@@ -10962,6 +11018,9 @@ function Check-Debugger-Hijacks {
                         Source = 'Debuggers'
                     }
                     Write-Snapshot $message
+                }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
                 }
             }
             if ($_.Name -eq 'DbgManagedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" PID %d APPDOM %d EXTEXT `"%s`" EVTHDL %d"){
@@ -10990,6 +11049,9 @@ function Check-Debugger-Hijacks {
                     }
                     Write-Snapshot $message
                 }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
+                }
             }
             if ($_.Name -eq '@' -and ($_.Value -ne "`"$env:homedrive\Program Files(x86)\Microsoft Script Debugger\msscrdbg.exe`"" -or $_.Value -ne "`"$env:homedrive\Program Files\Microsoft Script Debugger\msscrdbg.exe`"")){
                 $detection = [PSCustomObject]@{
@@ -11017,6 +11079,9 @@ function Check-Debugger-Hijacks {
                     }
                     Write-Snapshot $message
                 }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
+                }
             }
             if (($_.Name -in '(default)' -and $_.Value -ne "$env:homedrive\Program Files\Common Files\Microsoft Shared\VS7Debug\pdm.dll") -or ($_.Name -eq '@' -and $_.Value -ne "`"$env:homedrive\WINDOWS\system32\pdm.dll`"")){
                 $detection = [PSCustomObject]@{
@@ -11043,6 +11108,9 @@ function Check-Debugger-Hijacks {
                         Source = 'Debuggers'
                     }
                     Write-Snapshot $message
+                }
+                if (Check-Debugger-Hijack-Allowlist $path $_.Value){
+                    continue
                 }
             }
             if ($_.Name -in 'Debugger','ReflectDebugger'){
@@ -13687,6 +13755,8 @@ function Read-Snapshot(){
     $script:allowlist_startup_commands = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowtable_bits = @{}
     $script:allowtable_debuggers = @{}
+    $script:allowlist_debuggers = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_outlookstartup = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowtable_com = @{}
     $script:allowtable_services_reg = @{}
     $script:allowlist_modules = New-Object -TypeName "System.Collections.ArrayList"
@@ -13733,6 +13803,10 @@ function Read-Snapshot(){
         } elseif ($item.Source -eq "Debuggers"){
             # Using Name and Debugger File Path
             $allowtable_debuggers[$item.Key] = $item.Value
+            $allowlist_debuggers.Add($item.Value)
+        } elseif ($item.Source -eq "Outlook"){
+            # Using DLL Name as value
+            $allowlist_outlookstartup.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "COM"){
             # Using reg path and associated file
             $allowtable_com[$item.Key] = $item.Value
@@ -13815,13 +13889,13 @@ function Main {
     #Check-Connections
     #Check-WMIConsumers
     #Check-Startups
-    Check-BITS
-    <#Check-Modified-Windows-Accessibility-Feature
-    Check-Debugger-Hijacks
-    Check-PowerShell-Profiles
+    #Check-BITS
+    #Check-Modified-Windows-Accessibility-Feature
+    #Check-Debugger-Hijacks
+    #Check-PowerShell-Profiles
     Check-Office-Startup
     ###Check-Registry-Checks
-    Check-COM-Hijacks
+    <#Check-COM-Hijacks
     Service-Reg-Checks
     Check-LNK
     Check-Process-Modules
