@@ -10779,6 +10779,19 @@ function Service-Reg-Checks {
                         }
                         Write-Snapshot $message
                     }
+                    if ($loadsnapshot){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Allowlist Mismatch: Possible Service Hijack - Unexpected ImagePath Location'
+                            Risk = 'Medium'
+                            Source = 'Services'
+                            Technique = "T1543.003: Create or Modify System Process: Windows Service"
+                            Meta = "Key: " + $service.Name + ", Value: " + $_.Value+" Regex Expected Location: "+$image_path_lookup[$service.Name]
+                        }
+                        $result = Check-IfAllowed $allowtable_services_reg $service.Name $_.Value $_.Value $detection
+                        if ($result){
+                            continue
+                        }
+                    }
                     if ($image_path_lookup.ContainsKey($service.Name)){
                         if ($_.Value -notmatch $image_path_lookup[$service.Name]){
                                 $detection = [PSCustomObject]@{
@@ -10807,6 +10820,19 @@ function Service-Reg-Checks {
                                 Source = 'Services_REG'
                             }
                             Write-Snapshot $message
+                        }
+                        if ($loadsnapshot){
+                            $detection = [PSCustomObject]@{
+                                Name = 'Allowlist Mismatch: Possible Service Hijack - Unexpected ServiceDll Location'
+                                Risk = 'Medium'
+                                Source = 'Services'
+                                Technique = "T1543.003: Create or Modify System Process: Windows Service"
+                                Meta = "Key: " + $child_key.Name + ", Value: " + $_.Value+" Regex Expected Location: "+$service_dll_lookup[$child_key.Name]
+                            }
+                            $result = Check-IfAllowed $allowtable_services_reg $child_key.Name $_.Value $_.Value $detection
+                            if ($result){
+                                continue
+                            }
                         }
                         if ($service_dll_lookup.ContainsKey($child_key.Name)){
                             if ($_.Value -notmatch $service_dll_lookup[$child_key.Name]){
@@ -13918,11 +13944,11 @@ function Main {
     Check-Modified-Windows-Accessibility-Feature
     Check-Debugger-Hijacks
     Check-PowerShell-Profiles
-    Check-Outlook-Startup  #>
+    Check-Outlook-Startup
     ###Check-Registry-Checks
-    Check-COM-Hijacks
-    <#Service-Reg-Checks
-    Check-LNK
+    Check-COM-Hijacks #>
+    Service-Reg-Checks
+    <#Check-LNK
     Check-Process-Modules
     Check-Windows-Unsigned-Files
     Check-Service-Hijacks
