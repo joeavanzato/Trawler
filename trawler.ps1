@@ -10861,24 +10861,15 @@ function Check-Debugger-Hijacks {
 
     function Check-Debugger-Hijack-Allowlist ($key,$val){
         if ($loadsnapshot){
-            if ($allowtable_debuggers.ContainsKey($path)){
-                if ($allowtable_debuggers[$path] -eq $_.Value){
-                    return $true
-                } elseif ($allowtable_debuggers[$path] -eq "" -and $_.Value -eq "") {
-                    return $true
-                } else {
-                    $detection = [PSCustomObject]@{
-                        Name = 'Allowlisted Debugger Mismatch'
-                        Risk = 'Medium'
-                        Source = 'Registry'
-                        Technique = "T1546: Event Triggered Execution"
-                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                    }
-                    Write-Detection $detection
-                    return $true
-                }
+            $detection = [PSCustomObject]@{
+                Name = 'Allowlisted Debugger Mismatch'
+                Risk = 'Medium'
+                Source = 'Registry'
+                Technique = "T1546: Event Triggered Execution"
+                Meta = "Key Location: $key, Entry Value: "+$val
             }
-            if ($allowlist_debuggers.Contains($val)){
+            $result = Check-IfAllowed $allowtable_debuggers $key $val $detection
+            if ($result){
                 return $true
             }
         }
@@ -10889,6 +10880,7 @@ function Check-Debugger-Hijacks {
     # Debugger Hijacks
     # AeDebug 32
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug"
+    $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -10902,10 +10894,10 @@ function Check-Debugger-Hijacks {
                     Write-Snapshot $message
                 }
                 if (Check-Debugger-Hijack-Allowlist $path $_.Value){
-                    continue
+                    $pass = $true
                 }
             }
-            if ($_.Name -eq 'Debugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+            if ($_.Name -eq 'Debugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p" -and $pass -eq $false){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential AeDebug Hijacking'
                     Risk = 'High'
@@ -10918,6 +10910,7 @@ function Check-Debugger-Hijacks {
         }
     }
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
+    $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -10931,10 +10924,10 @@ function Check-Debugger-Hijacks {
                     Write-Snapshot $message
                 }
                 if (Check-Debugger-Hijack-Allowlist $path $_.Value){
-                    continue
+                    $pass = $true
                 }
             }
-            if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+            if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p" -and $pass -eq $false){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential AeDebug Hijacking'
                     Risk = 'High'
@@ -10949,6 +10942,7 @@ function Check-Debugger-Hijacks {
 
     # AeDebug 64
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug"
+    $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -10962,10 +10956,10 @@ function Check-Debugger-Hijacks {
                     Write-Snapshot $message
                 }
                 if (Check-Debugger-Hijack-Allowlist $path $_.Value){
-                    continue
+                    $pass = $true
                 }
             }
-            if ($_.Name -eq 'Debugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+            if ($_.Name -eq 'Debugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p" -and $pass -eq $false){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential AeDebug Hijacking'
                     Risk = 'High'
@@ -10978,6 +10972,7 @@ function Check-Debugger-Hijacks {
         }
     }
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
+    $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -10991,10 +10986,10 @@ function Check-Debugger-Hijacks {
                     Write-Snapshot $message
                 }
                 if (Check-Debugger-Hijack-Allowlist $path $_.Value){
-                    continue
+                    $pass = $true
                 }
             }
-            if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p"){
+            if ($_.Name -eq 'ProtectedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" -p %ld -e %ld -j 0x%p" -and $pass -eq $false){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential AeDebug Hijacking'
                     Risk = 'High'
@@ -11009,6 +11004,7 @@ function Check-Debugger-Hijacks {
 
     # .NET 32
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework"
+    $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -11022,10 +11018,10 @@ function Check-Debugger-Hijacks {
                     Write-Snapshot $message
                 }
                 if (Check-Debugger-Hijack-Allowlist $path $_.Value){
-                    continue
+                    $pass = $true
                 }
             }
-            if ($_.Name -eq 'DbgManagedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" PID %d APPDOM %d EXTEXT `"%s`" EVTHDL %d"){
+            if ($_.Name -eq 'DbgManagedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" PID %d APPDOM %d EXTEXT `"%s`" EVTHDL %d" -and $pass -eq $false){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential .NET Debugger Hijacking'
                     Risk = 'High'
@@ -11039,6 +11035,7 @@ function Check-Debugger-Hijacks {
     }
     # .NET 64
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework"
+    $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -11052,10 +11049,10 @@ function Check-Debugger-Hijacks {
                     Write-Snapshot $message
                 }
                 if (Check-Debugger-Hijack-Allowlist $path $_.Value){
-                    continue
+                    $pass = $true
                 }
             }
-            if ($_.Name -eq 'DbgManagedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" PID %d APPDOM %d EXTEXT `"%s`" EVTHDL %d"){
+            if ($_.Name -eq 'DbgManagedDebugger' -and $_.Value -ne "`"$env:homedrive\Windows\system32\vsjitdebugger.exe`" PID %d APPDOM %d EXTEXT `"%s`" EVTHDL %d" -and $pass -eq $false){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential .NET Debugger Hijacking'
                     Risk = 'High'
@@ -11069,6 +11066,7 @@ function Check-Debugger-Hijacks {
     }
     # Microsoft Script Debugger
     $path = "HKEY_CLASSES_ROOT\CLSID\{834128A2-51F4-11D0-8F20-00805F2CD064}\LocalServer32"
+    $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -11082,10 +11080,10 @@ function Check-Debugger-Hijacks {
                     Write-Snapshot $message
                 }
                 if (Check-Debugger-Hijack-Allowlist $path $_.Value){
-                    continue
+                    $pass = $true
                 }
             }
-            if ($_.Name -eq '@' -and ($_.Value -ne "`"$env:homedrive\Program Files(x86)\Microsoft Script Debugger\msscrdbg.exe`"" -or $_.Value -ne "`"$env:homedrive\Program Files\Microsoft Script Debugger\msscrdbg.exe`"")){
+            if ($_.Name -eq '@' -and $pass -eq $false -and ($_.Value -ne "`"$env:homedrive\Program Files(x86)\Microsoft Script Debugger\msscrdbg.exe`"" -or $_.Value -ne "`"$env:homedrive\Program Files\Microsoft Script Debugger\msscrdbg.exe`"")){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential Microsoft Script Debugger Hijacking'
                     Risk = 'High'
@@ -11099,6 +11097,7 @@ function Check-Debugger-Hijacks {
     }
     # Process Debugger
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{78A51822-51F4-11D0-8F20-00805F2CD064}\InprocServer32"
+    $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -11112,10 +11111,10 @@ function Check-Debugger-Hijacks {
                     Write-Snapshot $message
                 }
                 if (Check-Debugger-Hijack-Allowlist $path $_.Value){
-                    continue
+                    $pass = $true
                 }
             }
-            if (($_.Name -in '(default)' -and $_.Value -ne "$env:homedrive\Program Files\Common Files\Microsoft Shared\VS7Debug\pdm.dll") -or ($_.Name -eq '@' -and $_.Value -ne "`"$env:homedrive\WINDOWS\system32\pdm.dll`"")){
+            if (($_.Name -in '(default)' -and $pass -eq $false -and $_.Value -ne "$env:homedrive\Program Files\Common Files\Microsoft Shared\VS7Debug\pdm.dll") -or ($_.Name -eq '@' -and $_.Value -ne "`"$env:homedrive\WINDOWS\system32\pdm.dll`"")){
                 $detection = [PSCustomObject]@{
                     Name = 'Potential Process Debugger Hijacking'
                     Risk = 'High'
@@ -13941,12 +13940,12 @@ function Main {
     Check-WMIConsumers
     Check-Startups
     Check-BITS
-    Check-Modified-Windows-Accessibility-Feature
+    Check-Modified-Windows-Accessibility-Feature #>
     Check-Debugger-Hijacks
     Check-PowerShell-Profiles
     Check-Outlook-Startup
     ###Check-Registry-Checks
-    Check-COM-Hijacks #>
+    #Check-COM-Hijacks
     Service-Reg-Checks
     <#Check-LNK
     Check-Process-Modules
