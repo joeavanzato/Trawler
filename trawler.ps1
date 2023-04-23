@@ -36,7 +36,11 @@ param
 	[Parameter(
         Mandatory = $false,
         HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
-	    [string]$snapshotpath = "$PSScriptRoot\snapshot.csv"
+	    [string]$snapshotpath = "$PSScriptRoot\snapshot.csv",
+	[Parameter(
+        Mandatory = $false,
+        HelpMessage = 'The fully-qualified file-path where the snapshot CSV to be loaded is located')]
+	    [string]$loadsnapshot
 )
 if ($snapshot.IsPresent){
     $snapshot = $true
@@ -95,7 +99,6 @@ function global:ValidatePaths {
 # TODO - Temporary RID Hijacking
 # TODO - ntshrui.dll - https://www.mandiant.com/resources/blog/malware-persistence-windows-registry
 # TODO - Add file metadata for detected files (COM Hijacks, etc)
-
 # TODO - Add more suspicious paths for running processes
 $suspicious_process_paths = @(
 	".*\\users\\administrator\\.*",
@@ -197,6 +200,7 @@ function Check-ScheduledTasks {
     )
 
     ForEach ($task in $tasks){
+        # Allowlist Logic
         if ($snapshot){
             $message = [PSCustomObject]@{
                 Key = $task.TaskName
@@ -204,6 +208,29 @@ function Check-ScheduledTasks {
                 Source = 'Scheduled Tasks'
             }
             Write-Snapshot $message
+        }
+        # If we are loading a snapshot allowlist
+        if ($loadsnapshot){
+            # If the allowlist contains the curren task name
+            if ($allowtable_scheduledtask.ContainsKey($task.TaskName)){
+                # Skip if the taskname matches the executable path
+                if ($allowtable_scheduledtask[$task.TaskName] -eq $task.Execute){
+                    continue
+                # Skip if both the hashtable entry and the executable path are null
+                } elseif ($allowtable_scheduledtask[$task.TaskName] -eq "" -and $task.Execute -eq $null) {
+                    continue
+                } else {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Allowlisted Schedule Task Mismatch'
+                        Risk = 'Medium'
+                        Source = 'Scheduled Tasks'
+                        Technique = "T1053: Scheduled Task/Job"
+                        Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                    }
+                    Write-Detection $detection
+                    continue
+                }
+            }
         }
 
 
@@ -13488,6 +13515,22 @@ function Write-Snapshot($message){
     }
 }
 
+function Read-Snapshot(){
+    Write-Host "[*] Reading Snapshot File: $loadsnapshot"
+    if (-not(Test-Path $loadsnapshot)){
+        Write-Host "[!] Specified snapshot file does not exist!" -ForegroundColor "Yellow"
+        exit
+    }
+    $csv_data = Import-CSV $loadsnapshot
+    $global:allowtable_scheduledtask = @{}
+    ForEach ($item in $csv_data){
+        if ($item.Source -eq "Scheduled Tasks"){
+            $allowtable_scheduledtask[$item.Key] = $item.Value
+        }
+    }
+
+}
+
 function Logo {
     $logo = "
   __________  ___ _       ____    __________ 
@@ -13505,8 +13548,11 @@ function Logo {
 function Main {
     Logo
     ValidatePaths
+    if ($loadsnapshot -ne $null -and $snapshot -eq $false){
+        Read-Snapshot
+    }
     Check-ScheduledTasks
-    Check-Users
+    <#Check-Users
     Check-Services
     Check-Processes
     Check-Connections
@@ -13576,7 +13622,7 @@ function Main {
     Check-AMSIProviders
     Check-AppPaths
     Check-GPOExtensions
-    Check-HTMLHelpDLL
+    Check-HTMLHelpDLL#>
 }
 
 Main
