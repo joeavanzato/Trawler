@@ -33,6 +33,15 @@ If you have examples or ideas for additional detections, please feel free to sub
 
 Additionally, if you identify obvious false positives, please let me know by opening an issue or PR on GitHub!  The obvious culprits for this will be non-standard COMs, Services or Tasks.
 
+### CLI Parameters
+```
+-hide : Suppress Detection output to console
+-snapshot : Capture a "persistence snapshot" of the current system, defaulting to "$PSScriptRoot\snapshot.csv"
+-snapshotpath : Define a custom file-path for saving snapshot output to.
+-outpath : Define a custom file-path for saving detection output to (defaults to "$PSScriptRoot\detections.csv")
+-loadsnapshot : Define the path for an existing snapshot file to load as an allow-list reference
+```
+
 ## What separates this from something like PersistenceSniper?
 PersistenceSniper is an awesome tool - I've used it heavily in the past - but there are a few key points that differentiate these utilities
 * trawler is (currently) a local utility - it would be pretty straight-forward to wrap it in a loop and use WinRM/PowerShell Sessions to execute it on remote hosts though
