@@ -61,6 +61,7 @@ Trawler supports loading an allow-list from a 'snapshot' - to do this requires t
 
 That's it - all relevant detections will then draw from the snapshot file as an allow-list to reduce noise and identify any potential changes to the base image that may have occurred.
 
+(Allow-listing is implemented for most of the checks but not all - still being actively implemented)
 ## Example Images
 <p align="center">
 <img src="sample.PNG">
