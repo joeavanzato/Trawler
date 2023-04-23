@@ -40,6 +40,7 @@ PersistenceSniper is an awesome tool - I've used it heavily in the past - but th
   * PersistenceSniper does not contain any type of allow-listing - therefore, there is more noise generated when considering items such as Services, Scheduled Tasks, general COM DLL scanning, etc.
 * trawler's output is much more simplified - Name, Risk, Source, MITRE Technique and Metadata are the only items provided for each detection to help analysts jump-start their persistence hunting efforts
 * Regex is used heavily to help detect 'suspicious' keywords in various critical areas
+* trawler supports 'snapshotting' a system (for example, an enterprise golden image) then using the generated snapshot as an allow-list to reduce noise.
 
 Overall, these tools are extremely similar but approach the problem from slightly different angles - PersistenceSniper provides all information back to the analyst for review while Trawler tries to limit what is returned to only results that are likely to be potential adversary persistence mechanisms.  As such, there is a possibility for false-negatives with trawler if an adversary completely mimics an allow-listed item.
 
