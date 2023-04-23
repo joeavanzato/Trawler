@@ -11410,6 +11410,12 @@ function Check-PATH-Hijacks {
                     }
                     Write-Snapshot $message
                 }
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_pathhijack $bin.FullName
+                    if ($result){
+                        continue
+                    }
+                }
                 $detection = [PSCustomObject]@{
                     Name = 'Possible PATH Binary Hijack - same name as SYS32 binary'
                     Risk = 'Very High'
@@ -11468,6 +11474,8 @@ function Check-Association-Hijack {
                     $key.PSObject.Properties | ForEach-Object {
                         if ($_.Name -eq '(default)'){
                             #Write-Host $open_path $_.Value
+                            $exe = $_.Value
+                            $detection_triggered = $false
                             if ($snapshot){
                                 $message = [PSCustomObject]@{
                                     Key = $basefile
@@ -11476,9 +11484,19 @@ function Check-Association-Hijack {
                                 }
                                 Write-Snapshot $message
                             }
-
-                            $exe = $_.Value
-                            $detection_triggered = $false
+                            if ($loadsnapshot){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Allowlist Mismatch: Possible File Association Hijack - Mismatch on Expected Value'
+                                    Risk = 'Medium'
+                                    Source = 'Registry'
+                                    Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
+                                    Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                }
+                                $result = Check-IfAllowed $allowtable_fileassocations $basefile $exe $detection
+                                if ($result){
+                                    continue
+                                }
+                            }
 
                             if ($value_regex_lookup.ContainsKey($basefile)){
                                 if ($exe -notmatch $value_regex_lookup[$basefile]){
@@ -13877,7 +13895,7 @@ function Read-Snapshot(){
         } elseif ($item.Source -eq "UnsignedWindows"){
             # Using file fullpath
             $allowlist_unsignedfiles.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "UnsignedWindows"){
+        } elseif ($item.Source -eq "PATHHijack"){
             # Using file fullpath
             $allowlist_pathhijack.Add($item.Key) | Out-Null
         } elseif ($item.Source -eq "AssociationHijack"){
@@ -13959,6 +13977,7 @@ function Main {
     if ($loadsnapshot -ne $null -and $snapshot -eq $false){
         Read-Snapshot
     }
+    # TODO - Uncomment for prod
     Check-ScheduledTasks
     Check-Users
     Check-Services
@@ -13975,12 +13994,12 @@ function Main {
     #Check-COM-Hijacks
     Service-Reg-Checks
     Check-LNK
-    Check-Process-Modules
-    Check-Windows-Unsigned-Files
-    <#Check-Service-Hijacks
+    #Check-Process-Modules
+    #Check-Windows-Unsigned-Files
+    Check-Service-Hijacks
     Check-PATH-Hijacks
     Check-Association-Hijack
-    Check-Suspicious-Certificates
+    <#Check-Suspicious-Certificates
     Check-Office-Trusted-Locations
     Check-GPO-Scripts
     Check-TerminalProfiles
