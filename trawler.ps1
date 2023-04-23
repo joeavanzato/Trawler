@@ -12089,7 +12089,7 @@ function Check-UninstallStrings {
                         $message = [PSCustomObject]@{
                             Key = $item.Name
                             Value = $data.QuietUninstallString
-                            Source = 'QuietUninstallString'
+                            Source = 'UninstallString'
                         }
                         Write-Snapshot $message
                     }
@@ -13427,7 +13427,7 @@ function Check-AppPaths {
                         if ($key_basename -ne $value_basename){
                             if ($snapshot){
                                 $message = [PSCustomObject]@{
-                                    Key = $_.Name
+                                    Key = $item.Name
                                     Value = $_.Value
                                     Source = 'AppPaths'
                                 }
@@ -13585,25 +13585,99 @@ function Read-Snapshot(){
     $script:allowlist_startup_commands = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowtable_debuggers = @{}
     $script:allowtable_com = @{}
+    $script:allowtable_services_reg = @{}
+    $script:allowlist_modules = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_unsignedfiles = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_pathhijack = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_fileassocations = @{}
+    $script:allowtable_certificates = @{}
+    $script:allowlist_officeaddins = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_gposcripts = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_knowndebuggers = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_uninstallstrings = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_werhandlers = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_printmonitors = @{}
+    $script:allowtable_printprocessors = @{}
+    $script:allowlist_nlpdlls = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_apppaths = @{}
+    $script:allowlist_gpoextensions = New-Object -TypeName "System.Collections.ArrayList"
     ForEach ($item in $csv_data){
         if ($item.Source -eq "Scheduled Tasks"){
+            # Using scheduled task name and exe path
+            # TODO - Incorporate Task Arguments
             $allowtable_scheduledtask[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Users"){
+            # Using username
             $allowlist_users.Add($item.Key) | Out-Null
         } elseif ($item.Source -eq "Services"){
+            # Using Service Name and Full Path
             $allowtable_services[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Processes"){
+            # Using Process Executable Path
             $allowlist_process_exes.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "Connections"){
+            # Using Remote Address
             $allowlist_remote_addresses.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "WMI Consumers"){
+            # Using Name and CommandLineTemplate/ScriptFilePath
             $allowtable_wmi_consumers[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Startup"){
+            # Using execution 'command'
             $allowlist_startup_commands.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "Debuggers"){
+            # Using Name and Debugger File Path
             $allowtable_debuggers[$item.Key] = $item.Value
         } elseif ($item.Source -eq "COM"){
+            # Using reg path and associated file
             $allowtable_com[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "Services_REG"){
+            # Using reg path and value
+            $allowtable_services_reg[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "Modules"){
+            # Using DLL Name as value
+            $allowlist_modules.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "UnsignedWindows"){
+            # Using file fullpath
+            $allowlist_unsignedfiles.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "UnsignedWindows"){
+            # Using file fullpath
+            $allowlist_pathhijack.Add($item.Key) | Out-Null
+        } elseif ($item.Source -eq "AssociationHijack"){
+            # Using file shortname and associated command
+            $allowtable_fileassocations[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "Certificates"){
+            # Using Issuer and Subject
+            $allowtable_certificates[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "OfficeAddins"){
+            # Using full path
+            $allowlist_officeaddins.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "GPOScripts"){
+            # Using full path
+            $allowlist_gposcripts.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "KnownManagedDebuggers"){
+            # Using full path
+            $allowlist_knowndebuggers.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "UninstallString"){
+            # Using command
+            $allowlist_uninstallstrings.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "WERHandlers"){
+            # Using filepath
+            $allowlist_werhandlers.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "PrintMonitors"){
+            # Using key name and DLL path
+            $allowtable_printmonitors[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "PrintProcessors"){
+            # Using key name and DLL path
+            $allowtable_printprocessors[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "NLPDlls"){
+            # Using DLL path
+            $allowlist_nlpdlls.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "NLPDlls"){
+            # Using Reg Key and associated value
+            $allowtable_apppaths[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "GPOExtensions"){
+            # Using Reg Key and associated value
+            $allowlist_gpoextensions.Add($item.Value) | Out-Null
         }
     }
 
