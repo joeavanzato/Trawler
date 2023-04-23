@@ -62,28 +62,28 @@ function Get-ValidOutPath {
 	return $path
 }
 
-function global:ValidatePaths {
+function ValidatePaths {
     Try {
-        $global:outpath = Get-ValidOutPath -path $outpath
+        $script:outpath = Get-ValidOutPath -path $outpath
         Write-Host "Detection Output Path: $outpath"
         [io.file]::OpenWrite($outpath).close()
-        $global:output_writable = $true
+        $script:output_writable = $true
     }
     Catch {
         Write-Warning "Unable to write to provided output path: $outpath"
-        $global:output_writable = $false
+        $script:output_writable = $false
     }
     if ($snapshot){
         Try {
-            $global:snapshotpath = Get-ValidOutPath -path $snapshotpath
+            $script:snapshotpath = Get-ValidOutPath -path $snapshotpath
             Write-Host "Snapshot Output Path: $snapshotpath"
             [io.file]::OpenWrite($snapshotpath).close()
             Clear-Content $snapshotpath
-            $global:snapshotpath_writable = $true
+            $script:snapshotpath_writable = $true
         }
         Catch {
             Write-Warning "Unable to write to provided snapshot path: $snapshotpath"
-            $global:snapshotpath_writable = $false
+            $script:snapshotpath_writable = $false
         }
     }
 
@@ -119,6 +119,7 @@ $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25
 $office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", ".xlam", ".com"
 
 function Check-ScheduledTasks {
+    Write-Message "Checking Scheduled Tasks"
     $tasks = Get-ScheduledTask  | Select-Object -Property State,Actions,Author,Date,Description,Principal,SecurityDescriptor,Settings,TaskName,TaskPath,Triggers,URI, @{Name="RunAs";Expression={ $_.principal.userid }} -ExpandProperty Actions | Select-Object *
 
     $default_task_exe_paths = @(
@@ -328,6 +329,7 @@ function Check-ScheduledTasks {
 }
 
 function Check-Users {
+    Write-Message "Checking Local Administrators"
     # TODO - Catch error with outdated powershell versions that do not support Get-LocalGroupMember and use alternative gather mechanism
     # Find all local administrators and their last logon time as well as if they are enabled.
     $local_admins = Get-LocalGroupMember -Group "Administrators" | Select-Object *
@@ -362,6 +364,7 @@ function Check-Users {
 }
 
 function Check-Services {
+    Write-Message "Checking Windows Services"
     $default_service_exe_paths = @(
 		'"C:\Program Files (x86)\Google\Update\GoogleUpdate.exe" /medsvc',
 		'"C:\Program Files (x86)\Google\Update\GoogleUpdate.exe" /svc',
@@ -594,6 +597,7 @@ function Check-Services {
 
 function Check-Processes {
     # TODO - Check for processes spawned from netsh.dll
+    Write-Message "Checking Running Processes"
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
         if ($snapshot){
@@ -603,6 +607,12 @@ function Check-Processes {
                 Source = 'Processes'
             }
             Write-Snapshot $message
+        }
+        if ($loadsnapshot){
+            # If the allowlist contains the curren task name
+            if ($allowlist_process_exes.Contains($process.ExecutablePath)){
+                continue
+            }
         }
         if ($process.CommandLine -match $ipv4_pattern -or $process.CommandLine -match $ipv6_pattern) {
             $detection = [PSCustomObject]@{
@@ -614,6 +624,7 @@ function Check-Processes {
             }
             Write-Detection $detection
         }
+        # TODO - Determine if this should be changed to implement allow-listing through a set boolean or stay as-is
         ForEach ($path in $suspicious_process_paths) {
             if ($process.ExecutablePath -match $path){
                 $detection = [PSCustomObject]@{
@@ -631,6 +642,7 @@ function Check-Processes {
 }
 
 function Check-Connections {
+    Write-Message "Checking Network Connections"
     $tcp_connections = Get-NetTCPConnection | Select-Object State,LocalAddress,LocalPort,OwningProcess,RemoteAddress,RemotePort
     $suspicious_ports = @(20,21,22,23,25,137,139,445,3389,443)
     $allow_listed_process_names = @(
@@ -649,6 +661,7 @@ function Check-Connections {
 		"steam"		
     )
     ForEach ($conn in $tcp_connections) {
+        #allowlist_remote_addresses
 
         $proc = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue | Select-Object Name,Path
 
@@ -659,6 +672,12 @@ function Check-Connections {
                 Source = 'Connections'
             }
             Write-Snapshot $message
+        }
+        if ($loadsnapshot){
+            # If the allowlist contains the curren task name
+            if ($allowlist_remote_addresses.Contains($conn.RemoteAddress)){
+                continue
+            }
         }
 
         if ($conn.State -eq 'Listen' -and $conn.LocalPort -gt 1024){
@@ -13535,6 +13554,10 @@ function Write-Detection($det)  {
     }
 }
 
+function Write-Message ($message){
+    Write-Host "[+] $message"
+}
+
 function Write-Snapshot($message){
     # Snapshot acts as a custom allow-list for a specific gold-image or enterprise environment
     # Run trawler once like '.\trawler.ps1 -snapshot' to generate 'snapshot.csv
@@ -13553,9 +13576,15 @@ function Read-Snapshot(){
         exit
     }
     $csv_data = Import-CSV $loadsnapshot
-    $global:allowtable_scheduledtask = @{}
-    $global:allowlist_users = New-Object -TypeName "System.Collections.ArrayList"
-    $global:allowtable_services = @{}
+    $script:allowtable_scheduledtask = @{}
+    $script:allowlist_users = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_services = @{}
+    $script:allowlist_process_exes = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_remote_addresses = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_wmi_consumers = @{}
+    $script:allowlist_startup_commands = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_debuggers = @{}
+    $script:allowtable_com = @{}
     ForEach ($item in $csv_data){
         if ($item.Source -eq "Scheduled Tasks"){
             $allowtable_scheduledtask[$item.Key] = $item.Value
@@ -13563,6 +13592,18 @@ function Read-Snapshot(){
             $allowlist_users.Add($item.Key) | Out-Null
         } elseif ($item.Source -eq "Services"){
             $allowtable_services[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "Processes"){
+            $allowlist_process_exes.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "Connections"){
+            $allowlist_remote_addresses.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "WMI Consumers"){
+            $allowtable_wmi_consumers[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "Startup"){
+            $allowlist_startup_commands.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "Debuggers"){
+            $allowtable_debuggers[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "COM"){
+            $allowtable_com[$item.Key] = $item.Value
         }
     }
 
@@ -13591,9 +13632,9 @@ function Main {
     Check-ScheduledTasks
     Check-Users
     Check-Services
-    <#Check-Processes
+    Check-Processes
     Check-Connections
-    Check-WMIConsumers
+    <#Check-WMIConsumers
     Check-Startups
     Check-BITS
     Check-Modified-Windows-Accessibility-Feature
