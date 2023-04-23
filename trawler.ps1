@@ -11595,15 +11595,6 @@ function Check-Suspicious-Certificates {
             continue
         }
 
-        if ($snapshot){
-            $message = [PSCustomObject]@{
-                Key = $cert.Issuer
-                Value = $cert.Subject
-                Source = 'Certificates'
-            }
-            Write-Snapshot $message
-        }
-
         $cn_pattern = ".*CN=(.*?),.*"
         $cn_pattern_2 = "CN=(.*)"
         $ou_pattern = ".*O=(.*?),.*"
@@ -11637,6 +11628,28 @@ function Check-Suspicious-Certificates {
                 break
             } else {
                 $valid_signer = $false
+            }
+        }
+
+        if ($snapshot){
+            $message = [PSCustomObject]@{
+                Key = $cert.Issuer
+                Value = $cert.Subject
+                Source = 'Certificates'
+            }
+            Write-Snapshot $message
+        }
+        if ($loadsnapshot){
+            $detection = [PSCustomObject]@{
+                Name = 'Allowlist Mismatch for Certificate'
+                Risk = 'Medium'
+                Source = 'Certificates'
+                Technique = "T1553: Subvert Trust Controls: Install Root Certificate"
+                Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+            }
+            $result = Check-IfAllowed $allowtable_certificates $cert.Issuer $cert.Subject $detection
+            if ($result){
+                continue
             }
         }
 
@@ -11754,6 +11767,12 @@ function Check-Office-Trusted-Locations {
                     }
                     Write-Snapshot $message
                 }
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_officeaddins $item.FullName $item.FullName
+                    if ($result){
+                        continue
+                    }
+                }
                 $detection = [PSCustomObject]@{
                     Name = 'Potential Persistence via Office Startup Addin'
                     Risk = 'Medium'
@@ -11830,7 +11849,16 @@ function Check-GPO-Scripts {
                     }
                     Write-Snapshot $message
                 }
-
+                $pass = $false
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_gposcripts $script_location $script_location
+                    if ($result){
+                        $cmdline = $null
+                        $params = $null
+                        continue
+                    }
+                }
+                # TODO - Figure out ERROR
                 $script_content_detection = $false
                 try {
                     $script_content = Get-Content $script_location
@@ -13999,10 +14027,10 @@ function Main {
     Check-Service-Hijacks
     Check-PATH-Hijacks
     Check-Association-Hijack
-    <#Check-Suspicious-Certificates
+    Check-Suspicious-Certificates
     Check-Office-Trusted-Locations
     Check-GPO-Scripts
-    Check-TerminalProfiles
+    <#Check-TerminalProfiles
     Check-PeerDistExtensionDll
     Check-InternetSettingsLUIDll
     Check-ErrorHandlerCMD
