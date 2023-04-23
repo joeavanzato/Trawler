@@ -870,7 +870,7 @@ function Check-BITS {
     $bits = Get-BitsTransfer -AllUsers | Select-Object *
     ForEach ($item in $bits) {
         if ($item.NotifyCmdLine -ne $null){
-            $cmd = $item.NotifyCmdLine
+            $cmd = [string]$item.NotifyCmdLine
         } else {
             $cmd = ''
         }
@@ -881,6 +881,25 @@ function Check-BITS {
                 Source = 'BITS'
             }
             Write-Snapshot $message
+        }
+        if ($loadsnapshot){
+            if ($allowtable_bits.ContainsKey($item.DisplayName)){
+                if ($allowtable_bits[$item.DisplayName] -eq $cmd){
+                    continue
+                } elseif ($allowtable_bits[$item.DisplayName] -eq "" -and $cmd -eq "") {
+                    continue
+                } else {
+                    $detection = [PSCustomObject]@{
+                        Name = 'Allowlisted BITS Job Mismatch'
+                        Risk = 'Medium'
+                        Source = 'BITS'
+                        Technique = "T1197: BITS Jobs"
+                        Meta = "Item Name: "+$item.DisplayName+", TransferType: "+$item.TransferType+", Job State: "+$item.JobState+", User: "+$item.OwnerAccount+", Command: "+$cmd
+                    }
+                    Write-Detection $detection
+                    continue
+                }
+            }
         }
         $detection = [PSCustomObject]@{
             Name = 'BITS Item Review'
@@ -13666,6 +13685,7 @@ function Read-Snapshot(){
     $script:allowlist_remote_addresses = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowtable_wmi_consumers = @{}
     $script:allowlist_startup_commands = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_bits = @{}
     $script:allowtable_debuggers = @{}
     $script:allowtable_com = @{}
     $script:allowtable_services_reg = @{}
@@ -13707,6 +13727,9 @@ function Read-Snapshot(){
         } elseif ($item.Source -eq "Startup"){
             # Using execution 'command'
             $allowlist_startup_commands.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "BITS"){
+            # Using Name and 'Command'
+            $allowtable_bits[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Debuggers"){
             # Using Name and Debugger File Path
             $allowtable_debuggers[$item.Key] = $item.Value
@@ -13785,13 +13808,13 @@ function Main {
     if ($loadsnapshot -ne $null -and $snapshot -eq $false){
         Read-Snapshot
     }
-    Check-ScheduledTasks
-    Check-Users
-    Check-Services
-    Check-Processes
-    Check-Connections
-    Check-WMIConsumers
-    Check-Startups
+    #Check-ScheduledTasks
+    #Check-Users
+    #Check-Services
+    #Check-Processes
+    #Check-Connections
+    #Check-WMIConsumers
+    #Check-Startups
     Check-BITS
     <#Check-Modified-Windows-Accessibility-Feature
     Check-Debugger-Hijacks
