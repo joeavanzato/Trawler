@@ -33,16 +33,35 @@ If you have examples or ideas for additional detections, please feel free to sub
 
 Additionally, if you identify obvious false positives, please let me know by opening an issue or PR on GitHub!  The obvious culprits for this will be non-standard COMs, Services or Tasks.
 
-## What separates this from something like PersistenceSniper?
+### CLI Parameters
+```
+-hide : Suppress Detection output to console
+-snapshot : Capture a "persistence snapshot" of the current system, defaulting to "$PSScriptRoot\snapshot.csv"
+-snapshotpath : Define a custom file-path for saving snapshot output to.
+-outpath : Define a custom file-path for saving detection output to (defaults to "$PSScriptRoot\detections.csv")
+-loadsnapshot : Define the path for an existing snapshot file to load as an allow-list reference
+```
+
+## What separates this from PersistenceSniper?
 PersistenceSniper is an awesome tool - I've used it heavily in the past - but there are a few key points that differentiate these utilities
 * trawler is (currently) a local utility - it would be pretty straight-forward to wrap it in a loop and use WinRM/PowerShell Sessions to execute it on remote hosts though
 * trawler implements allow-listing for many 'noisy' detections to help remove expected detections from default configurations of Windows (10/2016/2019/2022) and these are constantly being updated
   * PersistenceSniper does not contain any type of allow-listing - therefore, there is more noise generated when considering items such as Services, Scheduled Tasks, general COM DLL scanning, etc.
 * trawler's output is much more simplified - Name, Risk, Source, MITRE Technique and Metadata are the only items provided for each detection to help analysts jump-start their persistence hunting efforts
 * Regex is used heavily to help detect 'suspicious' keywords in various critical areas
+* trawler supports 'snapshotting' a system (for example, an enterprise golden image) then using the generated snapshot as an allow-list to reduce noise.
 
 Overall, these tools are extremely similar but approach the problem from slightly different angles - PersistenceSniper provides all information back to the analyst for review while Trawler tries to limit what is returned to only results that are likely to be potential adversary persistence mechanisms.  As such, there is a possibility for false-negatives with trawler if an adversary completely mimics an allow-listed item.
 
+## Tuning to your environment
+Trawler supports loading an allow-list from a 'snapshot' - to do this requires two steps.
+1. Run '.\trawler.ps1 -snapshot' on a "Golden Image" representing the servers in your environment - once complete, in addition to the standard 'detections.csv' a file named 'snapshots.csv' will be generated
+2. This file can then be used as input to trawler when running on other hosts and the data will be loaded dynamically as an allow-list for each appropriate detection
+   1. '.\trawler.ps1' -loadsnapshot "path\to\snapshot.csv"
+
+That's it - all relevant detections will then draw from the snapshot file as an allow-list to reduce noise and identify any potential changes to the base image that may have occurred.
+
+(Allow-listing is implemented for most of the checks but not all - still being actively implemented)
 ## Example Images
 <p align="center">
 <img src="sample.PNG">
@@ -53,8 +72,6 @@ Overall, these tools are extremely similar but approach the problem from slightl
 <p align="center">
 <img src="sample3.PNG">
 </p>
-
-
 
 ## What is inspected?
 
@@ -141,6 +158,7 @@ TODO
 * AutoPlay Handler Inspection [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\]
 * HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\Pending\SPReviewEnabler
 * OCSetup [https://www.hexacorn.com/blog/2019/11/09/beyond-good-ol-run-key-part-122/]
+* Remote Access Tool Checks (VNC, TeamViewer, AnyDesk, Zoho, etc)
 
 ## MITRE Techniques Evaluated
 
