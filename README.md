@@ -158,6 +158,7 @@ TODO
 * AutoPlay Handler Inspection [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\]
 * HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\Pending\SPReviewEnabler
 * OCSetup [https://www.hexacorn.com/blog/2019/11/09/beyond-good-ol-run-key-part-122/]
+* Remote Access Tool Checks (VNC, TeamViewer, AnyDesk, Zoho, etc)
 
 ## MITRE Techniques Evaluated
 
