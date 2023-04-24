@@ -69,6 +69,12 @@ if ($hide.IsPresent){
 } else {
     $hide_console_output = $false
 }
+if ($loadsnapshot -ne $null){
+    $loadsnapshotdata = $true
+} else {
+    $loadsnapshotdata = $false
+}
+$detection_list = New-Object -TypeName "System.Collections.ArrayList"
 
 function Get-ValidOutPath {
 	param (
@@ -2012,7 +2018,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{1FABC6A8-AF38-4353-A39E-1AC0F29BDFA4}\InprocServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{1fb2a002-4c6c-4de7-85c2-cb8db9a4f728}\InProcServer32" = "$homedrive\\Windows\\System32\\dskquoui\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{1FCE6123-B675-4790-A629-F3E8AC06F839}\InprocServer32" = "$homedrive\\Windows\\System32\\catsrvut\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}\InprocServer32" = "$homedrive\\Program Files \(x86\)\\Microsoft\\Edge\\Application\\112\.0\.1722\.48\\BHO\\ie_to_edge_bho_64\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}\InprocServer32" = "$homedrive\\Program Files \(x86\)\\Microsoft\\Edge\\Application\\.*\\BHO\\ie_to_edge_bho_64\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{1fda955b-61ff-11da-978c-0008744faab7}\InprocServer32" = "$homedrive\\Windows\\system32\\dtsh\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{1fda955c-61ff-11da-978c-0008744faab7}\InprocServer32" = "$homedrive\\Windows\\system32\\dtsh\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{1FE45ED3-B842-4CF2-8DF6-43E3D6D10E64}\InProcServer32" = "$homedrive\\Windows\\System32\\audiokse\.dll"
@@ -2674,7 +2680,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{3a59a18b-f03c-48cb-8aa7-181d35291fd7}\InProcServer32" = "$homedrive\\Windows\\System32\\IME\\IMEJP\\imjptip\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{3A614B00-FB18-46F3-950E-682A46A48B9F}\InProcServer32" = "$homedrive\\Windows\\System32\\UICOM\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{3A66787A-8B15-4321-A09D-6E862D2DD2D4}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{3A84F9C2-6164-485C-A7D9-4B27F8AC009E}\InProcServer32" = "$homedrive\\Program Files \(x86\)\\Microsoft\\Edge\\Application\\112\.0\.1722\.48\\PdfPreview\\PdfPreviewHandler\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{3A84F9C2-6164-485C-A7D9-4B27F8AC009E}\InProcServer32" = "$homedrive\\Program Files \(x86\)\\Microsoft\\Edge\\Application\\.*\\PdfPreview\\PdfPreviewHandler\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{3A8CCCBC-0EFD-43a3-B838-F38A552BA237}\InprocServer32" = "$homedrive\\Windows\\System32\\wmvdspa\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{3A9428A7-31A4-45E9-9EFB-E055BF7BB3DB}\InprocServer32" = "$homedrive\\Windows\\System32\\msvidctl\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{3A965ED4-0E14-4A1B-A71E-972F1C1044F6}\InProcServer32" = "$homedrive\\Windows\\System32\\CloudExperienceHostCommon\.dll"
@@ -12098,20 +12104,23 @@ function Check-WindowsUpdateTestDlls {
                     }
                     Write-Snapshot $message
                 }
+                $pass = $false
                 if ($loadsnapshot){
                     $result = Check-IfAllowed $allowlist_winupdatetest $path $_.Value
                     if ($result){
-                        continue
+                        $pass = $true
                     }
                 }
-                $detection = [PSCustomObject]@{
-                    Name = 'Windows Update Test DLL Exists'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1574: Hijack Execution Flow"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                if ($pass -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Windows Update Test DLL Exists'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
                 }
-                Write-Detection $detection
             }
         }
     }
@@ -12136,10 +12145,11 @@ function Check-KnownManagedDebuggers {
                 }
                 Write-Snapshot $message
             }
+            $pass = $false
             if ($loadsnapshot){
                 $result = Check-IfAllowed $allowlist_knowndebuggers $path $_.Name
                 if ($result){
-                    continue
+                    $pass = $true
                 }
             }
             $matches_good = $false
@@ -12149,7 +12159,7 @@ function Check-KnownManagedDebuggers {
                     break
                 }
             }
-            if ($matches_good -eq $false){
+            if ($matches_good -eq $false -and $pass -and $false){
                 $detection = [PSCustomObject]@{
                     Name = 'Non-Standard KnownManagedDebugging DLL'
                     Risk = 'High'
@@ -12183,10 +12193,11 @@ function Check-MiniDumpAuxiliaryDLLs {
                 }
                 Write-Snapshot $message
             }
+            $pass = $false
             if ($loadsnapshot){
                 $result = Check-IfAllowed $allowlist_minidumpauxdlls $path $_.Name
                 if ($result){
-                    continue
+                    $pass = $true
                 }
             }
             $matches_good = $false
@@ -12196,7 +12207,7 @@ function Check-MiniDumpAuxiliaryDLLs {
                     break
                 }
             }
-            if ($matches_good -eq $false){
+            if ($matches_good -eq $false -and $pass -eq $false){
                 $detection = [PSCustomObject]@{
                     Name = 'Non-Standard MiniDumpAuxiliary DLL'
                     Risk = 'High'
@@ -12225,20 +12236,23 @@ function Check-Wow64LayerAbuse {
                     }
                     Write-Snapshot $message
                 }
+                $pass = $false
                 if ($loadsnapshot){
                     $result = Check-IfAllowed $allowlist_WOW64Compat $_.Name $_.Value
                     if ($result){
-                        continue
+                        $pass = $true
                     }
                 }
-                $detection = [PSCustomObject]@{
-                    Name = 'Non-Standard Wow64\x86 DLL loaded into x86 process'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1574: Hijack Execution Flow"
-                    Meta = "Key Location: $path, Target Process Name: "+$_.Name+" Loaded DLL: "+$_.Value
+                if ($pass -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Standard Wow64\x86 DLL loaded into x86 process'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, Target Process Name: "+$_.Name+" Loaded DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
                 }
-                Write-Detection $detection
             }
         }
     }
@@ -12263,20 +12277,23 @@ function Check-EventViewerMSC {
                         }
                         Write-Snapshot $message
                     }
+                    $pass = $false
                     if ($loadsnapshot){
                         $result = Check-IfAllowed $allowlist_MSCHijack $_.Name $_.Value
                         if ($result){
-                            continue
+                            $pass = $true
                         }
                     }
-                    $detection = [PSCustomObject]@{
-                        Name = 'Event Viewer MSC Hijack'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1574: Hijack Execution Flow"
-                        Meta = "Key Location: $path, Entry Name: "+$_.Name+" Loaded Value: "+$_.Value
+                    if ($pass -eq $false){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Event Viewer MSC Hijack'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1574: Hijack Execution Flow"
+                            Meta = "Key Location: $path, Entry Name: "+$_.Name+" Loaded Value: "+$_.Value
+                        }
+                        Write-Detection $detection
                     }
-                    Write-Detection $detection
                 }
             }
         }
@@ -12312,20 +12329,23 @@ function Check-MicrosoftTelemetryCommands {
                         }
                         Write-Snapshot $message
                     }
+                    $pass = $false
                     if ($loadsnapshot){
                         $result = Check-IfAllowed $allowlist_telemetry $item.Name $data.Command
                         if ($result){
-                            continue
+                            $pass = $true
                         }
                     }
-                    $detection = [PSCustomObject]@{
-                        Name = 'Non-Standard Microsoft Telemetry Command'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1112: Modify Registry"
-                        Meta = "Registry Path: "+$item.Name+", Command: "+$data.Command
+                    if ($pass -eq $false){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard Microsoft Telemetry Command'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1112: Modify Registry"
+                            Meta = "Registry Path: "+$item.Name+", Command: "+$data.Command
+                        }
+                        Write-Detection $detection
                     }
-                    Write-Detection $detection
                 }
             }
         }
@@ -12363,20 +12383,23 @@ function Check-ActiveSetup {
                         }
                         Write-Snapshot $message
                     }
+                    $pass = $false
                     if ($loadsnapshot){
                         $result = Check-IfAllowed $allowlist_activesetup $item.Name $data.StubPath
                         if ($result){
-                            continue
+                            $pass = $true
                         }
                     }
-                    $detection = [PSCustomObject]@{
-                        Name = 'Non-Standard StubPath Executed on User Logon'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1547.014: Boot or Logon Autostart Execution: Active Setup"
-                        Meta = "Registry Path: "+$item.Name+", StubPath: "+$data.StubPath
+                    if ($pass -eq $false){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Standard StubPath Executed on User Logon'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1547.014: Boot or Logon Autostart Execution: Active Setup"
+                            Meta = "Registry Path: "+$item.Name+", StubPath: "+$data.StubPath
+                        }
+                        Write-Detection $detection
                     }
-                    Write-Detection $detection
                 }
             }
         }
@@ -12402,6 +12425,7 @@ function Check-UninstallStrings {
                         }
                         Write-Snapshot $message
                     }
+                    $pass = $false
                     if ($loadsnapshot){
                         $detection = [PSCustomObject]@{
                             Name = 'Allowlist Mismatch: Uninstall String with Suspicious Keywords'
@@ -12412,17 +12436,19 @@ function Check-UninstallStrings {
                         }
                         $result = Check-IfAllowed $allowtable_uninstallstrings $item.Name $data.UninstallString $detection
                         if ($result){
-                            continue
+                            $pass = $true
                         }
                     }
-                    $detection = [PSCustomObject]@{
-                        Name = 'Uninstall String with Suspicious Keywords'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1546: Event Triggered Execution"
-                        Meta = "Application: "+$item.Name+", Uninstall String: "+$data.UninstallString
+                    if ($pass -eq $false){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Uninstall String with Suspicious Keywords'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Application: "+$item.Name+", Uninstall String: "+$data.UninstallString
+                        }
+                        Write-Detection $detection
                     }
-                    Write-Detection $detection
                 }
             }
             if ($data.QuietUninstallString -ne $null){
@@ -12435,6 +12461,7 @@ function Check-UninstallStrings {
                         }
                         Write-Snapshot $message
                     }
+                    $pass = $false
                     if ($loadsnapshot){
                         $detection = [PSCustomObject]@{
                             Name = 'Allowlist Mismatch: Uninstall String with Suspicious Keywords'
@@ -12445,17 +12472,19 @@ function Check-UninstallStrings {
                         }
                         $result = Check-IfAllowed $allowtable_quietuninstallstrings $item.Name $data.QuietUninstallString $detection
                         if ($result){
-                            continue
+                            $pass = $true
                         }
                     }
-                    $detection = [PSCustomObject]@{
-                        Name = 'Uninstall String with Suspicious Keywords'
-                        Risk = 'High'
-                        Source = 'Registry'
-                        Technique = "T1546: Event Triggered Execution"
-                        Meta = "Application: "+$item.Name+", Uninstall String: "+$data.QuietUninstallString
+                    if ($pass -eq $false){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Uninstall String with Suspicious Keywords'
+                            Risk = 'High'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Application: "+$item.Name+", Uninstall String: "+$data.QuietUninstallString
+                        }
+                        Write-Detection $detection
                     }
-                    Write-Detection $detection
                 }
             }
         }
@@ -12493,27 +12522,31 @@ function Check-PolicyManager {
                             }
                             Write-Snapshot $message
                         }
+                        $pass = $false
                         if ($loadsnapshot){
                             $result = Check-IfAllowed $allowlist_activesetup $item.Name $data.StubPath
                             if ($result){
-                                continue
+                                $pass = $true
                             }
                         }
-                        $detection = [PSCustomObject]@{
-                            Name = 'Non-Standard Policy Manager DLL'
-                            Risk = 'High'
-                            Source = 'Registry'
-                            Technique = "T1546: Event Triggered Execution"
-                            Meta = "Path: "+$subkey.Name+", Entry Name: PreCheckDLLPath, DLL: "+$data.PreCheckDLLPath
+                        if ($pass -eq $false){
+                            $detection = [PSCustomObject]@{
+                                Name = 'Non-Standard Policy Manager DLL'
+                                Risk = 'High'
+                                Source = 'Registry'
+                                Technique = "T1546: Event Triggered Execution"
+                                Meta = "Path: "+$subkey.Name+", Entry Name: PreCheckDLLPath, DLL: "+$data.PreCheckDLLPath
+                            }
+                            Write-Detection $detection
                         }
-                        Write-Detection $detection
                     }
                 }
                 if ($data.transportDllPath -ne $null){
+                    $pass = $false
                     if ($loadsnapshot){
                         $result = Check-IfAllowed $allowlist_policymanagerdlls $subkey.Name $data.transportDllPath
                         if ($result){
-                            continue
+                            $pass = $true
                         }
                     }
                     if ($data.transportDllPath -notin $allow_listed_values){
@@ -12525,14 +12558,16 @@ function Check-PolicyManager {
                             }
                             Write-Snapshot $message
                         }
-                        $detection = [PSCustomObject]@{
-                            Name = 'Non-Standard Policy Manager DLL'
-                            Risk = 'High'
-                            Source = 'Registry'
-                            Technique = "T1546: Event Triggered Execution"
-                            Meta = "Path: "+$subkey.Name+", Entry Name: transportDllPath, DLL: "+$data.transportDllPath
+                        if ($pass -eq $false){
+                            $detection = [PSCustomObject]@{
+                                Name = 'Non-Standard Policy Manager DLL'
+                                Risk = 'High'
+                                Source = 'Registry'
+                                Technique = "T1546: Event Triggered Execution"
+                                Meta = "Path: "+$subkey.Name+", Entry Name: transportDllPath, DLL: "+$data.transportDllPath
+                            }
+                            Write-Detection $detection
                         }
-                        Write-Detection $detection
                     }
                 }
             }
@@ -12605,20 +12640,23 @@ function Check-WERRuntimeExceptionHandlers {
                     }
                     Write-Snapshot $message
                 }
+                $pass = $false
                 if ($loadsnapshot){
                     $result = Check-IfAllowed $allowlist_werhandlers $path $_.Name
                     if ($result){
-                        continue
+                        $pass = $true
                     }
                 }
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential WER Helper Hijack'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1574: Hijack Execution Flow"
-                    Meta = "Key Location: $path, DLL: "+$_.Name
+                if ($pass -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Potential WER Helper Hijack'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key Location: $path, DLL: "+$_.Name
+                    }
+                    Write-Detection $detection
                 }
-                Write-Detection $detection
             }
         }
     }
@@ -12643,6 +12681,20 @@ function Check-SilentProcessExitMonitoring {
                     }
                     Write-Snapshot $message
                 }
+                if ($loadsnapshot){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Allowlist Mismatch: Process Launched on SilentProcessExit'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
+                        Meta = "Monitored Process: "+$item.Name+", Launched Process: "+$data.MonitorProcess+", Reporting Mode: "+$data.ReportingMode
+                    }
+                    $result = Check-IfAllowed $allowtable_silentprocessexit $item.Name $data.MonitorProcess $detection
+                    if ($result){
+                        continue
+                    }
+                }
+                #allowtable_silentprocessexit
                 $detection = [PSCustomObject]@{
                     Name = 'Process Launched on SilentProcessExit'
                     Risk = 'High'
@@ -12677,14 +12729,23 @@ function Check-WinlogonHelperDLLs {
                     }
                     Write-Snapshot $message
                 }
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential WinLogon Helper Persistence'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1547.004: Boot or Logon Autostart Execution: Winlogon Helper DLL"
-                    Meta = "Key Location: HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                $pass = $false
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_winlogonhelpers $_.Value $_.Value
+                    if ($result){
+                        $pass = $true
+                    }
                 }
-                Write-Detection $detection
+                if ($pass -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Potential WinLogon Helper Persistence'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1547.004: Boot or Logon Autostart Execution: Winlogon Helper DLL"
+                        Meta = "Key Location: HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
             }
         }
     }
@@ -12733,6 +12794,19 @@ function Check-RDPShadowConsent {
                         Source = 'RDPShadow'
                     }
                     Write-Snapshot $message
+                }
+                if ($loadsnapshot){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Allowlist Mismatch: RDP Shadowing without Consent is Enabled'
+                        Risk = 'Medium'
+                        Source = 'Registry'
+                        Technique = "T1098: Account Manipulation"
+                        Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    $result = Check-IfAllowed $allowtable_rdpshadow $_.Name $_.Value $detection
+                    if ($result){
+                        return
+                    }
                 }
             }
             if ($_.Name -eq 'Shadow' -and ($_.Value -eq 4 -or $_.Value -eq 2)) {
@@ -13978,6 +14052,7 @@ function Write-Detection($det)  {
     # Source - The source 'module' reporting the detection
     # Technique - The most relevant MITRE Technique
     # Meta - String containing reference material specific to the received detection
+    $detection_list.Add($det) | Out-Null
     if ($det.Risk -eq 'Very Low' -or $det.Risk -eq 'Low') {
         $fg_color = 'Green'
     } elseif ($det.Risk -eq 'Medium'){
@@ -13996,6 +14071,36 @@ function Write-Detection($det)  {
     if ($output_writable){
        $det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
     }
+}
+
+function Detection-Metrics {
+    $total_dets = 0
+    $vlow_dets = 0
+    $low_dets = 0
+    $medium_dets = 0
+    $high_dets = 0
+    $vhigh_dets = 0
+    ForEach ($detection in $detection_list){
+        $total_dets += 1
+        if ($detection.Risk -eq 'Very Low'){
+            $vlow_dets += 1
+        } elseif ($detection.Risk -eq 'Low'){
+            $low_dets += 1
+        } elseif ($detection.Risk -eq 'Medium'){
+            $medium_dets += 1
+        } elseif ($detection.Risk -eq 'High'){
+            $high_dets += 1
+        } elseif ($detection.Risk -eq 'Very High'){
+            $vhigh_dets += 1
+        }
+    }
+    Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor "White"
+    Write-Message "Total Detections: $total_dets"
+    Write-Message "Very-Low Risk Detections: $vlow_dets"
+    Write-Message "Low Risk Detections: $low_dets"
+    Write-Message "Medium Risk Detections: $medium_dets"
+    Write-Message "High Risk Detections: $high_dets"
+    Write-Message "Very-High Risk Detections: $high_dets"
 }
 
 function Write-Message ($message){
@@ -14060,6 +14165,9 @@ function Read-Snapshot(){
     $script:allowtable_quietuninstallstrings = @{}
     $script:allowlist_policymanagerdlls = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_listeningprocs = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_silentprocessexit = @{}
+    $script:allowlist_winlogonhelpers = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowtable_rdpshadow = @{}
     ForEach ($item in $csv_data){
         if ($item.Source -eq "Scheduled Tasks"){
             # Using scheduled task name and exe path
@@ -14067,8 +14175,12 @@ function Read-Snapshot(){
             $allowtable_scheduledtask[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Users"){
             $allowlist_users.Add($item.Key) | Out-Null
+        } elseif ($item.Source -eq "RDPShadow"){
+            $allowtable_rdpshadow[$item.Key] = $item.Value
         } elseif ($item.Source -eq "BIDDLL"){
             $allowlist_biddll.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "WinlogonHelpers"){
+            $allowlist_winlogonhelpers.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "ProcessConnections"){
             $allowlist_listeningprocs.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "PolicyManagerPreCheck" -or $item.Source -eq "PolicyManagerTransport"){
@@ -14089,6 +14201,8 @@ function Read-Snapshot(){
             $allowtable_uninstallstrings[$item.Key] = $item.Value
         } elseif ($item.Source -eq "QuietUninstallString"){
             $allowtable_quietuninstallstrings[$item.Key] = $item.Value
+        } elseif ($item.Source -eq "SilentProcessExit"){
+            $allowtable_silentprocessexit[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Services"){
             # Using Service Name and Full Path
             $allowtable_services[$item.Key] = $item.Value
@@ -14205,8 +14319,10 @@ function Logo {
 function Main {
     Logo
     ValidatePaths
-    if ($loadsnapshot -ne $null -and $snapshot -eq $false){
+    if ($loadsnapshotdata -and $snapshot -eq $false){
         Read-Snapshot
+    } elseif ($loadsnapshotdata -and $snapshot -eq $true) {
+        Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
     # TODO - Uncomment for prod
     Check-ScheduledTasks
@@ -14282,6 +14398,7 @@ function Main {
     Check-AppPaths
     Check-GPOExtensions
     Check-HTMLHelpDLL
+    Detection-Metrics
 }
 
 Main
