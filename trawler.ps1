@@ -69,7 +69,7 @@ if ($hide.IsPresent){
 } else {
     $hide_console_output = $false
 }
-if ($loadsnapshot -ne $null){
+if ($loadsnapshot.IsPresent){
     $loadsnapshotdata = $true
 } else {
     $loadsnapshotdata = $false
@@ -14351,11 +14351,13 @@ function Check-RATS {
         "Action1" = ""
         "AmmyAdmin (Log 1)" = "$env:ProgramData\AMMYY\access.log"
         "AmmyAdmin (Dir 1)" = "$env:ProgramData\AMMYY"
+        "AnyDesk (Dir 1)" = "$env:ProgramData\AnyDesk"
+        "AnyDesk (Dir 2)" = "$env:homedrive\Users\USER_REPLACE\AppData\Roaming\AnyDesk"
         "AnyDesk (Log 1)" = "$env:ProgramData\AnyDesk\ad.trace"
         "AnyDesk (Log 2)" = "$env:ProgramData\AnyDesk\connection_trace.txt"
-        "AnyDesk (Log 3)" = "$env:AppData\AnyDesk\ad.trace"
+        "AnyDesk (Log 3)" = "$env:homedrive\Users\USER_REPLACE\AppData\Roaming\AnyDesk\ad.trace"
         "AnyDesk (Log 4)" = "$env:ProgramData\AnyDesk\ad_svc.trace"
-        "AnyDesk (Log 5)" = "$env:AppData\AnyDesk\*.conf"
+        "AnyDesk (Log 5)" = "$env:homedrive\Users\USER_REPLACE\AppData\Roaming\AnyDesk\*.conf"
         "AnyDesk (Reg 1)" = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\AnyDesk"
         "AnyDesk (Reg 2)" = "Registry::HKLM\SOFTWARE\Clients\Media\AnyDesk"
         "AnyDesk (Reg 3)" = "Registry::HKLM\SYSTEM\ControlSet001\Services\AnyDesk"
@@ -14377,13 +14379,15 @@ function Check-RATS {
         "Atera\SplashTop (Reg 9)" = "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print\Printers\Splashtop PDF Remote Printer"
         "Atera\SplashTop (Reg 10)" = "Registry::HKLM\SOFTWARE\WOW6432Node\Splashtop Inc.\Splashtop Remote Server\ClientInfo"
         "ConnectWise\ScreenConnect (Dir 1)" = "$env:ProgramData\ScreenConnect*"
-        "ConnectWise\ScreenConnect (Dir 2)" = "$env:homedrive\Program Files(x86)\ScreenConnect*"
+        "ConnectWise\ScreenConnect (Dir 2)" = "$env:homedrive\Program Files (x86)\ScreenConnect*"
         "ConnectWise\ScreenConnect (Dir 3)" = "$env:homedrive\Program Files\ScreenConnect*"
         "ConnectWise\ScreenConnect (Dir 4)" = "$env:temp\ScreenConnect*"
-        "DameWare (Dir 1)" = "$env:LocalAppData\temp\dwrrcc downloads"
+        "ConnectWise\ScreenConnect (Dir 5)" = "$env:homedrive\Windows\temp\ScreenConnect*"
+        "ConnectWise\ScreenConnect (Dir 6)" = "$env:homedrive\Users\USER_REPLACE\Documents\ConnectWiseControl"
+        "DameWare (Dir 1)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\temp\dwrrcc downloads"
         "DameWare (Dir 2)" = "$env:homedrive\Windows\dwrcs"
         "Dameware (Dir 3)" = "$env:ProgramData\DameWare"
-        "DameWare (Dir 4)" = "$env:AppData\DameWare Development"
+        "DameWare (Dir 4)" = "$env:homedrive\Users\USER_REPLACE\AppData\Roaming\DameWare Development"
         "Dameware (Dir 5)" = "$env:ProgramData\DameWare Development"
         "GetScreen (Dir 1)" = "$env:homedrive\Program Files\Getscreen.me"
         "GetScreen (Dir 2)" = "$env:ProgramData\Getscreen.me"
@@ -14391,10 +14395,10 @@ function Check-RATS {
         "Iperius (Dir 2)" = "$env:homedrive\Program Files\iperius*"
         "Kaseya VSA (Dir 1)" = "$env:ProgramData\Kaseya*"
         "Kaseya VSA (Dir 2)" = "$env:homedrive\Program Files (x86)\Kaseya*"
-        "Kaseya VSA (Dir 3)" = "$env:localappdata\Kaseya*"
-        "LogMeIn (Dir 1)" = "$env:localappdata\LogMeInIgnition*"
+        "Kaseya VSA (Dir 3)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\Kaseya*"
+        "LogMeIn (Dir 1)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\LogMeInIgnition*"
         "NinjaOne" = ""
-        "Pulseway (Dir 1)" = "$env:appdata\Pulseway Remote Control"
+        "Pulseway (Dir 1)" = "$env:homedrive\Users\*\AppData\Roaming\Pulseway Remote Control"
         "Pulseway (Reg 1)" = "Registry::HKCU\Software\MMSOFT Design\Pulseway\Remote Desktop"
         "Pulseway (Reg 2)" = "Registry::HKLM\Software\MMSOFT Design\Pulseway\Remote Desktop"
         "Radmin (Dir 1)" = "$env:homedrive\Program Files\Radmin*"
@@ -14402,78 +14406,92 @@ function Check-RATS {
         "RealVNC (Dir 1)" = "$env:ProgramData\RealVBC-Service"
         "RealVNC (Log 1)" = "$env:ProgramData\RealVBC-Service\vncserver.log"
         "RealVNC (Log 2)" = "$env:ProgramData\RealVBC-Service\vncserver.log.bak"
-        "Remote Desktop Manager (Dir 1)" = "$env:localappdata\Devolutions\RemoteDesktopManager"
+        "Remote Desktop Manager (Dir 1)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\Devolutions\RemoteDesktopManager"
         "Remote Desktop Manager (Dir 2)" = "$env:homedrive\Program Files (x86)\Devolutions\Remote Desktop Manager"
         "Remote Desktop Manager (Dir 3)" = "$env:homedrive\Program Files\Devolutions\Remote Desktop Manager"
         "RemotePC (Dir 1)" = "$env:programdata\RemotePC*"
         "RemotePC (Dir 2)" = "$env:homedrive\Program Files (x86)\RemotePC*"
         "RemotePC (Dir 3)" = "$env:homedrive\Program Files\RemotePC*"
-        "RemotePC (Dir 4)" = "$env:localappdata\RemotePC*"
+        "RemotePC (Dir 4)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\RemotePC*"
         "RemoteToPC (Dir 1)" = "$env:programdata\RemoteToPC*"
         "RemoteToPC (Dir 2)" = "$env:homedrive\Program Files (x86)\RemoteToPC*"
         "RemoteToPC (Dir 3)" = "$env:homedrive\Program Files\RemoteToPC*"
-        "RemoteToPC (Dir 4)" = "$env:localappdata\RemoteToPC*"
+        "RemoteToPC (Dir 4)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\RemoteToPC*"
         "Remote Utilities (Dir 1)" = "$env:appdata\Remote Utilities Agent"
         "Remote Utilities (Dir 2)" = "$env:homedrive\Program Files (x86)\Remote Utilities*"
         "Remote Utilities (Dir 3)" = "$env:homedrive\Program Files\Remote Utilities*"
         "Remote Utilities (Dir 4)" = "$env:programdata\Remote Utilities*"
         "ScreenMeet (Dir 1)" = "$env:programdata\Projector Inc\ScreenMeet*"
         "ShowMyPC (Dir 1)" = "$env:temp\ShowMyPC"
-        "ShowMyPC (Dir 2)" = "$env:localappdata\ShowMyPC"
+        "ShowMyPC (Dir 2)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\ShowMyPC"
         "SightCall" = ""
         "Surfly" = ""
         "TightVNC (Log 1)" = "$env:homedrive\Windows\System32\config\systemprofile\AppData\Roaming\TightVNC\tvnserver.log"
         "TightVNC (Log 2)" = "$env:ProgramData\TightVNC\tvnserver.log"
-        "TeamViewer (Log 1)" = "$env:appdata\TeamViewer\Connections.txt"
+        "TeamViewer (Log 1)" = "$env:homedrive\Users\USER_REPLACE\AppData\Roaming\TeamViewer\Connections.txt"
         "TeamViewer (Log 2)" = "$env:temp\TeamViewer\Connections_incoming.txt"
         "TeamViewer (Log 3)" = "$env:homedrive\Program Files\TeamViewer\Connections_incoming.txt"
         "TeamViewer (Log 4)" = "$env:homedrive\Program Files\TeamViewer\TeamViewer*_Logfile.log"
-        "TeamViewer (Log 5)" = "$env:LocalAppData\TeamViewer\Logs\TeamViewer*_Logfile.log"
-        "TeamViewer (Log 6)" = "$env:appdata\TeamViewer\TeamViewer*_Logfile.log"
+        "TeamViewer (Log 5)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\TeamViewer\Logs\TeamViewer*_Logfile.log"
+        "TeamViewer (Log 6)" = "$env:homedrive\Users\USER_REPLACE\AppData\Roaming\TeamViewer\TeamViewer*_Logfile.log"
         "TeamViewer (Reg 1)" = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\TeamViewer"
         "TeamViewer (Reg 2)" = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\TeamViewer"
         "UltraVNC (Log 1)" = "$env:ProgramData\uvnc bvba\WinVNC.log"
         "UltraVNC (Log 2)" = "$env:ProgramData\uvnc bvba\mslogon.log"
         "XMReality" = ""
         "Viewabo" = ""
-        "ZoHo Assist (Dir 1)" = "$env:LocalAppData\ZohoMeeting"
-        "ZoHo Assist (Dir 2)" = "$env:LocalAppData\GoTo Resolve Applet"
+        "ZoHo Assist (Dir 1)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\ZohoMeeting"
+        "ZoHo Assist (Dir 2)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\GoTo Resolve Applet"
         "ZoHo Assist (Dir 3)" = "$env:homedrive\Program Files(x86)\GoTo Resolve*"
-        "ZoHo Assist (Dir 4)" = "$env:LocalAppData\GoTo"
+        "ZoHo Assist (Dir 4)" = "$env:homedrive\Users\USER_REPLACE\AppData\Local\GoTo"
     }
+    # TODO - Loop through and replace current username in C:\Users\*\ style paths to hunt in all dirs
+    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
+
+
+
     ForEach ($item in $application_logpaths.GetEnumerator()){
-        #Write-Host "Checking Path: "$item.Value
+        $paths = @()
         $checked_path = $item.Value
         $rat_name = $item.Name
-        #Write-Host $checked_path
         if ($checked_path -eq ""){
             continue
         }
-        if(Test-Path $checked_path){
-
-            if ($snapshot){
-                $message = [PSCustomObject]@{
-                    Key = $rat_name
-                    Value = $checked_path
-                    Source = 'RATS'
+        ForEach ($user in $profile_names){
+            if ($checked_path -match ".*USER_REPLACE.*"){
+                $tmp = $checked_path.Replace("USER_REPLACE", $user.Name)
+                $paths += $tmp
+            } else{
+                $paths += $checked_path
+                break
+            }
+        }
+        ForEach ($tmppath in $paths){
+            if(Test-Path $tmppath){
+                if ($snapshot){
+                    $message = [PSCustomObject]@{
+                        Key = $rat_name
+                        Value = $tmppath
+                        Source = 'RATS'
+                    }
+                    Write-Snapshot $message
                 }
-                Write-Snapshot $message
-            }
-            if ($loadsnapshot){
-                $result = Check-IfAllowed $allowlist_rats $checked_path $checked_path
-                if ($result){
-                    continue
+                if ($loadsnapshot){
+                    $result = Check-IfAllowed $allowlist_rats $rat_name $rat_name
+                    if ($result){
+                        continue
+                    }
                 }
+                $detection = [PSCustomObject]@{
+                    Name = 'Remote Access Tool Artifact'
+                    Risk = 'Medium'
+                    Source = 'Software'
+                    Technique = "T1219: Remote Access Software"
+                    Meta = "Possible RAT Artifact: $rat_name, Location: $tmppath"
+                }
+                Write-Detection $detection
+                #Write-Host "Found RAT Artifact: $rat_name, Location: $checked_path"
             }
-            $detection = [PSCustomObject]@{
-                Name = 'Remote Access Tool Artifact'
-                Risk = 'Medium'
-                Source = 'Software'
-                Technique = "T1219: Remote Access Software"
-                Meta = "Possible RAT Artifact: $rat_name, Location: $checked_path"
-            }
-            Write-Detection $detection
-            #Write-Host "Found RAT Artifact: $rat_name, Location: $checked_path"
         }
     }
 }
@@ -14630,7 +14648,7 @@ function Read-Snapshot(){
         } elseif ($item.Source -eq "AppShims"){
             $allowlist_appshims.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "RATS"){
-            $allowlist_rats.Add($item.Value) | Out-Null
+            $allowlist_rats.Add($item.Key) | Out-Null
         } elseif ($item.Source -eq "CommandAutorunProcessor"){
             $allowlist_cmdautorunproc.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "GlobalDotName"){
@@ -14820,7 +14838,7 @@ function Main {
     Check-WMIConsumers
     Check-Startups
     Check-BITS
-    Check-Modified-Windows-Accessibility-Feature #>
+    Check-Modified-Windows-Accessibility-Feature #><#
     Check-Debugger-Hijacks
     Check-PowerShell-Profiles
     Check-Outlook-Startup
