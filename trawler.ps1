@@ -202,6 +202,8 @@ $rat_terms = @(
 )
 
 function Check-ScheduledTasks {
+    # Supports Dynamic Snapshotting for Executable Paths
+    # TODO - Add Argument Comparison Checks
     Write-Message "Checking Scheduled Tasks"
     $tasks = Get-ScheduledTask  | Select-Object -Property State,Actions,Author,Date,Description,Principal,SecurityDescriptor,Settings,TaskName,TaskPath,Triggers,URI, @{Name="RunAs";Expression={ $_.principal.userid }} -ExpandProperty Actions | Select-Object *
 
@@ -403,6 +405,7 @@ function Check-ScheduledTasks {
 }
 
 function Check-Users {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Local Administrators"
     # TODO - Catch error with outdated powershell versions that do not support Get-LocalGroupMember and use alternative gather mechanism
     # Find all local administrators and their last logon time as well as if they are enabled.
@@ -438,6 +441,7 @@ function Check-Users {
 }
 
 function Check-Services {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Windows Services"
     $default_service_exe_paths = @(
 		"`"$env_homedrive\Program Files (x86)\Google\Update\GoogleUpdate.exe`" /medsvc",
@@ -675,7 +679,9 @@ function Check-Services {
 }
 
 function Check-Processes {
+    # Supports Dynamic Snapshotting
     # TODO - Check for processes spawned from netsh.dll
+
     Write-Message "Checking Running Processes"
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
@@ -721,6 +727,7 @@ function Check-Processes {
 }
 
 function Check-Connections {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Network Connections"
     $tcp_connections = Get-NetTCPConnection | Select-Object State,LocalAddress,LocalPort,OwningProcess,RemoteAddress,RemotePort
     $suspicious_ports = @(20,21,22,23,25,137,139,445,3389,443)
@@ -812,6 +819,7 @@ function Check-Connections {
 }
 
 function Check-WMIConsumers {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking WMI Consumers"
     $consumers = Get-WMIObject -Namespace root\Subscription -Class __EventConsumer | Select-Object *
 
@@ -874,6 +882,7 @@ function Check-WMIConsumers {
 }
 
 function Check-Startups {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Startup Items"
     $startups = Get-CimInstance -ClassName Win32_StartupCommand | Select-Object Command,Location,Name,User
     ForEach ($item in $startups) {
@@ -941,6 +950,7 @@ function Check-Startups {
 }
 
 function Check-BITS {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking BITS Jobs"
     $bits = Get-BitsTransfer -AllUsers | Select-Object *
     ForEach ($item in $bits) {
@@ -1083,6 +1093,7 @@ function Check-PowerShell-Profiles {
 }
 
 function Check-Outlook-Startup {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Outlook Macros"
     # allowlist_officeaddins
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
@@ -1181,6 +1192,7 @@ function Check-Registry-Checks {
 }
 
 function Check-COM-Hijacks {
+        # Supports Dynamic Snapshotting
         Write-Message "Checking COM Classes"
         # TODO - Consider NOT alerting when we don't have a 'known-good' entry for the CLSID in question
         # Malware will typically target 'well-known' keys that are present in default versions of Windows - that should be enough for most situations and help to reduce noise.
@@ -9876,6 +9888,8 @@ function Check-COM-Hijacks {
 }
 
 function Service-Reg-Checks {
+    # Supports Drive Retargeting
+    # Support Dynamic Snapshotting
     Write-Message "Checking Service Registry Entries"
     # Service DLL Inspection
     $homedrive = $env_homedrive
@@ -10972,7 +10986,7 @@ function Service-Reg-Checks {
 
 function Check-Debugger-Hijacks {
     Write-Message "Checking Debuggers"
-
+    # Supports Dynamic Snapshotting
     function Check-Debugger-Hijack-Allowlist ($key,$val){
         if ($loadsnapshot){
             $detection = [PSCustomObject]@{
@@ -11327,6 +11341,7 @@ function Check-LNK {
 }
 
 function Check-Process-Modules {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking 'Phantom' DLLs"
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     ForEach ($process in $processes){
@@ -11400,6 +11415,7 @@ function Check-Process-Modules {
 }
 
 function Check-Windows-Unsigned-Files {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Unsigned Files"
     $scan_paths = @(
     'C:\Windows',
@@ -11481,6 +11497,7 @@ function Check-Service-Hijacks {
 }
 
 function Check-PATH-Hijacks {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking PATH Hijacks"
     $system32_path = $env:windir+'\system32'
     $system32_bins = Get-ChildItem -File -Path $system32_path  -ErrorAction SilentlyContinue | Where-Object { $_.extension -in ".exe" } | Select-Object Name
@@ -11534,6 +11551,7 @@ function Check-PATH-Hijacks {
 }
 
 function Check-Association-Hijack {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking File Associations"
     $homedrive = $env:HOMEDRIVE
     $value_regex_lookup = @{
@@ -11646,6 +11664,7 @@ function Check-Association-Hijack {
 }
 
 function Check-Suspicious-Certificates {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Certificates"
     $certs = Get-ChildItem -path cert:\ -Recurse | Select-Object *
     # PSPath,DnsNameList,SendAsTrustedIssuer,PolicyId,Archived,FriendlyName,IssuerName,NotAfter,NotBefore,HasPrivateKey,SerialNumber,SubjectName,Version,Issuer,Subject
@@ -11832,6 +11851,7 @@ function Check-Suspicious-Certificates {
 }
 
 function Check-Office-Trusted-Locations {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Office Trusted Locations"
     #TODO - Add 'abnormal trusted location' detection
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
@@ -11889,6 +11909,7 @@ function Check-Office-Trusted-Locations {
 }
 
 function Check-GPO-Scripts {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking GPO Scripts"
     $base_key = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\State\Machine\Scripts"
     $script_paths = New-Object -TypeName "System.Collections.ArrayList"
@@ -11999,6 +12020,7 @@ function Check-GPO-Scripts {
 }
 
 function Check-TerminalProfiles {
+
     # TODO - Snapshot/Allowlist specific exes
     Write-Message "Checking Terminal Profiles"
     $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
@@ -12117,6 +12139,7 @@ function Check-ErrorHandlerCMD {
 }
 
 function Check-BIDDll {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking BID DLL"
     $paths = @(
         "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\BidInterface\Loader"
@@ -12171,7 +12194,7 @@ function Check-BIDDll {
 }
 
 function Check-WindowsUpdateTestDlls {
-    # TODO - Snapshot/Allowlist DLLs
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Windows Update Test"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Test"
     if (Test-Path -Path $path) {
@@ -12209,6 +12232,7 @@ function Check-WindowsUpdateTestDlls {
 }
 
 function Check-KnownManagedDebuggers {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Known Managed Debuggers"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\KnownManagedDebuggingDlls"
     $allow_list = @(
@@ -12256,6 +12280,7 @@ function Check-KnownManagedDebuggers {
 }
 
 function Check-MiniDumpAuxiliaryDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking MiniDumpAuxiliary DLLs"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpAuxiliaryDlls"
     $allow_list = @(
@@ -12304,6 +12329,7 @@ function Check-MiniDumpAuxiliaryDLLs {
 }
 
 function Check-Wow64LayerAbuse {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking WOW64 Compatibility DLLs"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Wow64\x86"
     if (Test-Path -Path $path) {
@@ -12341,6 +12367,7 @@ function Check-Wow64LayerAbuse {
 }
 
 function Check-EventViewerMSC {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Event Viewer MSC"
     $paths = @(
         "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Event Viewer"
@@ -12383,6 +12410,7 @@ function Check-EventViewerMSC {
 }
 
 function Check-MicrosoftTelemetryCommands {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Microsoft Telemetry"
     # Microsoft Telemetry Commands
     $allowed_telemetry_commands = @(
@@ -12435,6 +12463,7 @@ function Check-MicrosoftTelemetryCommands {
 }
 
 function Check-ActiveSetup {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Active Setup Stubs"
     # T1547.014 - Boot or Logon Autostart Execution: Active Setup
     $standard_stubpaths = @(
@@ -12489,6 +12518,7 @@ function Check-ActiveSetup {
 }
 
 function Check-UninstallStrings {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Uninstall Strings"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
     if (Test-Path -Path $path) {
@@ -12574,6 +12604,7 @@ function Check-UninstallStrings {
 }
 
 function Check-PolicyManager {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking PolicyManager DLLs"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default"
     $allow_listed_values = @(
@@ -12659,6 +12690,7 @@ function Check-PolicyManager {
 }
 
 function Check-SEMgrWallet {
+    # TODO - Implement snapshot skipping
     Write-Message "Checking SEMgr Wallet DLLs"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\SEMgr\Wallet"
     if (Test-Path -Path $path) {
@@ -12687,6 +12719,7 @@ function Check-SEMgrWallet {
 }
 
 function Check-WERRuntimeExceptionHandlers {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Error Reporting Handler DLLs"
     $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules"
     $allowed_entries = @(
@@ -12745,6 +12778,7 @@ function Check-WERRuntimeExceptionHandlers {
 }
 
 function Check-SilentProcessExitMonitoring {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking SilentProcessExit Monitoring"
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit") {
         $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -12791,6 +12825,7 @@ function Check-SilentProcessExitMonitoring {
 }
 
 function Check-WinlogonHelperDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Winlogon Helper DLLs"
     $standard_winlogon_helper_dlls = @(
         "C:\Windows\System32\userinit.exe,"
@@ -12864,6 +12899,7 @@ function Check-SethcHijack {
 }
 
 function Check-RDPShadowConsent {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking RDP Shadow Consent"
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -12906,6 +12942,7 @@ function Check-RDPShadowConsent {
 }
 
 function Check-RemoteUACSetting {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking RemoteUAC Setting"
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -12948,6 +12985,7 @@ function Check-RemoteUACSetting {
 }
 
 function Check-PrintMonitorDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking PrintMonitor DLLs"
     $standard_print_monitors = @(
 		"APMon.dll",
@@ -13001,6 +13039,7 @@ function Check-PrintMonitorDLLs {
 }
 
 function Check-LSA {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking LSA DLLs"
     # LSA Security Package Review
     # TODO - Check DLL Modification/Creation times
@@ -13196,6 +13235,7 @@ function Check-LSA {
 }
 
 function Check-DNSServerLevelPluginDLL {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking DNSServerLevelPlugin DLL"
     $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters"
     if (Test-Path -Path $path) {
@@ -13230,6 +13270,7 @@ function Check-DNSServerLevelPluginDLL {
 }
 
 function Check-ExplorerHelperUtilities {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Explorer Helper exes"
     $paths = @(
         "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\BackupPath"
@@ -13279,6 +13320,7 @@ function Check-ExplorerHelperUtilities {
 }
 
 function Check-TerminalServicesInitialProgram {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Terminal Services Initial Programs"
     $paths = @(
         "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
@@ -13328,6 +13370,7 @@ function Check-TerminalServicesInitialProgram {
 }
 
 function Check-RDPStartupPrograms {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking RDP Startup Programs"
     $allowed_rdp_startups = @(
         "rdpclip"
@@ -13373,6 +13416,7 @@ function Check-RDPStartupPrograms {
 }
 
 function Check-TimeProviderDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Time Provider DLLs"
     $standard_timeprovider_dll = @(
         "$env:homedrive\Windows\System32\w32time.dll",
@@ -13417,6 +13461,7 @@ function Check-TimeProviderDLLs {
 }
 
 function Check-PrintProcessorDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking PrintProcessor DLLs"
     $standard_print_processors = @(
         "winprint.dll"
@@ -13497,6 +13542,7 @@ function Check-PrintProcessorDLLs {
 }
 
 function Check-UserInitMPRScripts {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking UserInitMPRLogonScript"
     if (Test-Path -Path "Registry::HKCU\Environment") {
         $items = Get-ItemProperty -Path "Registry::HKCU\Environment" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -13549,6 +13595,7 @@ function Check-ScreenSaverEXE {
 }
 
 function Check-NetSHDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking NetSH DLLs"
     $standard_netsh_dlls = @(
 		"authfwcfg.dll",
@@ -13608,6 +13655,7 @@ function Check-NetSHDLLs {
 }
 
 function Check-AppCertDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking AppCert DLLs"
     $standard_appcert_dlls = @()
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls") {
@@ -13645,6 +13693,7 @@ function Check-AppCertDLLs {
 }
 
 function Check-AppInitDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking AppInit DLLs"
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -13714,6 +13763,7 @@ function Check-AppInitDLLs {
 }
 
 function Check-ApplicationShims {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Application Shims"
     # TODO - Also check HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Custom
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB") {
@@ -13749,6 +13799,7 @@ function Check-ApplicationShims {
 }
 
 function Check-IFEO {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Image File Execution Options"
     if (Test-Path -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options") {
         $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -13791,6 +13842,7 @@ function Check-IFEO {
 }
 
 function Check-FolderOpen {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking FolderOpen Command"
     if (Test-Path -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command") {
         $items = Get-ItemProperty -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -13886,6 +13938,7 @@ function Check-Officetest {
 }
 
 function Check-OfficeGlobalDotName {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Office GlobalDotName usage"
     # TODO - Cleanup Path Referencing, Add more versions?
     $office_versions = @(14,15,16)
@@ -13961,6 +14014,7 @@ function Check-AutoDialDLL {
 }
 
 function Check-CommandAutoRunProcessors {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking Command AutoRun Processors"
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -14062,6 +14116,7 @@ function Check-TrustProviderDLL {
 }
 
 function Check-NaturalLanguageDevelopmentDLLs {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking NaturalLanguageDevelopment DLLs"
     if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language") {
         $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -14102,6 +14157,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
 }
 
 function Check-WindowsLoadKey {
+    # TODO - Add Snapshot Skipping
     Write-Message "Checking Windows Load"
     $path = "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows"
     if (Test-Path -Path "Registry::$path") {
@@ -14130,6 +14186,7 @@ function Check-WindowsLoadKey {
 }
 
 function Check-AMSIProviders {
+    # TODO - Add Snapshot Skipping
     Write-Message "Checking AMSI Providers"
     $allowed_amsi_providers = @(
         "{2781761E-28E0-4109-99FE-B9D127C57AFE}"
@@ -14173,6 +14230,7 @@ function Check-AMSIProviders {
 }
 
 function Check-AppPaths {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking AppPaths"
     $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"
     if (Test-Path -Path "Registry::$path") {
@@ -14225,6 +14283,7 @@ function Check-AppPaths {
 }
 
 function Check-GPOExtensions {
+    # Supports Dynamic Snapshotting
     Write-Message "Checking GPO Extension DLLs"
     $homedrive = $env:HOMEDRIVE
     $gpo_dll_allowlist = @(
@@ -14311,8 +14370,9 @@ function Check-HTMLHelpDLL {
 }
 
 function Check-RATS {
-    # Support Drive Retarget (Except for HKCU)
+    # 99% Supports Drive Retargeting
     # TODO - Fix HKCU References
+    # Supports Dynamic Snapshotting
 
     # https://www.synacktiv.com/en/publications/legitimate-rats-a-comprehensive-forensic-analysis-of-the-usual-suspects.html
     # https://vikas-singh.notion.site/vikas-singh/Remote-Access-Software-Forensics-3e38d9a66ca0414ca9c882ad67f4f71b#183d1e94c9584aadbb13779bbe77f68e
