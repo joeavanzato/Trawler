@@ -18,6 +18,7 @@ Currently, trawler can detect most of the persistence techniques specifically ca
 * Analysis and Remediation Guidance Documentation (https://github.com/joeavanzato/Trawler/wiki/Analysis-and-Remediation-Guidance)
 * Dynamic Risk Assignment for each detection
 * Built-in Allow Lists for common Windows configurations spanning Windows 10/Server 2012|2016|2019|2022 to reduce noise
+* Capture persistence metadata from 'golden' enterprise image for use as a dynamic allow-list at runtime
 
 ## How do I use it?
 Just download and run trawler.ps1 from an Administrative PowerShell/cmd prompt - any detections will be displayed in the console as well as written to a CSV ('detections.csv') in the current working directory.  The generated CSV will contain Detection Name, Source, Risk, Metadata and the relevant MITRE Technique.
@@ -125,8 +126,8 @@ That's it - all relevant detections will then draw from the snapshot file as an 
 * Windows Terminal startOnUserLogin Hijacks
 * App Path Mismatches
 * Service DLL/ImagePath Mismatches
-* Non-Standard GPO Extension DLLs
-* Potential HKCR COM Hijacks
+* GPO Extension DLLs
+* Potential COM Hijacks
 * Non-Standard LSA Extensions
 * DNSServerLevelPluginDll Presence
 * Explorer\MyComputer Utility Hijack
@@ -146,6 +147,8 @@ That's it - all relevant detections will then draw from the snapshot file as an 
 * PolicyManager DLLs
 * SEMgr Wallet DLL
 * WER Runtime Exception Handlers
+* HTML Help (.CHM)
+* Remote Access Tool Artifacts (Files, Directories, Registry Keys)
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
@@ -158,7 +161,6 @@ TODO
 * AutoPlay Handler Inspection [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\]
 * HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\Pending\SPReviewEnabler
 * OCSetup [https://www.hexacorn.com/blog/2019/11/09/beyond-good-ol-run-key-part-122/]
-* Remote Access Tool Checks (VNC, TeamViewer, AnyDesk, Zoho, etc)
 
 ## MITRE Techniques Evaluated
 
