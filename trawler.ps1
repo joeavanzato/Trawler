@@ -141,6 +141,52 @@ $suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|regedit|invoke-iex|from
 $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
 $office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", ".xlam", ".com"
+$rat_terms = @(
+    #Remote Access Tool Indicators
+    # Any Process Name, Scheduled Task or Service containing these keywords will be flagged.
+    "aeroadmin",
+    "action1"
+    "ammyadmin"
+    "anydesk"
+    "anyscreen"
+    "anyviewer"
+    "atera"
+    "beyondtrust"
+    "bomgar"
+    "connectwise"
+    "dameware"
+    "desktopnow"
+    "distant"
+    "dwservice"
+    "dwagent"
+    "getscreen"
+    "iperius"
+    "kaseya"
+    "litemanager"
+    "logmein"
+    "mstsc"
+    "ninja1"
+    "ninjaone"
+    "pulseway"
+    "quickassist"
+    "radmin"
+    "realvnc"
+    "remotepc"
+    "remotetopc"
+    "remote utilities"
+    "screenconnect"
+    "screenmeet"
+    "showmypc"
+    "sightcall"
+    "splashtop"
+    "surfly"
+    "teamviewer"
+    "tightvnc"
+    "vnc"
+    "xmreality"
+    "ultravnc"
+    "zoho"
+)
 
 function Check-ScheduledTasks {
     Write-Message "Checking Scheduled Tasks"
@@ -541,6 +587,19 @@ function Check-Services {
             $result = Check-IfAllowed $allowtable_services $service.Name $service.PathName $detection
             if ($result){
                 continue
+            }
+        }
+        ForEach ($term in $rat_terms) {
+            if ($service.PathName -match ".*$term.*") {
+                # Service has a suspicious launch pattern matching a known RAT
+                $detection = [PSCustomObject]@{
+                    Name = 'Service Argument has known-RAT Keyword'
+                    Risk = 'Medium'
+                    Source = 'Services'
+                    Technique = "T1543.003: Create or Modify System Process: Windows Service"
+                    Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName+", RAT Keyword: "+$term
+                }
+                Write-Detection $detection
             }
         }
 
@@ -14228,6 +14287,197 @@ function Check-HTMLHelpDLL {
     }
 }
 
+function Check-RATS {
+    # https://www.synacktiv.com/en/publications/legitimate-rats-a-comprehensive-forensic-analysis-of-the-usual-suspects.html
+    # https://vikas-singh.notion.site/vikas-singh/Remote-Access-Software-Forensics-3e38d9a66ca0414ca9c882ad67f4f71b#183d1e94c9584aadbb13779bbe77f68e
+    # https://support.solarwinds.com/SuccessCenter/s/article/Log-File-Locations-Adjustments-and-Diagnostics-for-DameWare?language=en_US
+    # https://digitalforensicsdotblog.wordpress.com/tag/screenconnect/
+    # https://docs.getscreen.me/faq/agent/
+    # https://helpdesk.kaseya.com/hc/en-gb/articles/229009708-Live-Connect-Log-File-Locations
+    # https://support.goto.com/resolve/help/where-do-i-find-goto-resolve-application-logs
+    # https://support.radmin.com/index.php/Knowledgebase/Article/View/124/9/Radmin-Installation-Guide
+
+    ##### TightVNC
+    # -Log Files
+    ##### UltraVNC
+    # -Log Files
+    ##### RealVNC
+    # -Debug Logs - %ProgramData%\RealVBC-Service\vncserver.log
+    ##### AmmyAdmin
+    # -LogFiles
+    ##### Remote
+    ##### AnyDesk
+    # -Log Files
+    ##### TeamViewer
+    # -Log Files
+    # HKLM\SYSTEM\CurrentControlSet\Services\TeamViewer
+    ##### NinjaOne
+    ##### Zoho GoTo Assist/GoTo Resolve
+    ##### Atera
+    # https://support.atera.com/hc/en-us/articles/215955967-Troubleshoot-the-Atera-Agent-Windows-
+    # HKEY_LOCAL_MACHINE\SOFTWARE\ATERA Networks\AlphaAgent
+    # If Reg key exists, Agent was installed at one point
+    # Also installs a service named 'AlteraAgent'
+    ##### ConnectWise/ScreenConnect
+    # https://blog.morphisec.com/connectwise-control-abused-again-to-deliver-zeppelin-ransomware
+    # Installs service called "ScreenConnect Client"
+    # C:\ProgramData\ScreenConnect Client (<string ID>)\user.config
+    # C:\Windows\Temp\ScreenConnect\.*\
+    ##### AnyScreen
+    ##### RemotePC
+    ##### BeyondTrust
+    ##### Remote Desktop Manager
+    ##### Getscreen
+    ##### Action1
+    ##### Webex
+    ##### Atlassian
+    ##### Surfly
+    ##### Electric
+    ##### Pulseway
+    ##### Kaseya VSA
+    ##### XMReality
+    ##### SightCall
+    ##### DameWare
+    ##### ScreenMeet
+    ##### Viewabo
+    ##### ShowMyPC
+    ##### Iperius
+    ##### Radmin
+    ##### Remote Utilities
+    ##### RemoteToPC
+    ##### LogMeIn
+
+    $application_logpaths = @{
+        "Action1" = ""
+        "AmmyAdmin (Log 1)" = "$env:ProgramData\AMMYY\access.log"
+        "AmmyAdmin (Dir 1)" = "$env:ProgramData\AMMYY"
+        "AnyDesk (Log 1)" = "$env:ProgramData\AnyDesk\ad.trace"
+        "AnyDesk (Log 2)" = "$env:ProgramData\AnyDesk\connection_trace.txt"
+        "AnyDesk (Log 3)" = "$env:AppData\AnyDesk\ad.trace"
+        "AnyDesk (Log 4)" = "$env:ProgramData\AnyDesk\ad_svc.trace"
+        "AnyDesk (Log 5)" = "$env:AppData\AnyDesk\*.conf"
+        "AnyDesk (Reg 1)" = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\AnyDesk"
+        "AnyDesk (Reg 2)" = "Registry::HKLM\SOFTWARE\Clients\Media\AnyDesk"
+        "AnyDesk (Reg 3)" = "Registry::HKLM\SYSTEM\ControlSet001\Services\AnyDesk"
+        "AnyScreen" = ""
+        "Bomgar\BeyondTrust (Dir 1)" = "$env:homedrive\Program Files\Bomgar"
+        "Bomgar\BeyondTrust (Dir 2)" = "$env:homedrive\Program Files (x86)\Bomgar"
+        "Bomgar\BeyondTrust (Dir 3)" = "$env:ProgramData\BeyondTrust"
+        "Atera\SplashTop (Log 1)" = "$env:homedrive\Program Files\ATERA Networks\AteraAgent\Packages\AgentPackageRunCommandInteractive\log.txt"
+        "Atera\SplashTop (Log 2)" = "$env:homedrive\Program Files (x86)\Splashtop\Splashtop Remote\Server\log\*.txt"
+        "Atera\SplashTop (Dir 1)" = "$env:homedrive\Program Files\ATERA Networks\AteraAgent"
+        "Atera\SplashTop (Reg 1)" = "Registry::HKLM\SOFTWARE\Microsoft\Tracing\AteraAgent_RASAPI32"
+        "Atera\SplashTop (Reg 2)" = "Registry::HKLM\SOFTWARE\Microsoft\Tracing\AteraAgent_RASMANCS"
+        "Atera\SplashTop (Reg 3)" = "Registry::HKLM\SYSTEM\ControlSet001\Services\EventLog\Application\AlphaAgent"
+        "Atera\SplashTop (Reg 4)" = "Registry::HKLM\SYSTEM\ControlSet001\Services\EventLog\Application\AteraAgent"
+        "Atera\SplashTop (Reg 5)" = "Registry::HKLM\SYSTEM\ControlSet001\Services\AteraAgent"
+        "Atera\SplashTop (Reg 6)" = "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Splashtop-Splashtop Streamer-Remote Session/Operational"
+        "Atera\SplashTop (Reg 7)" = "Registry::HKLM\SYSTEM\ControlSet001\Services\SplashtopRemoteService"
+        "Atera\SplashTop (Reg 8)" = "Registry::HKLM\SYSTEM\ControlSet001\Control\SafeBoot\Network\SplashtopRemoteService"
+        "Atera\SplashTop (Reg 9)" = "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print\Printers\Splashtop PDF Remote Printer"
+        "Atera\SplashTop (Reg 10)" = "Registry::HKLM\SOFTWARE\WOW6432Node\Splashtop Inc.\Splashtop Remote Server\ClientInfo"
+        "ConnectWise\ScreenConnect (Dir 1)" = "$env:ProgramData\ScreenConnect*"
+        "ConnectWise\ScreenConnect (Dir 2)" = "$env:homedrive\Program Files(x86)\ScreenConnect*"
+        "ConnectWise\ScreenConnect (Dir 3)" = "$env:homedrive\Program Files\ScreenConnect*"
+        "ConnectWise\ScreenConnect (Dir 4)" = "$env:temp\ScreenConnect*"
+        "DameWare (Dir 1)" = "$env:LocalAppData\temp\dwrrcc downloads"
+        "DameWare (Dir 2)" = "$env:homedrive\Windows\dwrcs"
+        "Dameware (Dir 3)" = "$env:ProgramData\DameWare"
+        "DameWare (Dir 4)" = "$env:AppData\DameWare Development"
+        "Dameware (Dir 5)" = "$env:ProgramData\DameWare Development"
+        "GetScreen (Dir 1)" = "$env:homedrive\Program Files\Getscreen.me"
+        "GetScreen (Dir 2)" = "$env:ProgramData\Getscreen.me"
+        "Iperius (Dir 1)" = "$env:ProgramData\iperius*"
+        "Iperius (Dir 2)" = "$env:homedrive\Program Files\iperius*"
+        "Kaseya VSA (Dir 1)" = "$env:ProgramData\Kaseya*"
+        "Kaseya VSA (Dir 2)" = "$env:homedrive\Program Files (x86)\Kaseya*"
+        "Kaseya VSA (Dir 3)" = "$env:localappdata\Kaseya*"
+        "LogMeIn (Dir 1)" = "$env:localappdata\LogMeInIgnition*"
+        "NinjaOne" = ""
+        "Pulseway (Dir 1)" = "$env:appdata\Pulseway Remote Control"
+        "Pulseway (Reg 1)" = "Registry::HKCU\Software\MMSOFT Design\Pulseway\Remote Desktop"
+        "Pulseway (Reg 2)" = "Registry::HKLM\Software\MMSOFT Design\Pulseway\Remote Desktop"
+        "Radmin (Dir 1)" = "$env:homedrive\Program Files\Radmin*"
+        "Radmin (Dir 2)" = "$env:homedrive\Program Files (x86)\Radmin*"
+        "RealVNC (Dir 1)" = "$env:ProgramData\RealVBC-Service"
+        "RealVNC (Log 1)" = "$env:ProgramData\RealVBC-Service\vncserver.log"
+        "RealVNC (Log 2)" = "$env:ProgramData\RealVBC-Service\vncserver.log.bak"
+        "Remote Desktop Manager (Dir 1)" = "$env:localappdata\Devolutions\RemoteDesktopManager"
+        "Remote Desktop Manager (Dir 2)" = "$env:homedrive\Program Files (x86)\Devolutions\Remote Desktop Manager"
+        "Remote Desktop Manager (Dir 3)" = "$env:homedrive\Program Files\Devolutions\Remote Desktop Manager"
+        "RemotePC (Dir 1)" = "$env:programdata\RemotePC*"
+        "RemotePC (Dir 2)" = "$env:homedrive\Program Files (x86)\RemotePC*"
+        "RemotePC (Dir 3)" = "$env:homedrive\Program Files\RemotePC*"
+        "RemotePC (Dir 4)" = "$env:localappdata\RemotePC*"
+        "RemoteToPC (Dir 1)" = "$env:programdata\RemoteToPC*"
+        "RemoteToPC (Dir 2)" = "$env:homedrive\Program Files (x86)\RemoteToPC*"
+        "RemoteToPC (Dir 3)" = "$env:homedrive\Program Files\RemoteToPC*"
+        "RemoteToPC (Dir 4)" = "$env:localappdata\RemoteToPC*"
+        "Remote Utilities (Dir 1)" = "$env:appdata\Remote Utilities Agent"
+        "Remote Utilities (Dir 2)" = "$env:homedrive\Program Files (x86)\Remote Utilities*"
+        "Remote Utilities (Dir 3)" = "$env:homedrive\Program Files\Remote Utilities*"
+        "Remote Utilities (Dir 4)" = "$env:programdata\Remote Utilities*"
+        "ScreenMeet (Dir 1)" = "$env:programdata\Projector Inc\ScreenMeet*"
+        "ShowMyPC (Dir 1)" = "$env:temp\ShowMyPC"
+        "ShowMyPC (Dir 2)" = "$env:localappdata\ShowMyPC"
+        "SightCall" = ""
+        "Surfly" = ""
+        "TightVNC (Log 1)" = "$env:homedrive\Windows\System32\config\systemprofile\AppData\Roaming\TightVNC\tvnserver.log"
+        "TightVNC (Log 2)" = "$env:ProgramData\TightVNC\tvnserver.log"
+        "TeamViewer (Log 1)" = "$env:appdata\TeamViewer\Connections.txt"
+        "TeamViewer (Log 2)" = "$env:temp\TeamViewer\Connections_incoming.txt"
+        "TeamViewer (Log 3)" = "$env:homedrive\Program Files\TeamViewer\Connections_incoming.txt"
+        "TeamViewer (Log 4)" = "$env:homedrive\Program Files\TeamViewer\TeamViewer*_Logfile.log"
+        "TeamViewer (Log 5)" = "$env:LocalAppData\TeamViewer\Logs\TeamViewer*_Logfile.log"
+        "TeamViewer (Log 6)" = "$env:appdata\TeamViewer\TeamViewer*_Logfile.log"
+        "TeamViewer (Reg 1)" = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\TeamViewer"
+        "TeamViewer (Reg 2)" = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\TeamViewer"
+        "UltraVNC (Log 1)" = "$env:ProgramData\uvnc bvba\WinVNC.log"
+        "UltraVNC (Log 2)" = "$env:ProgramData\uvnc bvba\mslogon.log"
+        "XMReality" = ""
+        "Viewabo" = ""
+        "ZoHo Assist (Dir 1)" = "$env:LocalAppData\ZohoMeeting"
+        "ZoHo Assist (Dir 2)" = "$env:LocalAppData\GoTo Resolve Applet"
+        "ZoHo Assist (Dir 3)" = "$env:homedrive\Program Files(x86)\GoTo Resolve*"
+        "ZoHo Assist (Dir 4)" = "$env:LocalAppData\GoTo"
+    }
+    ForEach ($item in $application_logpaths.GetEnumerator()){
+        #Write-Host "Checking Path: "$item.Value
+        $checked_path = $item.Value
+        $rat_name = $item.Name
+        #Write-Host $checked_path
+        if ($checked_path -eq ""){
+            continue
+        }
+        if(Test-Path $checked_path){
+
+            if ($snapshot){
+                $message = [PSCustomObject]@{
+                    Key = $rat_name
+                    Value = $checked_path
+                    Source = 'RATS'
+                }
+                Write-Snapshot $message
+            }
+            if ($loadsnapshot){
+                $result = Check-IfAllowed $allowlist_rats $checked_path $checked_path
+                if ($result){
+                    continue
+                }
+            }
+            $detection = [PSCustomObject]@{
+                Name = 'Remote Access Tool Artifact'
+                Risk = 'Medium'
+                Source = 'Software'
+                Technique = "T1219: Remote Access Software"
+                Meta = "Possible RAT Artifact: $rat_name, Location: $checked_path"
+            }
+            Write-Detection $detection
+            #Write-Host "Found RAT Artifact: $rat_name, Location: $checked_path"
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -14367,6 +14617,7 @@ function Read-Snapshot(){
     $script:allowlist_folderopen = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_globaldotname = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_cmdautorunproc = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_rats = New-Object -TypeName "System.Collections.ArrayList"
     ForEach ($item in $csv_data){
         if ($item.Source -eq "Scheduled Tasks"){
             # Using scheduled task name and exe path
@@ -14378,6 +14629,8 @@ function Read-Snapshot(){
             $allowtable_ifeodebuggers[$item.Key] = $item.Value
         } elseif ($item.Source -eq "AppShims"){
             $allowlist_appshims.Add($item.Value) | Out-Null
+        } elseif ($item.Source -eq "RATS"){
+            $allowlist_rats.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "CommandAutorunProcessor"){
             $allowlist_cmdautorunproc.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "GlobalDotName"){
@@ -14632,6 +14885,7 @@ function Main {
     Check-AppPaths
     Check-GPOExtensions
     Check-HTMLHelpDLL
+    Check-RATS
     Detection-Metrics
 }
 
