@@ -153,7 +153,7 @@ $suspicious_process_paths = @(
 $suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|regedit|invoke-iex|frombase64|tobase64|rundll32|http:|https:|system\.net\.webclient|downloadfile|downloadstring|bitstransfer|system\.net\.sockets|tcpclient|xmlhttp|AssemblyBuilderAccess|shellcode|rc4bytestream|disablerealtimemonitoring|wmiobject|wmimethod|remotewmi|wmic|gzipstream|::decompress|io\.compression|write-zip|encodedcommand|wscript\.shell|MSXML2\.XMLHTTP).*"
 $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
-$office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", ".xlam", ".com"
+$office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", ".xlam", ".com", ".xla"
 $rat_terms = @(
     #Remote Access Tool Indicators
     # Any Process Name, Scheduled Task or Service containing these keywords will be flagged.
@@ -15238,29 +15238,31 @@ function Check-GPOExtensions {
 }
 
 function Check-HTMLHelpDLL {
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking HTML Help (.chm) DLL"
-    $path = "HKEY_CURRENT_USER\Software\Microsoft\HtmlHelp Author"
-    if (Test-Path -Path "Registry::$path") {
-        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $item.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'location'){
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential CHM DLL Hijack'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+    $basepath = "HKEY_CURRENT_USER\Software\Microsoft\HtmlHelp Author"
+    ForEach ($p in $regtarget_hkcu_list){
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        if (Test-Path -Path "Registry::$path") {
+            $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $item.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'location'){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Potential CHM DLL Hijack'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
                 }
-                Write-Detection $detection
             }
         }
     }
 }
 
 function Check-RATS {
-    # 99% Supports Drive Retargeting
-    # TODO - Fix HKCU References
+    # Supports Drive Retargeting
     # Supports Dynamic Snapshotting
 
     # https://www.synacktiv.com/en/publications/legitimate-rats-a-comprehensive-forensic-analysis-of-the-usual-suspects.html
@@ -15426,7 +15428,7 @@ function Check-RATS {
         $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
     } else {
         $profile_names = @()
-        Write-Warning "[!] Could not find '$env_homedrive\Users' on target drive!"
+        Write-Warning "[!] Could not find '$env_homedrive\Users'!"
     }
 
 
@@ -15442,13 +15444,26 @@ function Check-RATS {
                 if ($checked_path -match ".*USER_REPLACE.*"){
                     $tmp = $checked_path.Replace("USER_REPLACE", $user.Name)
                     $paths += $tmp
+                } elseif ($checked_path -match ".*HKCU.*"){
+                    ForEach ($p in $regtarget_hkcu_list){
+                        $paths += $checked_path.Replace("HKCU", $p)
+                    }
+                    break
                 } else{
                     $paths += $checked_path
                     break
                 }
             }
         } else {
-            $paths += $checked_path
+            if ($checked_path -match ".*HKCU.*")
+            {
+                ForEach ($p in $regtarget_hkcu_list)
+                {
+                    $paths += $checked_path.Replace("HKCU", $p)
+                }
+            } else {
+                $paths += $checked_path
+            }
         }
         ForEach ($tmppath in $paths){
             if(Test-Path $tmppath){
@@ -15794,7 +15809,8 @@ function Check-IfAllowed($allowmap, $key, $val, $det){
 
 function Drive-Change {
     # HKLM associated hives detected on the target drive will be loaded as 'HKLM\ANALYSIS_$NAME' such as 'HKLM\ANALYSIS_SOFTWARE' for the SOFTWARE hive
-    # User hives (NTUSER.DAT, USRCLASS.DAT) will be loaded as 'HKU\USER_ANALYSIS_$NAME' and 'HKU\USER_CLASS_ANALYSIS_$NAME' respectively - such as 'HKU\USER_ANALYSIS_JOE' for each detected profile on the target drive.
+    # User hives (NTUSER.DAT, USRCLASS.DAT) will be loaded as 'HKU\ANALYSIS_$NAME' and 'HKU\ANALYSIS_$NAME_Classes' respectively - such as 'HKU\ANALYSIS_JOE'/'HKU\ANALYSIS_JOE_Classes for each detected profile on the target drive.
+    Write-Message "Setting up Registry Variables"
     if ($drivechange){
         Write-Host "[!] Moving Target Drive to $drivetarget"
         if ($drivetarget -notmatch "^[A-Za-z]{1}:$"){
@@ -15819,20 +15835,26 @@ function Drive-Change {
         {
             $user_hive_list = New-Object -TypeName "System.Collections.ArrayList"
             $user_hive_list_classes = New-Object -TypeName "System.Collections.ArrayList"
+            $script:regtarget_hkcu_list = @()
+            $script:regtarget_hkcu_class_list = @()
             $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
             ForEach ($user in $profile_names){
                 $name = $user.Name
                 $ntuser_path = "$env_homedrive\Users\$name\NTUSER.DAT"
                 $class_path = "$env_homedrive\Users\$name\AppData\Local\Microsoft\Windows\UsrClass.DAT"
                 if (Test-Path $ntuser_path){
-                    $full_hive_path = "USER_ANALYSIS_{0}" -f $name
+                    $full_hive_path = "ANALYSIS_{0}" -f $name
                     Load-Hive $full_hive_path $ntuser_path "HKEY_USERS"
                     $user_hive_list.Add($full_hive_path) | Out-Null
+                    $tmphivepath = "HKEY_USERS\$full_hive_path"
+                    $script:regtarget_hkcu_list += $tmphivepath
                 }
                 if (Test-Path $class_path){
-                    $full_hive_path = "USER_CLASS_ANALYSIS_{0}" -f $name
+                    $full_hive_path = "ANALYSIS_{0}_Classes" -f $name
                     Load-Hive $full_hive_path $class_path "HKEY_USERS"
                     $user_hive_list_classes.Add($full_hive_path) | Out-Null
+                    $tmphivepath = "HKEY_USERS\$full_hive_path"
+                    $script:regtarget_hkcu_class_list += $tmphivepath
                 }
 
             }
@@ -15844,16 +15866,30 @@ function Drive-Change {
 
         $script:regtarget_hklm = "HKEY_LOCAL_MACHINE\ANALYSIS_"
         $script:regtarget_hkcu = "HKEY_CURRENT_USER\"
+        # Need to avoid using HKCR as it will be unavailable on dead drives
         $script:regtarget_hkcr = "HKEY_CLASSES_ROOT\"
         $script:currentcontrolset = "ControlSet001"
 
 
     } elseif ($drivechange -eq $false){
+        # Load all HKU hives into lists for global reference
+        $script:regtarget_hkcu_list = @()
+        $script:regtarget_hkcu_class_list = @()
+        $base_key = "HKEY_USERS"
+        $items = Get-ChildItem -Path "Registry::$base_key" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            if ($item.Name -match ".*_Classes"){
+                $script:regtarget_hkcu_class_list += $item.Name
+            } else {
+                $script:regtarget_hkcu_list += $item.Name
+            }
+        }
         $script:env_homedrive = $env:homedrive
         $script:env_assumedhomedrive = $env:homedrive
         $script:env_programdata = $env:programdata
         $script:regtarget_hklm = "HKEY_LOCAL_MACHINE\"
         $script:regtarget_hkcu = "HKEY_CURRENT_USER\"
+        # Need to avoid using HKCR as it will be unavailable on dead drives
         $script:regtarget_hkcr = "HKEY_CLASSES_ROOT\"
         $script:currentcontrolset = "CurrentControlSet"
     }
@@ -15877,9 +15913,8 @@ function Unload-Hive($hive_fullpath, $hive_value){
 }
 
 function Clean-Up {
-    Start-Sleep -seconds 5
+    #Start-Sleep -seconds 5
     if ($drivechange){
-        # TODO - Unload registry hives
         ForEach ($hive in $new_psdrives_list.GetEnumerator()){
             $hive_key = $hive.Key
             if (Test-Path "Registry::$hive_key"){
@@ -15984,8 +16019,8 @@ function Main {
     #Check-AMSIProviders
     #Check-AppPaths
     #Check-GPOExtensions
-    #Check-HTMLHelpDLL#>
-    #Check-RATS
+    Check-HTMLHelpDLL
+    Check-RATS
     Clean-Up
     Detection-Metrics
 }
