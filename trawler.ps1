@@ -14676,8 +14676,9 @@ function Check-IFEO {
     # Supports Dynamic Snapshotting
     # Supports Drive Retargeting
     Write-Message "Checking Image File Execution Options"
-    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options") {
-        $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $path = "Registry::$regtarget_hklm`SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options"
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -14718,90 +14719,113 @@ function Check-IFEO {
 
 function Check-FolderOpen {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking FolderOpen Command"
-    if (Test-Path -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\Software\Classes\Folder\shell\open\command" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'DelegateExecute') {
-                if ($snapshot){
-                    $message = [PSCustomObject]@{
-                        Key = $_.Name
-                        Value = $_.Value
-                        Source = 'FolderOpen'
+    $basepath = "Registry::HKEY_CURRENT_USER\Software\Classes\Folder\shell\open\command"
+    ForEach ($p in $regtarget_hkcu_list){
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'DelegateExecute') {
+                    if ($snapshot){
+                        $message = [PSCustomObject]@{
+                            Key = $_.Name
+                            Value = $_.Value
+                            Source = 'FolderOpen'
+                        }
+                        Write-Snapshot $message
                     }
-                    Write-Snapshot $message
-                }
-                if ($loadsnapshot){
-                    $result = Check-IfAllowed $allowlist_folderopen $_.Value $_.Value
-                    if ($result -eq $true){
-                        return
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_folderopen $_.Value $_.Value
+                        if ($result -eq $true){
+                            return
+                        }
                     }
+                    $detection = [PSCustomObject]@{
+                        Name = 'Potential Folder Open Hijack for Persistence'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                        Meta = "Key Location: HKCU\Software\Classes\Folder\shell\open\command, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
                 }
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Folder Open Hijack for Persistence'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                    Meta = "Key Location: HKCU\Software\Classes\Folder\shell\open\command, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
             }
         }
     }
 }
 
 function Check-WellKnownCOM {
-    # Can support drive retargeting
+    # Supports Drive Retargeting
+    # TODO - Add the same HKLM Check
     Write-Message "Checking well-known COM hijacks"
+
     # shell32.dll Hijack
-    if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Potential shell32.dll Hijack for Persistence'
-                Risk = 'High'
-                Source = 'Registry'
-                Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+    $basepath = "Registry::HKEY_CURRENT_USER\Software\Classes\CLSID\{42aedc87-2188-41fd-b9a3-0c966feabec1}\InprocServer32"
+    ForEach ($p in $regtarget_hkcu_list) {
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        if (Test-Path -Path $path)
+        {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath, PSParentPath, PSChildName, PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential shell32.dll Hijack for Persistence'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                    Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                }
+                Write-Detection $detection
             }
-            Write-Detection $detection
         }
     }
     # WBEM Subsystem
-    if (Test-Path -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Potential WBEM Subsystem Hijack for Persistence'
-                Risk = 'High'
-                Source = 'Registry'
-                Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+    $basepath = "Registry::HKEY_CURRENT_USER\Software\Classes\CLSID\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\InprocServer32"
+    ForEach ($p in $regtarget_hkcu_list) {
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                $detection = [PSCustomObject]@{
+                    Name = 'Potential WBEM Subsystem Hijack for Persistence'
+                    Risk = 'High'
+                    Source = 'Registry'
+                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                    Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                }
+                Write-Detection $detection
             }
-            Write-Detection $detection
         }
     }
+
 }
 
 function Check-Officetest {
-    # Partially Supports Retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Office test usage"
-    if (Test-Path -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            $detection = [PSCustomObject]@{
-                Name = 'Persistence via Office test\Special\Perf Key'
-                Risk = 'Very High'
-                Source = 'Office'
-                Technique = "T1137.002: Office Application Startup: Office Test"
-                Meta = "Key Location: HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf: "+$_.Name+", Entry Value: "+$_.Value
+    $basepath = "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf"
+    ForEach ($p in $regtarget_hkcu_list)
+    {
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        if (Test-Path -Path $path)
+        {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath, PSParentPath, PSChildName, PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                $detection = [PSCustomObject]@{
+                    Name = 'Persistence via Office test\Special\Perf Key'
+                    Risk = 'Very High'
+                    Source = 'Office'
+                    Technique = "T1137.002: Office Application Startup: Office Test"
+                    Meta = "Key Location: HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf: " + $_.Name + ", Entry Value: " + $_.Value
+                }
+                Write-Detection $detection
             }
-            Write-Detection $detection
         }
     }
-    if (Test-Path -Path "Registry::$regtarget_hklm`Software\Microsoft\Office test\Special\Perf") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $path = "Registry::$regtarget_hklm`Software\Microsoft\Office test\Special\Perf"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             $detection = [PSCustomObject]@{
                 Name = 'Persistence via Office test\Special\Perf Key'
@@ -14817,37 +14841,41 @@ function Check-Officetest {
 
 function Check-OfficeGlobalDotName {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Office GlobalDotName usage"
     # TODO - Cleanup Path Referencing, Add more versions?
     $office_versions = @(14,15,16)
     ForEach ($version in $office_versions){
-        if (Test-Path -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options") {
-            $items = Get-ItemProperty -Path "Registry::HKCU\software\microsoft\office\$version.0\word\options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            $items.PSObject.Properties | ForEach-Object {
-                if ($_.Name -eq "GlobalDotName"){
-                    if ($snapshot){
-                        $message = [PSCustomObject]@{
-                            Key = $_.Name
-                            Value = $_.Value
-                            Source = 'GlobalDotName'
+        $basepath = "Registry::HKEY_CURRENT_USER\software\microsoft\office\$version.0\word\options"
+        ForEach ($p in $regtarget_hkcu_list){
+            $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+            if (Test-Path -Path $path) {
+                $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                $items.PSObject.Properties | ForEach-Object {
+                    if ($_.Name -eq "GlobalDotName"){
+                        if ($snapshot){
+                            $message = [PSCustomObject]@{
+                                Key = $_.Name
+                                Value = $_.Value
+                                Source = 'GlobalDotName'
+                            }
+                            Write-Snapshot $message
                         }
-                        Write-Snapshot $message
-                    }
-                    if ($loadsnapshot){
-                        $result = Check-IfAllowed $allowlist_globaldotname $_.Value $_.Value
-                        if ($result -eq $true){
-                            continue
+                        if ($loadsnapshot){
+                            $result = Check-IfAllowed $allowlist_globaldotname $_.Value $_.Value
+                            if ($result -eq $true){
+                                continue
+                            }
                         }
+                        $detection = [PSCustomObject]@{
+                            Name = 'Persistence via Office GlobalDotName'
+                            Risk = 'Very High'
+                            Source = 'Office'
+                            Technique = "T1137.001: Office Application Office Template Macros"
+                            Meta = "Key Location: HKCU\software\microsoft\office\$version.0\word\options, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        }
+                        Write-Detection $detection
                     }
-                    $detection = [PSCustomObject]@{
-                        Name = 'Persistence via Office GlobalDotName'
-                        Risk = 'Very High'
-                        Source = 'Office'
-                        Technique = "T1137.001: Office Application Office Template Macros"
-                        Meta = "Key Location: HKCU\software\microsoft\office\$version.0\word\options, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                    }
-                    Write-Detection $detection
                 }
             }
         }
@@ -14857,8 +14885,9 @@ function Check-OfficeGlobalDotName {
 function Check-TerminalServicesDLL {
     # Supports Drive Retargeting
     Write-Message "Checking TerminalServices DLL"
-    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\TermService\Parameters") {
-        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\TermService\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\TermService\Parameters"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'ServiceDll' -and $_.Value -ne 'C:\Windows\System32\termsrv.dll'){
                 $detection = [PSCustomObject]@{
@@ -14877,8 +14906,9 @@ function Check-TerminalServicesDLL {
 function Check-AutoDialDLL {
     # Supports Drive Retargeting
     Write-Message "Checking Autodial DLL"
-    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\WinSock2\Parameters") {
-        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\WinSock2\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\WinSock2\Parameters"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AutodialDLL' -and $_.Value -ne 'C:\Windows\System32\rasadhlp.dll'){
                 $detection = [PSCustomObject]@{
@@ -14896,10 +14926,11 @@ function Check-AutoDialDLL {
 
 function Check-CommandAutoRunProcessors {
     # Supports Dynamic Snapshotting
-    # Partially Supports Drive Retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Command AutoRun Processors"
-    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Command Processor") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Command Processor"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AutoRun'){
                 if ($snapshot){
@@ -14930,38 +14961,42 @@ function Check-CommandAutoRunProcessors {
             }
         }
     }
-    if (Test-Path -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor") {
-        $items = Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $items.PSObject.Properties | ForEach-Object {
-            if ($_.Name -eq 'AutoRun') {
-                if ($snapshot)
-                {
-                    $message = [PSCustomObject]@{
-                        Key = $_.Name
-                        Value = $_.Value
-                        Source = 'CommandAutorunProcessor'
-                    }
-                    Write-Snapshot $message
-                }
-                $pass = $false
-                if ($loadsnapshot)
-                {
-                    $result = Check-IfAllowed $allowlist_cmdautorunproc $_.Value $_.Value
-                    if ($result -eq $true)
+    $basepath = "Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Command Processor"
+    ForEach ($p in $regtarget_hkcu_list){
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        if (Test-Path -Path $path) {
+            $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $items.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'AutoRun') {
+                    if ($snapshot)
                     {
-                        $pass = $true
+                        $message = [PSCustomObject]@{
+                            Key = $_.Name
+                            Value = $_.Value
+                            Source = 'CommandAutorunProcessor'
+                        }
+                        Write-Snapshot $message
                     }
-                }
-                if ($pass -eq $false)
-                {
-                    $detection = [PSCustomObject]@{
-                        Name = 'Potential Hijacking of Command AutoRun Processor'
-                        Risk = 'Very High'
-                        Source = 'Registry'
-                        Technique = "T1546: Event Triggered Execution"
-                        Meta = "Key Location: HKEY_CURRENT_USER\SOFTWARE\Microsoft\Command Processor, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                    $pass = $false
+                    if ($loadsnapshot)
+                    {
+                        $result = Check-IfAllowed $allowlist_cmdautorunproc $_.Value $_.Value
+                        if ($result -eq $true)
+                        {
+                            $pass = $true
+                        }
                     }
-                    Write-Detection $detection
+                    if ($pass -eq $false)
+                    {
+                        $detection = [PSCustomObject]@{
+                            Name = 'Potential Hijacking of Command AutoRun Processor'
+                            Risk = 'Very High'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Key Location: HKEY_CURRENT_USER\SOFTWARE\Microsoft\Command Processor, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                        }
+                        Write-Detection $detection
+                    }
                 }
             }
         }
@@ -14971,8 +15006,9 @@ function Check-CommandAutoRunProcessors {
 function Check-TrustProviderDLL {
     # Supports Drive Retargeting
     Write-Message "Checking Trust Provider"
-    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}") {
-        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}"
+    if (Test-Path -Path $path) {
+        $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Dll' -and $_.Value -ne 'C:\Windows\System32\WindowsPowerShell\v1.0\pwrshsip.dll'){
                 $detection = [PSCustomObject]@{
@@ -15002,8 +15038,9 @@ function Check-NaturalLanguageDevelopmentDLLs {
     # Supports Dynamic Snapshotting
     # Supports Drive Retargeting
     Write-Message "Checking NaturalLanguageDevelopment DLLs"
-    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\ContentIndex\Language") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\ContentIndex\Language"
+    if (Test-Path -Path $path) {
+        $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -15042,29 +15079,32 @@ function Check-NaturalLanguageDevelopmentDLLs {
 
 function Check-WindowsLoadKey {
     # TODO - Add Snapshot Skipping
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Windows Load"
-    $path = "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows"
-    if (Test-Path -Path "Registry::$path") {
-        $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-        $item.PSObject.Properties | ForEach-Object {
-            if ($_.Name -in 'Load'){
-                if ($snapshot){
-                    $message = [PSCustomObject]@{
-                        Key = $_.Name
-                        Value = $_.Value
-                        Source = 'WindowsLoad'
+    $basepath = "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows"
+    ForEach ($p in $regtarget_hkcu_list){
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        if (Test-Path -Path "Registry::$path") {
+            $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $item.PSObject.Properties | ForEach-Object {
+                if ($_.Name -in 'Load'){
+                    if ($snapshot){
+                        $message = [PSCustomObject]@{
+                            Key = $_.Name
+                            Value = $_.Value
+                            Source = 'WindowsLoad'
+                        }
+                        Write-Snapshot $message
                     }
-                    Write-Snapshot $message
+                    $detection = [PSCustomObject]@{
+                        Name = 'Potential Windows Load Hijacking'
+                        Risk = 'High'
+                        Source = 'Registry'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    }
+                    Write-Detection $detection
                 }
-                $detection = [PSCustomObject]@{
-                    Name = 'Potential Windows Load Hijacking'
-                    Risk = 'High'
-                    Source = 'Registry'
-                    Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
-                }
-                Write-Detection $detection
             }
         }
     }
