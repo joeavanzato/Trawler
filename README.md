@@ -41,7 +41,7 @@ Additionally, if you identify obvious false positives, please let me know by ope
 -snapshotpath : Define a custom file-path for saving snapshot output to.
 -outpath : Define a custom file-path for saving detection output to (defaults to "$PSScriptRoot\detections.csv")
 -loadsnapshot : Define the path for an existing snapshot file to load as an allow-list reference
--targetdrive : Define the homedrive variable for a target drive (eg. .\trawler.ps1 -targetdrive "D:")
+-drivetarget : Define the homedrive variable for a target drive (eg. .\trawler.ps1 -targetdrive "D:")
 ```
 
 ## What separates this from PersistenceSniper?
@@ -66,15 +66,21 @@ That's it - all relevant detections will then draw from the snapshot file as an 
 (Allow-listing is implemented for most of the checks but not all - still being actively implemented)
 
 ## Drive ReTargeting
-Often during an investigation, analysts may end up mounting a new drive that represents an imaged Windows device - Trawler now partially supports scanning these mounted drives through the use of the '-targetdrive' parameter.
+Often during an investigation, analysts may end up mounting a new drive that represents an imaged Windows device - Trawler now partially supports scanning these mounted drives through the use of the '-drivetarget' parameter.
 
-At runtime, Trawler will re-target temporary script-level environment variables for use in checking file-based artifacts and also will attempt to load relevant Registry Hives (HKLM\SOFTWARE, HKLM\SYSTEM, NTUSER.DATs) underneath HKLM prefixed by 'ANALYSIS_'.  Trawler will also attempt to unload these temporarily loaded hives upon script completion.
+At runtime, Trawler will re-target temporary script-level variables for use in checking file-based artifacts and also will attempt to load relevant Registry Hives (HKLM\SOFTWARE, HKLM\SYSTEM, NTUSER.DATs, USRCLASS.DATs) underneath HKLM/HKU and prefixed by 'ANALYSIS_'.  Trawler will also attempt to unload these temporarily loaded hives upon script completion.
+
+As an example, if you have an image mounted at a location such as 'F:\Test' which contains the NTFS file system ('F:\Test\Windows', 'F:\Test\User', etc) then you can invoke tralier like below;
+```powershell
+.\trawler.ps1 -drivetarget "F:\Test"
+```
 
 ### What is not inspected when drive retargeting?
 * Running Processes
 * Network Connections
 * 'Phantom' DLLs
-* WMI Consumers (Maybe later on, would require parsing binary structures)
+* WMI Consumers (Being worked on)
+* BITS Jobs (Being worked on)
 
 Most other checks will function fine because they are based entirely on reading registry hives or file-based artifacts (or can be converted to do so, such as directly reading Task XML as opposed to using built-in command-lets.)
 
