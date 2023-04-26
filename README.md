@@ -74,6 +74,7 @@ As an example, if you have an image mounted at a location such as 'F:\Test' whic
 ```powershell
 .\trawler.ps1 -drivetarget "F:\Test"
 ```
+Please note that since trawler attempts to load the registry hive files from the drive in question, mapping a UNC path to a live remote device will NOT work as those files will not be accessible due to system locks.  I am working on an approach which will handle live remote devices, stay tuned.
 
 ### What is not inspected when drive retargeting?
 * Running Processes
