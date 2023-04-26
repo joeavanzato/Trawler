@@ -1350,7 +1350,7 @@ function Check-Services {
         "$env_assumedhomedrive\Windows\System32\drivers\xinputhid.sys"
     )
 
-    $services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
+    #$services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
     $service_path = "$regtarget_hklm`SYSTEM\$currentcontrolset\Services"
     $service_list = New-Object -TypeName "System.Collections.ArrayList"
     if (Test-Path -Path "Registry::$service_path") {
@@ -1682,6 +1682,7 @@ function Check-WMIConsumers {
 function Check-Startups {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting with some tinkering, just registry and file-paths basically.
+    # Partially supports drive retargeting currently
     Write-Message "Checking Startup Items"
     $startups = Get-CimInstance -ClassName Win32_StartupCommand | Select-Object Command,Location,Name,User
     ForEach ($item in $startups) {
@@ -1710,10 +1711,10 @@ function Check-Startups {
     }
 
     $paths = @(
-        "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
-        "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
-        "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
-        "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
+        "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
+        "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
     )
     ForEach ($path_ in $paths){
         $path = "Registry::$path_"
@@ -1798,14 +1799,14 @@ function Check-Modified-Windows-Accessibility-Feature {
     # Can support drive retargeting
     Write-Message "Checking Accessibility Binaries"
     $files_to_check = @(
-		"C:\Program Files\Common Files\microsoft shared\ink\HID.dll"
-		"C:\Windows\System32\AtBroker.exe",
-		"C:\Windows\System32\DisplaySwitch.exe",
-		"C:\Windows\System32\Magnify.exe",
-		"C:\Windows\System32\Narrator.exe",
-		"C:\Windows\System32\osk.exe",
-		"C:\Windows\System32\sethc.exe",
-		"C:\Windows\System32\utilman.exe"		
+		"$env_homedrive\Program Files\Common Files\microsoft shared\ink\HID.dll"
+		"$env_homedrive\Windows\System32\AtBroker.exe",
+		"$env_homedrive\Windows\System32\DisplaySwitch.exe",
+		"$env_homedrive\Windows\System32\Magnify.exe",
+		"$env_homedrive\Windows\System32\Narrator.exe",
+		"$env_homedrive\Windows\System32\osk.exe",
+		"$env_homedrive\Windows\System32\sethc.exe",
+		"$env_homedrive\Windows\System32\utilman.exe"
     )
     ForEach ($file in $files_to_check){ 
         $fdata = Get-Item $file -ErrorAction SilentlyContinue | Select-Object CreationTime,LastWriteTime
@@ -1857,11 +1858,11 @@ function Check-PowerShell-Profiles {
         Write-Detection $detection
     }
 
-    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object Name
+    $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object Name
     ForEach ($name in $profile_names){
-        $path1 = "C:\Users\$name\Documents\WindowsPowerShell\profile.ps1"
-        $path2 = "C:\Users\$name\Documents\WindowsPowerShell\Microsoft.PowerShellISE_profile.ps1"
-        $path3 = "C:\Users\$name\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
+        $path1 = "$env_homedrive\Users\$name\Documents\WindowsPowerShell\profile.ps1"
+        $path2 = "$env_homedrive\Users\$name\Documents\WindowsPowerShell\Microsoft.PowerShellISE_profile.ps1"
+        $path3 = "$env_homedrive\Users\$name\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
         if (Test-Path $path1){
             $detection = [PSCustomObject]@{
                 Name = 'Review: Custom PowerShell Profile'
@@ -1897,12 +1898,12 @@ function Check-PowerShell-Profiles {
 
 function Check-Outlook-Startup {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Outlook Macros"
     # allowlist_officeaddins
-    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
+    $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
     ForEach ($user in $profile_names){
-        $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
+        $path = "$env_homedrive\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
         $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Select-Object * | Where-Object {$_.extension -in $office_addin_extensions}
         ForEach ($item in $items){
             if ($snapshot){
@@ -1928,7 +1929,7 @@ function Check-Outlook-Startup {
             }
             #Write-Detection $detection - Removing this as it is a duplicate of the new Office Scanning Functionality which will cover the same checks
         }
-        $path = "$env:homedrive\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Outlook\VbaProject.OTM"
+        $path = "$env_homedrive\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Outlook\VbaProject.OTM"
         if (Test-Path $path) {
             if ($snapshot){
                 $message = [PSCustomObject]@{
@@ -11791,8 +11792,7 @@ function Service-Reg-Checks {
 
 function Check-Debugger-Hijacks {
     Write-Message "Checking Debuggers"
-    # Supports Dynamic Snapshotting
-    # Can Support Drive Retargeting
+    # Partially Supports Dynamic Snapshotting
     function Check-Debugger-Hijack-Allowlist ($key,$val){
         if ($loadsnapshot){
             $detection = [PSCustomObject]@{
@@ -11813,7 +11813,7 @@ function Check-Debugger-Hijacks {
     # allowtable_debuggers
     # Debugger Hijacks
     # AeDebug 32
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug"
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug"
     $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -11843,7 +11843,7 @@ function Check-Debugger-Hijacks {
             }
         }
     }
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
     $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -11875,7 +11875,7 @@ function Check-Debugger-Hijacks {
     }
 
     # AeDebug 64
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug"
+    $path = "$regtarget_hklm`SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug"
     $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -11905,7 +11905,7 @@ function Check-Debugger-Hijacks {
             }
         }
     }
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
+    $path = "$regtarget_hklm`SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebugProtected"
     $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -11937,7 +11937,7 @@ function Check-Debugger-Hijacks {
     }
 
     # .NET 32
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework"
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\.NETFramework"
     $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -11968,7 +11968,7 @@ function Check-Debugger-Hijacks {
         }
     }
     # .NET 64
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework"
+    $path = "$regtarget_hklm`SOFTWARE\Wow6432Node\Microsoft\.NETFramework"
     $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -12030,7 +12030,7 @@ function Check-Debugger-Hijacks {
         }
     }
     # Process Debugger
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{78A51822-51F4-11D0-8F20-00805F2CD064}\InprocServer32"
+    $path = "$regtarget_hklm`SOFTWARE\Classes\CLSID\{78A51822-51F4-11D0-8F20-00805F2CD064}\InprocServer32"
     $pass = $false
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -12061,7 +12061,7 @@ function Check-Debugger-Hijacks {
         }
     }
     # WER Debuggers
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\Hangs"
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\Windows\Windows Error Reporting\Hangs"
     if (Test-Path -Path "Registry::$path") {
         $item = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $item.PSObject.Properties | ForEach-Object {
@@ -12094,13 +12094,13 @@ function Check-Debugger-Hijacks {
 
 function Check-LNK {
     # TODO - Maybe, Snapshots
-    # Can Support Drive Retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking LNK Targets"
     $current_date = Get-Date
     $WScript = New-Object -ComObject WScript.Shell
-    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
+    $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
     ForEach ($user in $profile_names){
-        $path = "C:\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Windows\Recent"
+        $path = "$env_homedrive\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Windows\Recent"
         $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Where-Object {$_.extension -in ".lnk"} | Select-Object *
         ForEach ($item in $items){
             #Write-Host $item.FullName, $item.LastWriteTime
@@ -12231,10 +12231,10 @@ function Check-Windows-Unsigned-Files {
     # Can Support Drive Retargeting
     Write-Message "Checking Unsigned Files"
     $scan_paths = @(
-    'C:\Windows',
-    'C:\Windows\System32',
-    'C:\Windows\System'
-    'C:\Windows\temp'
+    "$env_homedrive\Windows",
+    "$env_homedrive\Windows\System32",
+    "$env_homedrive\Windows\System"
+    "$env_homedrive\Windows\temp"
     )
     #allowlist_unsignedfiles
     ForEach ($path in $scan_paths)
@@ -12276,9 +12276,26 @@ function Check-Windows-Unsigned-Files {
 
 function Check-Service-Hijacks {
     Write-Message "Checking Un-Quoted Services"
-    # Can Support Drive Retargeting
-    $services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
-    ForEach ($service in $services){
+    # Supports Drive Retargeting
+    #$services = Get-CimInstance -ClassName Win32_Service  | Select-Object Name, PathName, StartMode, Caption, DisplayName, InstallDate, ProcessId, State
+    $service_path = "$regtarget_hklm`SYSTEM\$currentcontrolset\Services"
+    $service_list = New-Object -TypeName "System.Collections.ArrayList"
+    if (Test-Path -Path "Registry::$service_path") {
+        $items = Get-ChildItem -Path "Registry::$service_path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSProvider
+            if ($data.ImagePath -ne $null){
+                $service = [PSCustomObject]@{
+                    Name = $data.PSChildName
+                    PathName = $data.ImagePath
+                }
+                $service.PathName = $service.PathName.Replace("\SystemRoot", "$env_assumedhomedrive\Windows")
+                $service_list.Add($service) | Out-Null
+            }
+        }
+    }
+    ForEach ($service in $service_list){
         if ($service.PathName -match '".*"[\s]?.*') {
             # Skip Paths where the executable is contained in quotes
             continue
@@ -12313,6 +12330,8 @@ function Check-Service-Hijacks {
 function Check-PATH-Hijacks {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
+    # Data Stored at HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Environment
+    # Can just collect from this key instead of actual PATH var
     Write-Message "Checking PATH Hijacks"
     $system32_path = $env:windir+'\system32'
     $system32_bins = Get-ChildItem -File -Path $system32_path  -ErrorAction SilentlyContinue | Where-Object { $_.extension -in ".exe" } | Select-Object Name
@@ -12367,8 +12386,9 @@ function Check-PATH-Hijacks {
 
 function Check-Association-Hijack {
     # Supports Dynamic Snapshotting
+    # Can MAYBE support drive retargeting - need to retarget to inspecting HKLM/HKCU class area instead of HKCR
     Write-Message "Checking File Associations"
-    $homedrive = $env:HOMEDRIVE
+    $homedrive = $env_assumedhomedrive
     $value_regex_lookup = @{
         accesshtmlfile = "`"$homedrive\\Program Files\\Microsoft Office\\Root\\Office.*\\MSACCESS.EXE`"";
         batfile = '"%1" %';
@@ -12672,7 +12692,7 @@ function Check-Office-Trusted-Locations {
     # Can support drive retargeting
     Write-Message "Checking Office Trusted Locations"
     #TODO - Add 'abnormal trusted location' detection
-    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
+    $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
     $current_user = $env:USERNAME
 
     if (Test-Path -Path "Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\16.0\Word\Security\Trusted Locations") {
@@ -12730,9 +12750,9 @@ function Check-GPO-Scripts {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking GPO Scripts"
-    $base_key = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\State\Machine\Scripts"
+    $base_key = "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\State\Machine\Scripts"
     $script_paths = New-Object -TypeName "System.Collections.ArrayList"
-    $homedrive = $env:HOMEDRIVE
+    $homedrive = $env_homedrive
     $paths = @(
         "$homedrive\Windows\System32\GroupPolicy\Machine\Scripts\psscripts.ini",
         "$homedrive\Windows\System32\GroupPolicy\Machine\Scripts\scripts.ini",
@@ -12839,11 +12859,11 @@ function Check-GPO-Scripts {
 }
 
 function Check-TerminalProfiles {
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     # TODO - Snapshot/Allowlist specific exes
     Write-Message "Checking Terminal Profiles"
-    $profile_names = Get-ChildItem 'C:\Users' -Attributes Directory | Select-Object *
-    $base_path = "$env:homedrive\Users\_USER_\AppData\Local\Packages\"
+    $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
+    $base_path = "$env_homedrive\Users\_USER_\AppData\Local\Packages\"
     ForEach ($user in $profile_names){
         $new_path = $base_path.replace("_USER_", $user.Name)
         $new_path += "Microsoft.WindowsTerminal*"
@@ -12880,9 +12900,9 @@ function Check-TerminalProfiles {
 }
 
 function Check-PeerDistExtensionDll {
-    # Can support drive retargeting
+    # Supports Drive Targeting
     Write-Message "Checking PeerDistExtension DLL"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PeerDist\Extension"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\PeerDist\Extension"
     $expected_value = "peerdist.dll"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -12902,10 +12922,10 @@ function Check-PeerDistExtensionDll {
 }
 
 function Check-InternetSettingsLUIDll {
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking InternetSettings DLL"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\LUI"
-    $expected_value = "$env:systemroot\system32\wininetlui.dll!InternetErrorDlgEx"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\LUI"
+    $expected_value = "$env_assumedhomedrive\Windows\system32\wininetlui.dll!InternetErrorDlgEx"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -12924,9 +12944,9 @@ function Check-InternetSettingsLUIDll {
 }
 
 function Check-ErrorHandlerCMD {
-    # Can support drive retargeting
+    # Support Drive Retargeting
     Write-Message "Checking ErrorHandler.cmd"
-    $path = "$env:homedrive\windows\Setup\Scripts\ErrorHandler.cmd"
+    $path = "$env_homedrive\windows\Setup\Scripts\ErrorHandler.cmd"
     if (Test-Path $path){
 
         $script_content_detection = $false
@@ -12965,8 +12985,8 @@ function Check-BIDDll {
     # Can support drive retargeting
     Write-Message "Checking BID DLL"
     $paths = @(
-        "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\BidInterface\Loader"
-        "Registry::HKEY_LOCAL_MACHINE\software\Wow6432Node\Microsoft\BidInterface\Loader"
+        "Registry::$regtarget_hklm`Software\Microsoft\BidInterface\Loader"
+        "Registry::$regtarget_hklm`software\Wow6432Node\Microsoft\BidInterface\Loader"
 
     )
     $expected_values = @(
@@ -13020,7 +13040,7 @@ function Check-WindowsUpdateTestDlls {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking Windows Update Test"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Test"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Test"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -13059,7 +13079,7 @@ function Check-KnownManagedDebuggers {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking Known Managed Debuggers"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\KnownManagedDebuggingDlls"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\KnownManagedDebuggingDlls"
     $allow_list = @(
         "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
         "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\mscordacwks\.dll"
@@ -13108,7 +13128,7 @@ function Check-MiniDumpAuxiliaryDLLs {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking MiniDumpAuxiliary DLLs"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpAuxiliaryDlls"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpAuxiliaryDlls"
     $allow_list = @(
         "$env:homedrive\\Program Files\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\coreclr\.dll"
         "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\(mscorwks|clr)\.dll"
@@ -13158,7 +13178,7 @@ function Check-Wow64LayerAbuse {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking WOW64 Compatibility DLLs"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Wow64\x86"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Wow64\x86"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -13198,8 +13218,8 @@ function Check-EventViewerMSC {
     # Can support drive retargeting
     Write-Message "Checking Event Viewer MSC"
     $paths = @(
-        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Event Viewer"
-        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Event Viewer"
+        "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\Event Viewer"
+        "Registry::$regtarget_hklm`SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Event Viewer"
     )
     ForEach ($path in $paths){
         if (Test-Path -Path $path) {
@@ -13252,7 +13272,7 @@ function Check-MicrosoftTelemetryCommands {
         "$env:systemroot\Windows\system32\CompatTelRunner.exe -m:generaltel.dll -f:DoCensusRun"
 
     )
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController"
     if (Test-Path -Path $path) {
         $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
@@ -13309,7 +13329,7 @@ function Check-ActiveSetup {
         "$env:homedrive\Windows\System32\ie4uinit.exe -DisableSSL3"
 		"U"
     )
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Active Setup\Installed Components") {
         $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
@@ -13351,7 +13371,7 @@ function Check-UninstallStrings {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking Uninstall Strings"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
     if (Test-Path -Path $path) {
         $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
@@ -13438,7 +13458,7 @@ function Check-PolicyManager {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking PolicyManager DLLs"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\PolicyManager\default"
     $allow_listed_values = @(
         "%SYSTEMROOT%\system32\PolicyManagerPrecheck.dll"
         "%SYSTEMROOT%\system32\hascsp.dll"
@@ -13525,7 +13545,7 @@ function Check-SEMgrWallet {
     # TODO - Implement snapshot skipping
     # Can support drive retargeting
     Write-Message "Checking SEMgr Wallet DLLs"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\SEMgr\Wallet"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\SEMgr\Wallet"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -13555,7 +13575,7 @@ function Check-WERRuntimeExceptionHandlers {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking Error Reporting Handler DLLs"
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules"
+    $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules"
     $allowed_entries = @(
         "$env:homedrive\\(Program Files|Program Files\(x86\))\\Microsoft\\Edge\\Application\\.*\\msedge_wer\.dll"
         "$env:homedrive\\(Program Files|Program Files\(x86\))\\Common Files\\Microsoft Shared\\ClickToRun\\c2r64werhandler\.dll"
@@ -13615,8 +13635,8 @@ function Check-SilentProcessExitMonitoring {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking SilentProcessExit Monitoring"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit") {
+        $items = Get-ChildItem -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -13670,8 +13690,8 @@ function Check-WinlogonHelperDLLs {
         "ShellAppRuntime.exe"
         "mpnotify.exe"
     )
-    if (Test-Path -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon") {
-        $items = Get-ItemProperty -Path "Registry::HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`Software\Microsoft\Windows NT\CurrentVersion\Winlogon") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`Software\Microsoft\Windows NT\CurrentVersion\Winlogon" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -in 'Userinit','Shell','ShellInfrastructure','ShellAppRuntime','MPNotify' -and $_.Value -notin $standard_winlogon_helper_dlls) {
                 if ($snapshot){
@@ -13708,7 +13728,7 @@ function Check-UtilmanHijack {
     # TODO - Add Better Details
     # Can support drive retargeting
     Write-Message "Checking utilman.exe"
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe") {
             $detection = [PSCustomObject]@{
                 Name = 'Potential utilman.exe Registry Persistence'
                 Risk = 'High'
@@ -13724,7 +13744,7 @@ function Check-SethcHijack {
     # TODO - Add Better Details
     # Can support drive retargeting
     Write-Message "Checking sethc.exe"
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe") {
             $detection = [PSCustomObject]@{
                 Name = 'Potential sethc.exe Registry Persistence'
                 Risk = 'High'
@@ -13740,8 +13760,8 @@ function Check-RDPShadowConsent {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking RDP Shadow Consent"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Shadow'){
                 if ($snapshot){
@@ -13784,8 +13804,8 @@ function Check-RemoteUACSetting {
     # Supports Dynamic Snapshotting
     # Can support drive retargeting
     Write-Message "Checking RemoteUAC Setting"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'LocalAccountTokenFilterPolicy') {
                 if ($snapshot){
@@ -13837,8 +13857,8 @@ function Check-PrintMonitorDLLs {
 		"usbmon.dll",
 		"WSDMon.dll" # Server 2016
     )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors") {
-        $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Monitors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Print\Monitors") {
+        $items = Get-ChildItem -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Print\Monitors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -13901,8 +13921,8 @@ function Check-LSA {
 		"wsauth",
 		"wsauth" #vmware
     )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Lsa") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
@@ -13964,8 +13984,8 @@ function Check-LSA {
             }
         }
     }
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Lsa\OSConfig") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Lsa\OSConfig" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Security Packages' -and $_.Value -ne '""') {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
@@ -13998,7 +14018,7 @@ function Check-LSA {
             }
         }
     }
-    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\LsaExtensionConfig\LsaSrv"
+    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\LsaExtensionConfig\LsaSrv"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -14040,8 +14060,8 @@ function Check-LSA {
 		"rassfm", # Windows Server 2019 AWS Lightsail
 		"scecli" # Windows 10/Server
     )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Lsa") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Lsa" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq "Notification Packages") {
                 $packages = $_.Value.Split([System.Environment]::NewLine)
@@ -14078,9 +14098,9 @@ function Check-LSA {
 
 function Check-DNSServerLevelPluginDLL {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking DNSServerLevelPlugin DLL"
-    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters"
+    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\DNS\Parameters"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -14114,12 +14134,12 @@ function Check-DNSServerLevelPluginDLL {
 
 function Check-ExplorerHelperUtilities {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Explorer Helper exes"
     $paths = @(
-        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\BackupPath"
-        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\cleanuppath"
-        "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\DefragPath"
+        "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\BackupPath"
+        "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\cleanuppath"
+        "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\DefragPath"
     )
     $allowlisted_explorer_util_paths = @(
         "$env:SYSTEMROOT\system32\sdclt.exe"
@@ -14165,12 +14185,12 @@ function Check-ExplorerHelperUtilities {
 
 function Check-TerminalServicesInitialProgram {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Partially Supports Retargeting
     Write-Message "Checking Terminal Services Initial Programs"
     $paths = @(
-        "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
+        "Registry::$regtarget_hklm`SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
         "Registry::HKCU\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
-        "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp"
+        "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp"
     )
     ForEach ($path in $paths){
         if (Test-Path -Path $path) {
@@ -14216,12 +14236,12 @@ function Check-TerminalServicesInitialProgram {
 
 function Check-RDPStartupPrograms {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking RDP Startup Programs"
     $allowed_rdp_startups = @(
         "rdpclip"
     )
-    $path = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\Wds\rdpwd"
+    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Terminal Server\Wds\rdpwd"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -14263,13 +14283,13 @@ function Check-RDPStartupPrograms {
 
 function Check-TimeProviderDLLs {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Time Provider DLLs"
     $standard_timeprovider_dll = @(
         "$env:homedrive\Windows\System32\w32time.dll",
         "$env:homedrive\Windows\System32\vmictimeprovider.dll"
     )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders") {
         $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
@@ -14309,12 +14329,12 @@ function Check-TimeProviderDLLs {
 
 function Check-PrintProcessorDLLs {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking PrintProcessor DLLs"
     $standard_print_processors = @(
         "winprint.dll"
     )
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors") {
         $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
@@ -14354,7 +14374,7 @@ function Check-PrintProcessorDLLs {
             }
         }
     }
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors") {
         $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
@@ -14446,7 +14466,7 @@ function Check-ScreenSaverEXE {
 
 function Check-NetSHDLLs {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking NetSH DLLs"
     $standard_netsh_dlls = @(
 		"authfwcfg.dll",
@@ -14471,7 +14491,7 @@ function Check-NetSHDLLs {
 		"wshelper.dll",
 		"wwancfg.dll"
     )
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Netsh") {
         $items = Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Netsh" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Value -notin $standard_netsh_dlls) {
@@ -14507,10 +14527,10 @@ function Check-NetSHDLLs {
 
 function Check-AppCertDLLs {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking AppCert DLLs"
     $standard_appcert_dlls = @()
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Value -notin $standard_appcert_dlls) {
@@ -14546,9 +14566,9 @@ function Check-AppCertDLLs {
 
 function Check-AppInitDLLs {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking AppInit DLLs"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AppInit_DLLs' -and $_.Value -ne '') {
@@ -14580,7 +14600,7 @@ function Check-AppInitDLLs {
             }
         }
     }
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AppInit_DLLs' -and $_.Value -ne '') {
@@ -14620,7 +14640,7 @@ function Check-ApplicationShims {
     # Can support drive retargeting
     Write-Message "Checking Application Shims"
     # TODO - Also check HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Custom
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($snapshot){
@@ -14654,9 +14674,9 @@ function Check-ApplicationShims {
 
 function Check-IFEO {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Image File Execution Options"
-    if (Test-Path -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options") {
         $items = Get-ChildItem -Path "Registry::HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
@@ -14765,7 +14785,7 @@ function Check-WellKnownCOM {
 }
 
 function Check-Officetest {
-    # Can support drive retargeting
+    # Partially Supports Retargeting
     Write-Message "Checking Office test usage"
     if (Test-Path -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf") {
         $items = Get-ItemProperty -Path "Registry::HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -14780,7 +14800,7 @@ function Check-Officetest {
             Write-Detection $detection
         }
     }
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`Software\Microsoft\Office test\Special\Perf") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             $detection = [PSCustomObject]@{
@@ -14835,10 +14855,10 @@ function Check-OfficeGlobalDotName {
 }
 
 function Check-TerminalServicesDLL {
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking TerminalServices DLL"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\TermService\Parameters") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\TermService\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'ServiceDll' -and $_.Value -ne 'C:\Windows\System32\termsrv.dll'){
                 $detection = [PSCustomObject]@{
@@ -14855,10 +14875,10 @@ function Check-TerminalServicesDLL {
 }
 
 function Check-AutoDialDLL {
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Autodial DLL"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\WinSock2\Parameters") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\WinSock2\Parameters" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AutodialDLL' -and $_.Value -ne 'C:\Windows\System32\rasadhlp.dll'){
                 $detection = [PSCustomObject]@{
@@ -14876,9 +14896,9 @@ function Check-AutoDialDLL {
 
 function Check-CommandAutoRunProcessors {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Partially Supports Drive Retargeting
     Write-Message "Checking Command AutoRun Processors"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Command Processor") {
         $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'AutoRun'){
@@ -14949,10 +14969,10 @@ function Check-CommandAutoRunProcessors {
 }
 
 function Check-TrustProviderDLL {
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking Trust Provider"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}") {
-        $items = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    if (Test-Path -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}") {
+        $items = Get-ItemProperty -Path "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
             if ($_.Name -eq 'Dll' -and $_.Value -ne 'C:\Windows\System32\WindowsPowerShell\v1.0\pwrshsip.dll'){
                 $detection = [PSCustomObject]@{
@@ -14980,9 +15000,9 @@ function Check-TrustProviderDLL {
 
 function Check-NaturalLanguageDevelopmentDLLs {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking NaturalLanguageDevelopment DLLs"
-    if (Test-Path -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language") {
+    if (Test-Path -Path "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\ContentIndex\Language") {
         $items = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\ContentIndex\Language" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
             $path = "Registry::"+$item.Name
@@ -15052,13 +15072,13 @@ function Check-WindowsLoadKey {
 
 function Check-AMSIProviders {
     # TODO - Add Snapshot Skipping
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking AMSI Providers"
     $allowed_amsi_providers = @(
         "{2781761E-28E0-4109-99FE-B9D127C57AFE}"
     )
 
-    $path = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\AMSI\Providers"
+    $path = "Registry::$regtarget_hklm`\SOFTWARE\Microsoft\AMSI\Providers"
     if (Test-Path -Path $path) {
         $items = Get-ChildItem -Path $path | Select-Object *
         ForEach ($item in $items) {
@@ -15097,9 +15117,9 @@ function Check-AMSIProviders {
 
 function Check-AppPaths {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking AppPaths"
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"
     if (Test-Path -Path "Registry::$path") {
         $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
@@ -15151,7 +15171,7 @@ function Check-AppPaths {
 
 function Check-GPOExtensions {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking GPO Extension DLLs"
     $homedrive = $env:HOMEDRIVE
     $gpo_dll_allowlist = @(
@@ -15181,7 +15201,7 @@ function Check-GPOExtensions {
         "wlgpclnt.dll"
     )
 
-    $path = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\GPExtensions"
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\GPExtensions"
     if (Test-Path -Path "Registry::$path") {
         $items = Get-ChildItem -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
@@ -15894,7 +15914,7 @@ function Main {
     }
     #Check-ScheduledTasks
     #Check-Users
-    Check-Services
+    #Check-Services
     #Check-Processes
     #Check-Connections
     #Check-WMIConsumers
