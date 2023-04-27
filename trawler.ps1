@@ -2274,6 +2274,7 @@ function Check-COM-Hijacks {
     # TODO - Consider NOT alerting when we don't have a 'known-good' entry for the CLSID in question
     # TODO - Some regex appears to be non-functional, especially on HKU inspection - need to figure out why/troubleshoot
     # Malware will typically target 'well-known' keys that are present in default versions of Windows - that should be enough for most situations and help to reduce noise.
+    $homedrive = $env_assumedhomedrive
 	$default_hkcr_com_lookups = @{
 	"HKEY_CLASSES_ROOT\CLSID\{0000002F-0000-0000-C000-000000000046}\InprocServer32" = "$homedrive\\Windows\\System32\\oleaut32\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{00000300-0000-0000-C000-000000000046}\InprocServer32" = "(combase\.dll|ole32\.dll)"
@@ -3021,7 +3022,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{19227DC0-FC88-4AAA-8C2D-A0DB913AA2FF}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{19352205-42B0-4690-9AA4-D7DB9AE5F259}\InProcServer32" = "$homedrive\\Windows\\System32\\provsvc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{193B4137-0480-11D1-97DA-00C04FB9618A}\InprocServer32" = "$homedrive\\Windows\\system32\\msdtcprx\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{195B4D07-3DE2-4744-BBF2-D90121AE785B}\InprocServer32" = "`"$env:homedrive\\ProgramData\\Microsoft\\Windows Defender\\Platform\\.*\\DefenderCSP\.dll`""
+	"HKEY_CLASSES_ROOT\CLSID\{195B4D07-3DE2-4744-BBF2-D90121AE785B}\InprocServer32" = "`"$homedrive\\ProgramData\\Microsoft\\Windows Defender\\Platform\\.*\\DefenderCSP\.dll`""
 	"HKEY_CLASSES_ROOT\CLSID\{19603261-6059-43DF-B9E1-8B4352825A90}\InprocServer32" = "$homedrive\\Windows\\System32\\wiascanprofiles\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1965FEA3-3896-438B-B789-F5981797E7E7}\InProcServer32" = "$homedrive\\Windows\\System32\\MapsBtSvcProxy\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1968106d-f3b5-44cf-890e-116fcb9ecef1}\InProcServer32" = "$homedrive\\Windows\\System32\\sud\.dll"
