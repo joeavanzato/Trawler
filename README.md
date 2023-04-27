@@ -19,6 +19,7 @@ Currently, trawler can detect most of the persistence techniques specifically ca
 * Dynamic Risk Assignment for each detection
 * Built-in Allow Lists for common Windows configurations spanning Windows 10/Server 2012|2016|2019|2022 to reduce noise
 * Capture persistence metadata from 'golden' enterprise image for use as a dynamic allow-list at runtime
+* Analyze mounted disk images via drive re-targeting
 
 ## How do I use it?
 Just download and run trawler.ps1 from an Administrative PowerShell/cmd prompt - any detections will be displayed in the console as well as written to a CSV ('detections.csv') in the current working directory.  The generated CSV will contain Detection Name, Source, Risk, Metadata and the relevant MITRE Technique.
@@ -82,6 +83,7 @@ Please note that since trawler attempts to load the registry hive files from the
 * 'Phantom' DLLs
 * WMI Consumers (Being worked on)
 * BITS Jobs (Being worked on)
+* Certificate Parsing (Being worked on)
 
 Most other checks will function fine because they are based entirely on reading registry hives or file-based artifacts (or can be converted to do so, such as directly reading Task XML as opposed to using built-in command-lets.)
 

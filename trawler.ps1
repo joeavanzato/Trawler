@@ -16541,7 +16541,7 @@ function Detection-Metrics {
     Write-Message "Low Risk Detections: $low_dets"
     Write-Message "Medium Risk Detections: $medium_dets"
     Write-Message "High Risk Detections: $high_dets"
-    Write-Message "Very-High Risk Detections: $high_dets"
+    Write-Message "Very-High Risk Detections: $vhigh_dets"
 }
 
 function Write-Message ($message){
