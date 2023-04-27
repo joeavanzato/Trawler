@@ -13575,7 +13575,7 @@ function Check-Office-Trusted-Locations {
                     if ($data.Path.Contains($current_user)){
                         ForEach ($user in $profile_names){
                             $new_path = $data.Path.replace($current_user, $user.Name)
-                            Write-Host $new_path
+                            #Write-Host $new_path
                             if ($possible_paths -notcontains $new_path) {
                                 $possible_paths.Add($new_path) | Out-Null
                             }
@@ -13586,6 +13586,7 @@ function Check-Office-Trusted-Locations {
                     $default_trusted_locations = @(
                         "C:\Users\$actual_current_user\AppData\Roaming\Microsoft\Templates"
                         "C:\Program Files\Microsoft Office\root\Templates\"
+                        "C:\Program Files (x86)\Microsoft Office\root\Templates\"
                         "C:\Users\$actual_current_user\AppData\Roaming\Microsoft\Word\Startup"
                     )
                     $pass = $false
