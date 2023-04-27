@@ -211,7 +211,83 @@ function Check-ScheduledTasks {
         return
     }
     Write-Message "Checking Scheduled Tasks"
-    $tasks = Get-ScheduledTask  | Select-Object -Property State,Actions,Author,Date,Description,Principal,SecurityDescriptor,Settings,TaskName,TaskPath,Triggers,URI, @{Name="RunAs";Expression={ $_.principal.userid }} -ExpandProperty Actions | Select-Object *
+
+    $task_base_path = "$env_homedrive\Windows\System32\Tasks"
+    $tasks = New-Object -TypeName "System.Collections.ArrayList"
+    $author_pattern = '<Author>(?<Author>.*?)<\/Author>'
+    $runas_pattern = '<Principal id="(?<RunAs>.*?)">'
+    $execute_pattern = '<Command>(?<Execute>.*?)<\/Command>'
+    $argument_pattern = '<Arguments>(?<Arguments>.*?)<\/Arguments>'
+    $userid_pattern = '<UserId>(?<UserId>.*?)</UserId>'
+    if (Test-Path -Path $task_base_path) {
+        $items = Get-ChildItem -Path $task_base_path -Recurse -ErrorAction SilentlyContinue
+        ForEach ($item in $items) {
+            $task_content = Get-Content $item.FullName -ErrorAction SilentlyContinue | Out-String
+            if ($task_content -eq $null){
+                continue
+            }
+            $task_content = [string]::join("",($task_content.Split("`n")))
+            #Write-Host $task_content[0]
+            #$task_match = $regex_pattern.Match($task_content)
+
+            $author_match = [regex]::Matches($task_content, $author_pattern)
+            $runas_match = [regex]::Matches($task_content, $runas_pattern)
+            $execute_match = [regex]::Matches($task_content, $execute_pattern)
+            $arguments_match = [regex]::Matches($task_content, $argument_pattern)
+            $userid_match = [regex]::Matches($task_content, $userid_pattern)
+
+
+            If ($author_match[0] -eq $null){
+                $author = "N/A"
+            } else {
+                $author = $author_match[0].Groups["Author"].Value
+            }
+            If ($runas_match[0] -eq $null){
+                $runas = "N/A"
+            } else {
+                $runas = $runas_match[0].Groups["RunAs"].Value
+                if ($runas -eq "Author"){
+                    $runas = $author
+                }
+            }
+            If ($execute_match[0] -eq $null){
+                $execute = "N/A"
+            } else {
+                $execute = $execute_match[0].Groups["Execute"].Value
+            }
+            If ($arguments_match[0] -eq $null){
+                $arguments = "N/A"
+            } else {
+                $arguments = $arguments_match[0].Groups["Arguments"].Value
+            }
+            If ($userid_match[0] -eq $null){
+                $userid = $author
+            } else {
+                $userid = $userid_match[0].Groups["UserId"].Value
+                if ($userid -eq 'S-1-5-18' -or $userid -eq 'System'){
+                    $userid = 'SYSTEM'
+                }
+                if ($runas -eq 'N/A'){
+                    $runas = $userid
+                }
+                if ($author -eq 'N/A'){
+                    $author = $userid
+                }
+            }
+
+            $task = [PSCustomObject]@{
+                TaskName = $item.Name
+                Execute = $execute
+                Arguments = $arguments
+                Author = $author
+                RunAs = $runas
+                UserId = $userid
+            }
+            if ($task.Execute -ne "N/A"){
+                $tasks.Add($task) | Out-Null
+            }
+        }
+    }
 
     $default_task_exe_paths = @(
 		'"%ProgramFiles%\Windows Media Player\wmpnscfg.exe"',
@@ -290,6 +366,7 @@ function Check-ScheduledTasks {
 		'/B /nologo %systemroot%\System32\calluxxprovider.vbs $(Arg0) $(Arg1) $(Arg2)',
 		'/NoUACCheck'
     )
+    #$tasks = Get-ScheduledTask  | Select-Object -Property State,Actions,Author,Date,Description,Principal,SecurityDescriptor,Settings,TaskName,TaskPath,Triggers,URI, @{Name="RunAs";Expression={ $_.principal.userid }} -ExpandProperty Actions | Select-Object *
 
     ForEach ($task in $tasks){
         # Allowlist Logic
@@ -403,7 +480,7 @@ function Check-ScheduledTasks {
                 Risk = 'Low'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs+", UserId: "+$task.UserId
             }
             Write-Detection $detection
         }
@@ -1693,8 +1770,7 @@ function Check-WMIConsumers {
 
 function Check-Startups {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting with some tinkering, just registry and file-paths basically.
-    # Partially supports drive retargeting currently
+    # Supports Drive Retargeting
     Write-Message "Checking Startup Items"
     $paths = @(
         "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
@@ -13137,7 +13213,10 @@ function Check-Association-Hijack {
 function Check-Suspicious-Certificates {
     # Supports Dynamic Snapshotting
     # Can maybe support drive retargeting
-
+    if ($drivechange){
+        Write-Message "Skipping Certificate Analysis - No Drive Retargeting [yet]"
+        return
+    }
     # https://www.michev.info/blog/post/1435/windows-certificate-stores#:~:text=Under%20file%3A%5C%25APPDATA%25%5C,find%20all%20your%20personal%20certificates.
     Write-Message "Checking Certificates"
     $certs = Get-ChildItem -path cert:\ -Recurse | Select-Object *
@@ -13433,7 +13512,7 @@ function Check-Office-Trusted-Locations {
 
 function Check-GPO-Scripts {
     # Supports Dynamic Snapshotting
-    # Can support drive retargeting
+    # Supports Drive Retargeting
     Write-Message "Checking GPO Scripts"
     $base_key = "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\State\Machine\Scripts"
     $script_paths = New-Object -TypeName "System.Collections.ArrayList"
@@ -16733,14 +16812,14 @@ function Main {
         Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
     Check-ScheduledTasks
-    Check-Users
+<#    Check-Users
     Check-Services
     Check-Processes
     Check-Connections
     Check-WMIConsumers
     Check-Startups
     Check-BITS
-    Check-Modified-Windows-Accessibility-Feature #><#<#
+    Check-Modified-Windows-Accessibility-Feature #><#<#<#<#
     Check-Debugger-Hijacks
     Check-PowerShell-Profiles
     Check-Outlook-Startup
@@ -16805,7 +16884,7 @@ function Main {
     Check-AppPaths
     Check-GPOExtensions
     Check-HTMLHelpDLL
-    Check-RATS
+    Check-RATS#>
     Clean-Up
     Detection-Metrics
 }
