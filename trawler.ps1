@@ -14351,17 +14351,17 @@ function Check-WERRuntimeExceptionHandlers {
     # Supports Drive Retargeting
     Write-Message "Checking Error Reporting Handler DLLs"
     $allowed_entries = @(
-        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Microsoft\\Edge\\Application\\.*\\msedge_wer\.dll"
-        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Common Files\\Microsoft Shared\\ClickToRun\\c2r64werhandler\.dll"
-        "$env:homedrive\\(Program Files|Program Files\(x86\))\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
-        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Google\\Chrome\\Application\\.*\\chrome_wer\.dll"
-        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Microsoft Office\\root\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\OFFICE.*\\msowercrash\.dll"
-        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Microsoft Visual Studio\\.*\\Community\\common7\\ide\\VsWerHandler\.dll"
-        "$env:homedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\mscordacwks\.dll"
-        "$env:homedrive\\Windows\\System32\\iertutil.dll"
-        "$env:homedrive\\Windows\\System32\\msiwer.dll"
-        "$env:homedrive\\Windows\\System32\\wbiosrvc.dll"
-        "$env:homedrive\\(Program Files|Program Files\(x86\))\\Mozilla Firefox\\mozwer.dll"
+        "$env_assumedhomedrive\\Program Files( \(x86\))?\\Microsoft\\Edge\\Application\\.*\\msedge_wer\.dll"
+        "$env_assumedhomedrive\\Program Files( \(x86\))?\\Common Files\\Microsoft Shared\\ClickToRun\\c2r64werhandler\.dll"
+        "$env_assumedhomedrive\\Program Files( \(x86\))?\\dotnet\\shared\\Microsoft\.NETCore\.App\\.*\\mscordaccore\.dll"
+        "$env_assumedhomedrive\\Program Files( \(x86\))?\\Google\\Chrome\\Application\\.*\\chrome_wer\.dll"
+        "$env_assumedhomedrive\\Program Files( \(x86\))?\\Microsoft Office\\root\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\OFFICE.*\\msowercrash\.dll"
+        "$env_assumedhomedrive\\Program Files( \(x86\))?\\Microsoft Visual Studio\\.*\\Community\\common7\\ide\\VsWerHandler\.dll"
+        "$env_assumedhomedrive\\Windows\\Microsoft\.NET\\Framework64\\.*\\mscordacwks\.dll"
+        "$env_assumedhomedrive\\Windows\\System32\\iertutil.dll"
+        "$env_assumedhomedrive\\Windows\\System32\\msiwer.dll"
+        "$env_assumedhomedrive\\Windows\\System32\\wbiosrvc.dll"
+        "$env_assumedhomedrive\\(Program Files|Program Files\(x86\))\\Mozilla Firefox\\mozwer.dll"
     )
     $path = "Registry::$regtarget_hklm`SOFTWARE\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules"
     if (Test-Path -Path $path) {
@@ -14370,8 +14370,10 @@ function Check-WERRuntimeExceptionHandlers {
 
             $verified_match = $false
             ForEach ($entry in $allowed_entries){
+                #Write-Host $entry
                 if ($_.Name -match $entry -and $verified_match -eq $false){
                     $verified_match = $true
+                } else {
                 }
             }
 
@@ -14886,7 +14888,7 @@ function Check-DNSServerLevelPluginDLL {
     # Supports Dynamic Snapshotting
     # Supports Drive Retargeting
     Write-Message "Checking DNSServerLevelPlugin DLL"
-    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\DNS\Parameters"
+    $path = "Registry::$regtarget_hklm`SYSTEM\$currentcontrolset\Services\DNS\Parameters"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -14975,7 +14977,7 @@ function Check-TerminalServicesInitialProgram {
     Write-Message "Checking Terminal Services Initial Programs"
     $paths = @(
         "Registry::$regtarget_hklm`SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
-        "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp"
+        "Registry::$regtarget_hklm`SYSTEM\$currentcontrolset\Control\Terminal Server\WinStations\RDP-Tcp"
     )
     $basepath = "Registry::HKEY_CURRENT_USER\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"
     ForEach ($p in $regtarget_hkcu_list) {
@@ -15031,7 +15033,7 @@ function Check-RDPStartupPrograms {
     $allowed_rdp_startups = @(
         "rdpclip"
     )
-    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Terminal Server\Wds\rdpwd"
+    $path = "Registry::$regtarget_hklm`SYSTEM\$currentcontrolset\Control\Terminal Server\Wds\rdpwd"
     if (Test-Path -Path $path) {
         $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         $items.PSObject.Properties | ForEach-Object {
@@ -15079,7 +15081,7 @@ function Check-TimeProviderDLLs {
         "$env:homedrive\Windows\System32\w32time.dll",
         "$env:homedrive\Windows\System32\vmictimeprovider.dll"
     )
-    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders"
+    $path = "Registry::$regtarget_hklm`SYSTEM\$currentcontrolset\Services\W32Time\TimeProviders"
     if (Test-Path -Path $path) {
         $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
@@ -15125,7 +15127,7 @@ function Check-PrintProcessorDLLs {
     $standard_print_processors = @(
         "winprint.dll"
     )
-    $path = "Registry::$regtarget_hklm`SYSTEM\ControlSet001\Control\Print\Environments\Windows x64\Print Processors"
+    $path = "Registry::$regtarget_hklm`SYSTEM\$currentcontrolset\Control\Print\Environments\Windows x64\Print Processors"
     if (Test-Path -Path $path) {
         $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
@@ -15166,7 +15168,7 @@ function Check-PrintProcessorDLLs {
             }
         }
     }
-    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors"
+    $path = "Registry::$regtarget_hklm`SYSTEM\$currentcontrolset\Control\Print\Environments\Windows x64\Print Processors"
     if (Test-Path -Path $path) {
         $items = Get-ChildItem -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
         ForEach ($item in $items) {
@@ -16818,7 +16820,7 @@ function Main {
     } elseif ($loadsnapshotdata -and $snapshot) {
         Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
-    Check-ScheduledTasks
+    <#Check-ScheduledTasks
     Check-Users
     Check-Services
     Check-Processes
@@ -16826,7 +16828,7 @@ function Main {
     Check-WMIConsumers
     Check-Startups
     Check-BITS
-    Check-Modified-Windows-Accessibility-Feature #><#<#<#<#
+    Check-Modified-Windows-Accessibility-Feature #><#<#<#<#<#
     Check-Debugger-Hijacks
     Check-PowerShell-Profiles
     Check-Outlook-Startup
@@ -16854,9 +16856,9 @@ function Main {
     Check-ActiveSetup
     Check-PolicyManager
     Check-UninstallStrings
-    Check-SEMgrWallet
+    Check-SEMgrWallet#>
     Check-WERRuntimeExceptionHandlers
-    Check-SilentProcessExitMonitoring
+  <#  Check-SilentProcessExitMonitoring
     Check-WinlogonHelperDLLs
     Check-UtilmanHijack
     Check-SethcHijack
@@ -16891,7 +16893,7 @@ function Main {
     Check-AppPaths
     Check-GPOExtensions
     Check-HTMLHelpDLL
-    Check-RATS
+    Check-RATS#>
     Clean-Up
     Detection-Metrics
 }
