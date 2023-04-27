@@ -205,6 +205,7 @@ function Check-ScheduledTasks {
     # Supports Dynamic Snapshotting for Executable Paths
     # Can possibly support drive-retargeting by parsing Task XML
     # Working on this with regex from Task Files
+    # ^ Mostly working now
     # TODO - Add Argument Comparison Checks
     Write-Message "Checking Scheduled Tasks"
 
@@ -16818,7 +16819,7 @@ function Main {
         Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
     Check-ScheduledTasks
-<#    Check-Users
+    Check-Users
     Check-Services
     Check-Processes
     Check-Connections
@@ -16890,7 +16891,7 @@ function Main {
     Check-AppPaths
     Check-GPOExtensions
     Check-HTMLHelpDLL
-    Check-RATS#>
+    Check-RATS
     Clean-Up
     Detection-Metrics
 }
