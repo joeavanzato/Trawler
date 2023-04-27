@@ -206,10 +206,6 @@ function Check-ScheduledTasks {
     # Can possibly support drive-retargeting by parsing Task XML
     # Working on this with regex from Task Files
     # TODO - Add Argument Comparison Checks
-    if ($drivechange){
-        Write-Message "Skipping Scheduled Task Analysis - No Drive Retargeting [yet]"
-        return
-    }
     Write-Message "Checking Scheduled Tasks"
 
     $task_base_path = "$env_homedrive\Windows\System32\Tasks"
@@ -219,6 +215,12 @@ function Check-ScheduledTasks {
     $execute_pattern = '<Command>(?<Execute>.*?)<\/Command>'
     $argument_pattern = '<Arguments>(?<Arguments>.*?)<\/Arguments>'
     $userid_pattern = '<UserId>(?<UserId>.*?)</UserId>'
+    $sid_lookup = @{
+        'S-1-5-17' = 'IUSR'
+        'S-1-5-18' = 'SYSTEM'
+        'S-1-5-19' = 'LOCAL_SERVICE'
+        'S-1-5-20' = 'NETWORK_SERVICE'
+    }
     if (Test-Path -Path $task_base_path) {
         $items = Get-ChildItem -Path $task_base_path -Recurse -ErrorAction SilentlyContinue
         ForEach ($item in $items) {
@@ -264,8 +266,12 @@ function Check-ScheduledTasks {
                 $userid = $author
             } else {
                 $userid = $userid_match[0].Groups["UserId"].Value
-                if ($userid -eq 'S-1-5-18' -or $userid -eq 'System'){
+                if ($userid -eq 'System'){
                     $userid = 'SYSTEM'
+                } elseif ($userid -match 'S-.*'){
+                    if ($sid_lookup.ContainsKey($userid)){
+                        $userid = $sid_lookup[$userid]
+                    }
                 }
                 if ($runas -eq 'N/A'){
                     $runas = $userid
