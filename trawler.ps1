@@ -12918,29 +12918,29 @@ function Check-Process-Modules {
     }
     Write-Message "Checking 'Phantom' DLLs"
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
+    $suspicious_unsigned_dll_names = @(
+        "cdpsgshims.dll",
+        "diagtrack_win.dll",
+        "EdgeGdi.dll",
+        "Msfte.dll",
+        "phoneinfo.dll",
+        "rpcss.dll",
+        "sapi_onecore.dll",
+        "spreview.exewdscore.dll",
+        "Tsmsisrv.dll",
+        "TSVIPSrv.dll",
+        "Ualapi.dll",
+        "UsoSelfhost.dll",
+        "wbemcomn.dll",
+        "WindowsCoreDeviceInfo.dll",
+        "windowsperformancerecordercontrol.dll",
+        "wlanhlp.dll",
+        "wlbsctrl.dll",
+        "wow64log.dll",
+        "WptsExtensions.dll"
+        "fveapi.dll"
+    )
     ForEach ($process in $processes){
-
-        $suspicious_unsigned_dll_names = @(
-			"cdpsgshims.dll",
-			"diagtrack_win.dll",
-			"EdgeGdi.dll",
-			"Msfte.dll",
-			"phoneinfo.dll",
-            "rpcss.dll",
-            "sapi_onecore.dll",
-            "spreview.exewdscore.dll",
-			"Tsmsisrv.dll",
-			"TSVIPSrv.dll",
-			"Ualapi.dll",
-            "UsoSelfhost.dll",
-			"wbemcomn.dll",
-			"WindowsCoreDeviceInfo.dll",
-			"windowsperformancerecordercontrol.dll",
-			"wlanhlp.dll",
-			"wlbsctrl.dll",
-			"wow64log.dll",
-			"WptsExtensions.dll"
-        )
         $modules = Get-Process -id $process.ProcessId -ErrorAction SilentlyContinue  | Select-Object -ExpandProperty modules -ErrorAction SilentlyContinue | Select-Object Company,FileName,ModuleName
         if ($modules -ne $null){
             ForEach ($module in $modules){
@@ -16645,6 +16645,24 @@ function Check-MSDTCDll {
     }
 }
 
+function Check-Narrator {
+    # Supports Drive Retargeting
+    # https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/
+    Write-Message "Checking Narrator MSTTSLocEnUS.dll Presence"
+    $basepath = "$env_homedrive\Windows\System32\Speech\Engines\TTS\MSTTSLocEnUS.DLL"
+    if (Test-Path $basepath){
+        $item = Get-Item -Path $basepath -ErrorAction SilentlyContinue | Select-Object *
+        $detection = [PSCustomObject]@{
+            Name = 'Narrator Missing DLL is Present'
+            Risk = 'Medium'
+            Source = 'Windows Narrator'
+            Technique = "T1546: Event Triggered Execution"
+            Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+        }
+        Write-Detection $detection
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -17115,7 +17133,7 @@ function Main {
     } elseif ($loadsnapshotdata -and $snapshot) {
         Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
-    <#Check-ScheduledTasks
+    Check-ScheduledTasks
     Check-Users
     Check-Services
     Check-Processes
@@ -17192,8 +17210,9 @@ function Main {
     Check-ContextMenu
     Check-OfficeAI
     # TODO Check-SCM-DACL
-    Check-Notepad++-Plugins#>
+    Check-Notepad++-Plugins
     Check-MSDTCDll
+    Check-Narrator
     Clean-Up
     Detection-Metrics
 }
