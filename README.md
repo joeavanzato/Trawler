@@ -175,6 +175,8 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * WER Runtime Exception Handlers
 * HTML Help (.CHM)
 * Remote Access Tool Artifacts (Files, Directories, Registry Keys)
+* ContextMenuHandler DLL Checks
+* Office AI.exe
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)

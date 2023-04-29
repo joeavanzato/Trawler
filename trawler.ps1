@@ -16487,6 +16487,90 @@ function Check-RATS {
     }
 }
 
+function Check-ContextMenu {
+    # HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shellex\ContextMenuHandlers\{B7CDF620-DB73-44C0-8611-832B261A0107}
+    # HKEY_USERS\S-1-5-21-63485881-451500365-4075260605-1001\SOFTWARE\Classes\*\shellex\ContextMenuHandlers\{B7CDF620-DB73-44C0-8611-832B261A0107}
+    # The general idea is that {B7CDF620-DB73-44C0-8611-832B261A0107} represents the Explorer context menu - we are scanning ALL ContextMenuHandlers for DLLs present in the (Default) property as opposed to a CLSID
+    # https://ristbs.github.io/2023/02/15/hijack-explorer-context-menu-for-persistence-and-fun.html
+    # Supports Drive Retargeting
+    # No Snapshotting right now - can add though.
+    Write-Message "Checking Context Menu Handlers"
+
+    $path = "$regtarget_hklm`SOFTWARE\Classes\*\shellex\ContextMenuHandlers"
+    if (Test-Path -LiteralPath "Registry::$path") {
+        $items = Get-ChildItem -LiteralPath "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        ForEach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -LiteralPath $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq '(Default)' -and $_.Value -match ".*\.dll.*") {
+                    $detection = [PSCustomObject]@{
+                        Name = 'DLL loaded in ContextMenuHandler'
+                        Risk = 'Medium'
+                        Source = 'Windows Context Menu'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+
+    $basepath = "HKEY_CURRENT_USER\SOFTWARE\Classes\*\shellex\ContextMenuHandlers"
+    ForEach ($p in $regtarget_hkcu_list){
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        if (Test-Path -LiteralPath "Registry::$path") {
+            $items = Get-ChildItem -LiteralPath "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            ForEach ($item in $items) {
+                $path = "Registry::"+$item.Name
+                $data = Get-ItemProperty -LiteralPath $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                $data.PSObject.Properties | ForEach-Object {
+                    if ($_.Name -eq '(Default)' -and $_.Value -match ".*\.dll.*") {
+                        $detection = [PSCustomObject]@{
+                            Name = 'DLL loaded in ContextMenuHandler'
+                            Risk = 'Medium'
+                            Source = 'Windows Context Menu'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+function Check-SCM-DACL {
+    # https://pentestlab.blog/2023/03/20/persistence-service-control-manager/
+}
+
+function Check-OfficeAI {
+    # https://twitter.com/Laughing_Mantis/status/1645268114966470662
+    Write-Message "Checking Office AI.exe Presence"
+    $basepath = "$env_homedrive\Program Files\Microsoft Office\root\Office*"
+    if (Test-Path $basepath){
+        $path = "$env_homedrive\Program Files\Microsoft Office\root"
+        $dirs = Get-ChildItem -Path $path -Directory -Filter "Office*" -ErrorAction SilentlyContinue
+        ForEach ($dir in $dirs){
+            $ai = $dir.FullName+"\ai.exe"
+            if (Test-Path $ai){
+                $item = Get-Item -Path $ai -ErrorAction SilentlyContinue | Select-Object *
+                $detection = [PSCustomObject]@{
+                    Name = 'AI.exe in Office Directory'
+                    Risk = 'Medium'
+                    Source = 'Windows Context Menu'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -17031,6 +17115,8 @@ function Main {
     Check-GPOExtensions
     Check-HTMLHelpDLL
     Check-RATS
+    Check-ContextMenu
+    Check-OfficeAI
     Clean-Up
     Detection-Metrics
 }
