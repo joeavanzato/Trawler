@@ -2273,6 +2273,7 @@ function Check-COM-Hijacks {
     Write-Message "Checking COM Classes"
     # TODO - Consider NOT alerting when we don't have a 'known-good' entry for the CLSID in question
     # TODO - Some regex appears to be non-functional, especially on HKU inspection - need to figure out why/troubleshoot
+    # TODO - Inspect TreatAs options
     # Malware will typically target 'well-known' keys that are present in default versions of Windows - that should be enough for most situations and help to reduce noise.
     $homedrive = $env_assumedhomedrive
 	$default_hkcr_com_lookups = @{
@@ -16613,6 +16614,37 @@ function Check-Notepad++-Plugins {
     }
 }
 
+function Check-MSDTCDll {
+    # https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/
+    Write-Message "Checking MSDTC DLL Hijack"
+    $matches = @{
+        "OracleOciLib" = "oci.dll"
+        "OracleOciLibPath" = "$env_assumedhomedrive\Windows\system32"
+        "OracleSqlLib" = "SQLLib80.dll"
+        "OracleSqlLibPath" = "$env_assumedhomedrive\Windows\system32"
+        "OracleXaLib" = "xa80.dll"
+        "OracleXaLibPath" = "$env_assumedhomedrive\Windows\system32"
+    }
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\MSDTC\MTxOCI"
+    if (Test-Path -Path "Registry::$path") {
+        $data = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $data.PSObject.Properties | ForEach-Object {
+            if ($matches.ContainsKey($_.Name)){
+                if ($_.Value -ne $matches[$_.Name]){
+                    $detection = [PSCustomObject]@{
+                        Name = 'MSDTC Key/Value Mismatch'
+                        Risk = 'Medium'
+                        Source = 'Windows MSDTC'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key: "+$path+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Expected Value: "+$matches[$_.Name]
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
     # Name - The name of the detection logic.
@@ -17158,9 +17190,10 @@ function Main {
     Check-HTMLHelpDLL
     Check-RATS
     Check-ContextMenu
-    Check-OfficeAI#>
+    Check-OfficeAI
     # TODO Check-SCM-DACL
-    Check-Notepad++-Plugins
+    Check-Notepad++-Plugins#>
+    Check-MSDTCDll
     Clean-Up
     Detection-Metrics
 }

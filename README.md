@@ -178,6 +178,7 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * ContextMenuHandler DLL Checks
 * Office AI.exe
 * Notepad++ Plugins
+* MSDTC Hijacks
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
