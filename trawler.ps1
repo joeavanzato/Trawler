@@ -1843,6 +1843,7 @@ function Check-WMIConsumers {
     # Supports Dynamic Snapshotting
     # Drive Retargeting..maybe
     # https://netsecninja.github.io/dfir-notes/wmi-forensics/
+    # https://github.com/davidpany/WMI_Forensics
     # https://github.com/mandiant/flare-wmi/blob/master/WMIParser/WMIParser/ActiveScriptConsumer.cpp
     # This would require building a binary parser in PowerShell..difficult.
     if ($drivechange){
@@ -16494,6 +16495,7 @@ function Check-ContextMenu {
     # https://ristbs.github.io/2023/02/15/hijack-explorer-context-menu-for-persistence-and-fun.html
     # Supports Drive Retargeting
     # No Snapshotting right now - can add though.
+    # TODO - Check ColumnHandlers, CopyHookHandlers, DragDropHandlers and PropertySheetHandlers in same key, HKLM\Software\Classes\*\shellex
     Write-Message "Checking Context Menu Handlers"
 
     $path = "$regtarget_hklm`SOFTWARE\Classes\*\shellex\ContextMenuHandlers"
@@ -16676,6 +16678,29 @@ function Check-Narrator {
             Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
         }
         Write-Detection $detection
+    }
+}
+
+FUNCTION Check-Suspicious-File-Locations {
+    Write-Message "Checking Suspicious File Locations"
+    $suspicious_extensions = @('*.exe', '*.bat', '*.ps1', '*.hta', '*.vba', '*.vbs', '*.zip', '*.gz', '*.7z', '*.dll', '*.scr')
+    $recursive_paths_to_check = @(
+        "$env_homedrive\Users\Public"
+        "$env_homedrive\Users\Administrator"
+        "$env_homedrive\Windows\temp"
+    )
+    ForEach ($path in $recursive_paths_to_check){
+        $items = Get-ChildItem -Path $path -Recurse -ErrorAction SilentlyContinue -Include $suspicious_extensions
+        ForEach ($item in $items){
+            $detection = [PSCustomObject]@{
+                Name = 'Anomalous File in Suspicious Location'
+                Risk = 'High'
+                Source = 'Windows'
+                Technique = "N/A"
+                Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+            }
+            Write-Detection $detection
+        }
     }
 }
 
@@ -17232,6 +17257,7 @@ function Main {
     Check-Notepad++-Plugins
     Check-MSDTCDll
     Check-Narrator
+    Check-Suspicious-File-Locations
     Clean-Up
     Detection-Metrics
 }

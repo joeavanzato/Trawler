@@ -180,6 +180,7 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * Notepad++ Plugins
 * MSDTC Registry Hijacks
 * Narrator DLL Hijack (MSTTSLocEnUS.DLL)
+* Suspicious File Location Checks
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
@@ -192,6 +193,9 @@ TODO
 * AutoPlay Handler Inspection [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers\Handlers\]
 * HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\Pending\SPReviewEnabler
 * OCSetup [https://www.hexacorn.com/blog/2019/11/09/beyond-good-ol-run-key-part-122/]
+* Review https://hijacklibs.net/# for additional opportunities
+* Review https://www.wietzebeukema.nl/blog/hijacking-dlls-in-windows for additional opportunities
+* Review https://silentrunners.org/launchpoints.html for additional opportunities
 
 ## MITRE Techniques Evaluated
 
