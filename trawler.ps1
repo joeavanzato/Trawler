@@ -11423,14 +11423,13 @@ function Check-COM-Hijacks {
 }
 
 function Service-Reg-Checks {
+    # TODO - Check FailureCommand for abnormal entries
     # Supports Drive Retargeting
     # Support Dynamic Snapshotting
     Write-Message "Checking Service Registry Entries"
     # Service DLL Inspection
     $homedrive = $env_homedrive
 
-    # Going to use ControlSet001 here instead of CurrentControlSet - this could potentially cause issues if ControlSet002 is in use but..meh.
-    # TODO - Investigate above comment for possible resolutions longterm
     $image_path_lookup = @{
         "$regtarget_hklm`SYSTEM\$currentcontrolset\Services\ZoomCptService" = "`"[A-Za-z]{1}:\\Program Files\\Common Files\\Zoom\\Support\\CptService\.exe`" -user_path `"[A-Za-z]{1}:\\Users\\.*\\AppData\\Roaming\\Zoom`""
         "$regtarget_hklm`SYSTEM\$currentcontrolset\Services\xinputhid" = "System32\\drivers\\xinputhid\.sys"
@@ -16505,14 +16504,31 @@ function Check-ContextMenu {
             $data = Get-ItemProperty -LiteralPath $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             $data.PSObject.Properties | ForEach-Object {
                 if ($_.Name -eq '(Default)' -and $_.Value -match ".*\.dll.*") {
-                    $detection = [PSCustomObject]@{
-                        Name = 'DLL loaded in ContextMenuHandler'
-                        Risk = 'Medium'
-                        Source = 'Windows Context Menu'
-                        Technique = "T1546: Event Triggered Execution"
-                        Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                    if ($snapshot){
+                        $message = [PSCustomObject]@{
+                            Key = $item.Name
+                            Value = $_.Value
+                            Source = 'ContextMenuHandlers'
+                        }
+                        Write-Snapshot $message
                     }
-                    Write-Detection $detection
+                    $pass = $false
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_contextmenuhandlers $_.Value $_.Value
+                        if ($result){
+                            $pass = $true
+                        }
+                    }
+                    if ($pass -eq $false){
+                        $detection = [PSCustomObject]@{
+                            Name = 'DLL loaded in ContextMenuHandler'
+                            Risk = 'Medium'
+                            Source = 'Windows Context Menu'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                        }
+                        Write-Detection $detection
+                    }
                 }
             }
         }
@@ -16804,6 +16820,7 @@ function Read-Snapshot(){
     $script:allowlist_cmdautorunproc = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_rats = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_office_trusted_locations = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_contextmenuhandlers = New-Object -TypeName "System.Collections.ArrayList"
     ForEach ($item in $csv_data){
         if ($item.Source -eq "Scheduled Tasks"){
             # Using scheduled task name and exe path
@@ -16811,6 +16828,8 @@ function Read-Snapshot(){
             $allowtable_scheduledtask[$item.Key] = $item.Value
         } elseif ($item.Source -eq "Users"){
             $allowlist_users.Add($item.Key) | Out-Null
+        } elseif ($item.Source -eq "ContextMenuHandlers"){
+            $allowlist_contextmenuhandlers.Add($item.Value) | Out-Null
         } elseif ($item.Source -eq "IFEO"){
             $allowtable_ifeodebuggers[$item.Key] = $item.Value
         } elseif ($item.Source -eq "AppShims"){
