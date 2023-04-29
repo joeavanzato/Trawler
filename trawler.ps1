@@ -16491,6 +16491,7 @@ function Check-ContextMenu {
     # HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shellex\ContextMenuHandlers\{B7CDF620-DB73-44C0-8611-832B261A0107}
     # HKEY_USERS\S-1-5-21-63485881-451500365-4075260605-1001\SOFTWARE\Classes\*\shellex\ContextMenuHandlers\{B7CDF620-DB73-44C0-8611-832B261A0107}
     # The general idea is that {B7CDF620-DB73-44C0-8611-832B261A0107} represents the Explorer context menu - we are scanning ALL ContextMenuHandlers for DLLs present in the (Default) property as opposed to a CLSID
+    # https://ristbs.github.io/2023/02/15/hijack-explorer-context-menu-for-persistence-and-fun.html
     # Supports Drive Retargeting
     # No Snapshotting right now - can add though.
     Write-Message "Checking Context Menu Handlers"
@@ -16542,7 +16543,33 @@ function Check-ContextMenu {
 
 }
 
+function Check-SCM-DACL {
+    # https://pentestlab.blog/2023/03/20/persistence-service-control-manager/
+}
 
+function Check-OfficeAI {
+    # https://twitter.com/Laughing_Mantis/status/1645268114966470662
+    Write-Message "Checking Office AI.exe Presence"
+    $basepath = "$env_homedrive\Program Files\Microsoft Office\root\Office*"
+    if (Test-Path $basepath){
+        $path = "$env_homedrive\Program Files\Microsoft Office\root"
+        $dirs = Get-ChildItem -Path $path -Directory -Filter "Office*" -ErrorAction SilentlyContinue
+        ForEach ($dir in $dirs){
+            $ai = $dir.FullName+"\ai.exe"
+            if (Test-Path $ai){
+                $item = Get-Item -Path $ai -ErrorAction SilentlyContinue | Select-Object *
+                $detection = [PSCustomObject]@{
+                    Name = 'AI.exe in Office Directory'
+                    Risk = 'Medium'
+                    Source = 'Windows Context Menu'
+                    Technique = "T1546: Event Triggered Execution"
+                    Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+}
 
 function Write-Detection($det)  {
     # det is a custom object which will contain various pieces of metadata for the detection
@@ -17089,6 +17116,7 @@ function Main {
     Check-HTMLHelpDLL
     Check-RATS
     Check-ContextMenu
+    Check-OfficeAI
     Clean-Up
     Detection-Metrics
 }
