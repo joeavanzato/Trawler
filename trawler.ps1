@@ -2273,6 +2273,7 @@ function Check-COM-Hijacks {
     Write-Message "Checking COM Classes"
     # TODO - Consider NOT alerting when we don't have a 'known-good' entry for the CLSID in question
     # TODO - Some regex appears to be non-functional, especially on HKU inspection - need to figure out why/troubleshoot
+    # TODO - Inspect TreatAs options
     # Malware will typically target 'well-known' keys that are present in default versions of Windows - that should be enough for most situations and help to reduce noise.
     $homedrive = $env_assumedhomedrive
 	$default_hkcr_com_lookups = @{
@@ -12917,29 +12918,29 @@ function Check-Process-Modules {
     }
     Write-Message "Checking 'Phantom' DLLs"
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
+    $suspicious_unsigned_dll_names = @(
+        "cdpsgshims.dll",
+        "diagtrack_win.dll",
+        "EdgeGdi.dll",
+        "Msfte.dll",
+        "phoneinfo.dll",
+        "rpcss.dll",
+        "sapi_onecore.dll",
+        "spreview.exewdscore.dll",
+        "Tsmsisrv.dll",
+        "TSVIPSrv.dll",
+        "Ualapi.dll",
+        "UsoSelfhost.dll",
+        "wbemcomn.dll",
+        "WindowsCoreDeviceInfo.dll",
+        "windowsperformancerecordercontrol.dll",
+        "wlanhlp.dll",
+        "wlbsctrl.dll",
+        "wow64log.dll",
+        "WptsExtensions.dll"
+        "fveapi.dll"
+    )
     ForEach ($process in $processes){
-
-        $suspicious_unsigned_dll_names = @(
-			"cdpsgshims.dll",
-			"diagtrack_win.dll",
-			"EdgeGdi.dll",
-			"Msfte.dll",
-			"phoneinfo.dll",
-            "rpcss.dll",
-            "sapi_onecore.dll",
-            "spreview.exewdscore.dll",
-			"Tsmsisrv.dll",
-			"TSVIPSrv.dll",
-			"Ualapi.dll",
-            "UsoSelfhost.dll",
-			"wbemcomn.dll",
-			"WindowsCoreDeviceInfo.dll",
-			"windowsperformancerecordercontrol.dll",
-			"wlanhlp.dll",
-			"wlbsctrl.dll",
-			"wow64log.dll",
-			"WptsExtensions.dll"
-        )
         $modules = Get-Process -id $process.ProcessId -ErrorAction SilentlyContinue  | Select-Object -ExpandProperty modules -ErrorAction SilentlyContinue | Select-Object Company,FileName,ModuleName
         if ($modules -ne $null){
             ForEach ($module in $modules){
@@ -16545,9 +16546,11 @@ function Check-ContextMenu {
 
 function Check-SCM-DACL {
     # https://pentestlab.blog/2023/03/20/persistence-service-control-manager/
+    # TODO
 }
 
 function Check-OfficeAI {
+    # Supports Drive Retargeting
     # https://twitter.com/Laughing_Mantis/status/1645268114966470662
     Write-Message "Checking Office AI.exe Presence"
     $basepath = "$env_homedrive\Program Files\Microsoft Office\root\Office*"
@@ -16568,6 +16571,95 @@ function Check-OfficeAI {
                 Write-Detection $detection
             }
         }
+    }
+}
+
+function Check-Notepad++-Plugins {
+    # https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/
+    # Supports Drive Retargeting
+    Write-Message "Checking Notepad++ Plugins"
+    $basepaths = @(
+        "$env_homedrive\Program Files\Notepad++\plugins"
+        "$env_homedrive\Program Files (x86)\Notepad++\plugins"
+    )
+    $allowlisted = @(
+        ".*\\Config\\nppPluginList\.dll"
+        ".*\\mimeTools\\mimeTools\.dll"
+        ".*\\NppConverter\\NppConverter\.dll"
+        ".*\\NppExport\\NppExport\.dll"
+    )
+    ForEach ($basepath in $basepaths){
+        if (Test-Path $basepath){
+            $dlls = Get-ChildItem -Path $basepath -File -Filter "*.dll" -Recurse -ErrorAction SilentlyContinue
+            #Write-Host $dlls
+            ForEach ($item in $dlls){
+                $match = $false
+                ForEach ($allow_match in $allowlisted){
+                    if ($item.FullName -match $allow_match){
+                        $match = $true
+                    }
+                }
+                if ($match -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Default Notepad++ Plugin DLL'
+                        Risk = 'Medium'
+                        Source = 'Notepad++'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-MSDTCDll {
+    # https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/
+    Write-Message "Checking MSDTC DLL Hijack"
+    $matches = @{
+        "OracleOciLib" = "oci.dll"
+        "OracleOciLibPath" = "$env_assumedhomedrive\Windows\system32"
+        "OracleSqlLib" = "SQLLib80.dll"
+        "OracleSqlLibPath" = "$env_assumedhomedrive\Windows\system32"
+        "OracleXaLib" = "xa80.dll"
+        "OracleXaLibPath" = "$env_assumedhomedrive\Windows\system32"
+    }
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\MSDTC\MTxOCI"
+    if (Test-Path -Path "Registry::$path") {
+        $data = Get-ItemProperty -Path "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $data.PSObject.Properties | ForEach-Object {
+            if ($matches.ContainsKey($_.Name)){
+                if ($_.Value -ne $matches[$_.Name]){
+                    $detection = [PSCustomObject]@{
+                        Name = 'MSDTC Key/Value Mismatch'
+                        Risk = 'Medium'
+                        Source = 'Windows MSDTC'
+                        Technique = "T1574: Hijack Execution Flow"
+                        Meta = "Key: "+$path+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Expected Value: "+$matches[$_.Name]
+                    }
+                    Write-Detection $detection
+                }
+            }
+        }
+    }
+}
+
+function Check-Narrator {
+    # Supports Drive Retargeting
+    # https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/
+    Write-Message "Checking Narrator MSTTSLocEnUS.dll Presence"
+    $basepath = "$env_homedrive\Windows\System32\Speech\Engines\TTS\MSTTSLocEnUS.DLL"
+    if (Test-Path $basepath){
+        $item = Get-Item -Path $basepath -ErrorAction SilentlyContinue | Select-Object *
+        $detection = [PSCustomObject]@{
+            Name = 'Narrator Missing DLL is Present'
+            Risk = 'Medium'
+            Source = 'Windows Narrator'
+            Technique = "T1546: Event Triggered Execution"
+            Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+        }
+        Write-Detection $detection
     }
 }
 
@@ -17117,6 +17209,10 @@ function Main {
     Check-RATS
     Check-ContextMenu
     Check-OfficeAI
+    # TODO Check-SCM-DACL
+    Check-Notepad++-Plugins
+    Check-MSDTCDll
+    Check-Narrator
     Clean-Up
     Detection-Metrics
 }
