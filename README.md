@@ -177,6 +177,7 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * Remote Access Tool Artifacts (Files, Directories, Registry Keys)
 * ContextMenuHandler DLL Checks
 * Office AI.exe
+* Notepad++ Plugins
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
@@ -246,4 +247,11 @@ This tool would not exist without the amazing InfoSec community - the most notab
 * [Hexacorn - Persistence Series](https://www.hexacorn.com/blog/2017/01/28/beyond-good-ol-run-key-all-parts/)
 * [IRED](https://www.ired.team/)
 * [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings)
+
+## More References
+* https://twitter.com/Laughing_Mantis/status/1645268114966470662
+* https://shellz.club/posts/a-novel-method-for-bypass-ETW/
+* https://pentestlab.blog/2023/03/20/persistence-service-control-manager/
+* https://ristbs.github.io/2023/02/15/hijack-explorer-context-menu-for-persistence-and-fun.html
+* https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/
 

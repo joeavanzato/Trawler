@@ -16545,9 +16545,11 @@ function Check-ContextMenu {
 
 function Check-SCM-DACL {
     # https://pentestlab.blog/2023/03/20/persistence-service-control-manager/
+    # TODO
 }
 
 function Check-OfficeAI {
+    # Supports Drive Retargeting
     # https://twitter.com/Laughing_Mantis/status/1645268114966470662
     Write-Message "Checking Office AI.exe Presence"
     $basepath = "$env_homedrive\Program Files\Microsoft Office\root\Office*"
@@ -16566,6 +16568,46 @@ function Check-OfficeAI {
                     Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
                 }
                 Write-Detection $detection
+            }
+        }
+    }
+}
+
+function Check-Notepad++-Plugins {
+    # https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/
+    # Supports Drive Retargeting
+    Write-Message "Checking Notepad++ Plugins"
+    $basepaths = @(
+        "$env_homedrive\Program Files\Notepad++\plugins"
+        "$env_homedrive\Program Files (x86)\Notepad++\plugins"
+    )
+    $allowlisted = @(
+        ".*\\Config\\nppPluginList\.dll"
+        ".*\\mimeTools\\mimeTools\.dll"
+        ".*\\NppConverter\\NppConverter\.dll"
+        ".*\\NppExport\\NppExport\.dll"
+    )
+    ForEach ($basepath in $basepaths){
+        if (Test-Path $basepath){
+            $dlls = Get-ChildItem -Path $basepath -File -Filter "*.dll" -Recurse -ErrorAction SilentlyContinue
+            #Write-Host $dlls
+            ForEach ($item in $dlls){
+                $match = $false
+                ForEach ($allow_match in $allowlisted){
+                    if ($item.FullName -match $allow_match){
+                        $match = $true
+                    }
+                }
+                if ($match -eq $false){
+                    $detection = [PSCustomObject]@{
+                        Name = 'Non-Default Notepad++ Plugin DLL'
+                        Risk = 'Medium'
+                        Source = 'Notepad++'
+                        Technique = "T1546: Event Triggered Execution"
+                        Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                    }
+                    Write-Detection $detection
+                }
             }
         }
     }
@@ -17041,7 +17083,7 @@ function Main {
     } elseif ($loadsnapshotdata -and $snapshot) {
         Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
-    Check-ScheduledTasks
+    <#Check-ScheduledTasks
     Check-Users
     Check-Services
     Check-Processes
@@ -17116,7 +17158,9 @@ function Main {
     Check-HTMLHelpDLL
     Check-RATS
     Check-ContextMenu
-    Check-OfficeAI
+    Check-OfficeAI#>
+    # TODO Check-SCM-DACL
+    Check-Notepad++-Plugins
     Clean-Up
     Detection-Metrics
 }
