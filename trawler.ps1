@@ -172,6 +172,7 @@ $rat_terms = @(
     "distant"
     "dwservice"
     "dwagent"
+    "ehorus"
     "getscreen"
     "iperius"
     "kaseya"
