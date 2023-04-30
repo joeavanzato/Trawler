@@ -16407,7 +16407,7 @@ function Check-RATS {
         "ShowMyPC (Dir 2)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\ShowMyPC"
         "SightCall" = ""
         "Surfly" = ""
-        "Syncro (Dir 1)" = "$env_programdata\Syncro\bin"
+        "Syncro (Dir 1)" = "$env_programdata\Syncro"
         "Syncro (Dir 2)" = "$env_homedrive\Program Files\RepairTech\Syncro"
         "TightVNC (Log 1)" = "$env_homedrive\Windows\System32\config\systemprofile\AppData\Roaming\TightVNC\tvnserver.log"
         "TightVNC (Log 2)" = "$env_programdata\TightVNC\tvnserver.log"

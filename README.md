@@ -42,7 +42,7 @@ Additionally, if you identify obvious false positives, please let me know by ope
 -snapshotpath : Define a custom file-path for saving snapshot output to.
 -outpath : Define a custom file-path for saving detection output to (defaults to "$PSScriptRoot\detections.csv")
 -loadsnapshot : Define the path for an existing snapshot file to load as an allow-list reference
--drivetarget : Define the homedrive variable for a target drive (eg. .\trawler.ps1 -targetdrive "D:")
+-drivetarget : Define the variable for a mounted target drive (eg. .\trawler.ps1 -targetdrive "D:") - using this alone leads to an 'assumed homedrive' variable of C: for analysis purposes
 ```
 
 ## What separates this from PersistenceSniper?
@@ -71,7 +71,7 @@ Often during an investigation, analysts may end up mounting a new drive that rep
 
 At runtime, Trawler will re-target temporary script-level variables for use in checking file-based artifacts and also will attempt to load relevant Registry Hives (HKLM\SOFTWARE, HKLM\SYSTEM, NTUSER.DATs, USRCLASS.DATs) underneath HKLM/HKU and prefixed by 'ANALYSIS_'.  Trawler will also attempt to unload these temporarily loaded hives upon script completion.
 
-As an example, if you have an image mounted at a location such as 'F:\Test' which contains the NTFS file system ('F:\Test\Windows', 'F:\Test\User', etc) then you can invoke tralier like below;
+As an example, if you have an image mounted at a location such as 'F:\Test' which contains the NTFS file system ('F:\Test\Windows', 'F:\Test\User', etc) then you can invoke trawler like below;
 ```powershell
 .\trawler.ps1 -drivetarget "F:\Test"
 ```
