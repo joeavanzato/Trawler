@@ -187,12 +187,14 @@ $rat_terms = @(
     "remotepc"
     "remotetopc"
     "remote utilities"
+    "RepairTech"
     "screenconnect"
     "screenmeet"
     "showmypc"
     "sightcall"
     "splashtop"
     "surfly"
+    "syncro"
     "teamviewer"
     "tightvnc"
     "vnc"
@@ -1631,7 +1633,17 @@ function Check-Services {
                 Write-Detection $detection
             }
         }
-
+        if ($service.PathName -match "$env_assumedhomedrive\\Windows\\Temp\\.*") {
+            # Service launching from Windows\Temp
+            $detection = [PSCustomObject]@{
+                Name = 'Service Launching from Windows Temp Directory'
+                Risk = 'High'
+                Source = 'Services'
+                Technique = "T1543.003: Create or Modify System Process: Windows Service"
+                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+            }
+            Write-Detection $detection
+        }
         # Detection - Non-Standard Tasks
         ForEach ($i in $default_service_exe_paths){
             if ( $service.PathName -like $i) {
@@ -16395,6 +16407,8 @@ function Check-RATS {
         "ShowMyPC (Dir 2)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\ShowMyPC"
         "SightCall" = ""
         "Surfly" = ""
+        "Syncro (Dir 1)" = "$env_programdata\Syncro"
+        "Syncro (Dir 2)" = "$env_homedrive\Program Files\RepairTech\Syncro"
         "TightVNC (Log 1)" = "$env_homedrive\Windows\System32\config\systemprofile\AppData\Roaming\TightVNC\tvnserver.log"
         "TightVNC (Log 2)" = "$env_programdata\TightVNC\tvnserver.log"
         "TeamViewer (Log 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\TeamViewer\Connections.txt"
@@ -16681,9 +16695,9 @@ function Check-Narrator {
     }
 }
 
-FUNCTION Check-Suspicious-File-Locations {
+function Check-Suspicious-File-Locations {
     Write-Message "Checking Suspicious File Locations"
-    $suspicious_extensions = @('*.exe', '*.bat', '*.ps1', '*.hta', '*.vba', '*.vbs', '*.zip', '*.gz', '*.7z', '*.dll', '*.scr')
+    $suspicious_extensions = @('*.exe', '*.bat', '*.ps1', '*.hta', '*.vb', '*.vba', '*.vbs', '*.zip', '*.gz', '*.7z', '*.dll', '*.scr', '*.cmd', '*.com', '*.ws', '*.wsf', '*.scf', '*.scr', '*.pif')
     $recursive_paths_to_check = @(
         "$env_homedrive\Users\Public"
         "$env_homedrive\Users\Administrator"
