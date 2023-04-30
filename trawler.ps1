@@ -15136,7 +15136,7 @@ function Check-TerminalServicesInitialProgram {
 
     ForEach ($path in $paths){
         if (Test-Path -Path $path) {
-            $finhert = $false
+            $finherit = $false
             $items = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
             $items.PSObject.Properties | ForEach-Object {
                 if ($_.Name -eq 'fInheritInitialProgram' -and $_.Value -eq "1"){
