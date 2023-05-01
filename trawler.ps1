@@ -231,7 +231,7 @@ function ValidatePaths {
 }
 
 
-# TODO - JSON Detection Outputto easily encapsulate more details
+# TODO - JSON Detection Output to easily encapsulate more details
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
 # TODO - Browser Extension Analysis
 # TODO - Temporary RID Hijacking
@@ -263,46 +263,83 @@ $rat_terms = @(
     "aeroadmin",
     "action1"
     "ammyadmin"
+    "aa_v"
     "anydesk"
     "anyscreen"
     "anyviewer"
     "atera"
+    "aweray_remote"
+    "awrem32"
+    "awhost32"
     "beyondtrust"
     "bomgar"
     "connectwise"
+    "cservice"
     "dameware"
     "desktopnow"
-    "distant"
+    "distant-desktop"
     "dwservice"
     "dwagent"
+    "dwagsvc"
+    "dwrcs"
+    "famitrfc"
+    "g2comm"
+    "g2host"
+    "g2fileh"
+    "g2mainh"
+    "g2printh"
+    "g2svc"
+    "g2tray"
+    "gopcsrv"
     "getscreen"
     "iperius"
     "kaseya"
     "litemanager"
     "logmein"
+    "lmiignition"
+    "lmiguardiansvc"
+    "meshagent"
     "mstsc"
     "ninja1"
     "ninjaone"
+    "PCMonitorManager"
+    "pcmonitorsrv"
     "pulseway"
     "quickassist"
     "radmin"
+    "rcclient"
     "realvnc"
     "remotepc"
     "remotetopc"
     "remote utilities"
     "RepairTech"
+    "ROMServer"
+    "ROMFUSClient"
+    "rutserv"
     "screenconnect"
     "screenmeet"
     "showmypc"
+    "smpcsetup"
+    "strwinclt"
+    "supremo"
     "sightcall"
     "splashtop"
     "surfly"
     "syncro"
+    "tacticalrmm"
     "teamviewer"
     "tightvnc"
+    "ultraviewer"
     "vnc"
+    "winvnc"
+    "vncviewer"
+    "winvncsc"
+    "winwvc"
     "xmreality"
     "ultravnc"
+    "Zaservice"
+    "Zohours"
+    "ZohoMeeting"
     "zoho"
 )
 
@@ -523,7 +560,19 @@ function Check-ScheduledTasks {
                 $exe_match = $false 
             }
         }
-
+        ForEach ($term in $rat_terms) {
+            if ($task.Execute -match ".*$term.*" -or $task.Arguments -match ".*$term.*") {
+                # Service has a suspicious launch pattern matching a known RAT
+                $detection = [PSCustomObject]@{
+                    Name = 'Scheduled Task has known-RAT Keyword'
+                    Risk = 'Medium'
+                    Source = 'Scheduled Tasks'
+                    Technique = "T1053: Scheduled Task/Job"
+                    Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs+", RAT Keyword: "+$term
+                }
+                Write-Detection $detection
+            }
+        }
         # Task Running as SYSTEM
         if ($task.RunAs -eq "SYSTEM" -and $exe_match -eq $false -and $task.Arguments -notin $default_task_args) {
             # Current Task Executable Path is non-standard
@@ -1823,6 +1872,18 @@ function Check-Processes {
             $result = Check-IfAllowed $allowlist_process_exes $process.ProcessName $process.ExecutablePath
             if ($result){
                 continue
+            }
+        }
+        ForEach ($term in $rat_terms) {
+            if ($process.CommandLine -match ".*$term.*") {
+                $detection = [PSCustomObject]@{
+                    Name = 'Running Process has known-RAT Keyword'
+                    Risk = 'Medium'
+                    Source = 'Processes'
+                    Technique = "T1059: Command and Scripting Interpreter"
+                    Meta = "Process Name: "+ $process.ProcessName+", CommandLine: "+ $process.CommandLine+", Executable: "+$process.ExecutablePath+", RAT Keyword: "+$term
+                }
+                Write-Detection $detection
             }
         }
         if ($process.CommandLine -match $ipv4_pattern -or $process.CommandLine -match $ipv6_pattern) {
@@ -16520,6 +16581,7 @@ function Check-RATS {
         #"TeamViewer (Reg 3)" = "Registry::{0}SYSTEM\ControlSet001\Services\TeamViewer" -f $regtarget_hklm
         "UltraVNC (Log 1)" = "$env_programdata\uvnc bvba\WinVNC.log"
         "UltraVNC (Log 2)" = "$env_programdata\uvnc bvba\mslogon.log"
+        "UltraViewer (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\UltraViewer"
         "XMReality" = ""
         "Viewabo" = ""
         "ZoHo Assist (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\ZohoMeeting"
@@ -17525,10 +17587,10 @@ function Main {
 			"RATS" { Check-RATS }
 			"RDPShadowConsent" { Check-RDPShadowConsent }
 			"RDPStartupPrograms" { Check-RDPStartupPrograms }
-			# "RegistryChecks" {Check-Registry-Checks}
+			# "RegistryChecks" {Check-Registry-Checks}  # Deprecated
 			"RemoteUACSetting" { Check-RemoteUACSetting }
 			"ScheduledTasks" { Check-ScheduledTasks }
-			# "SCMDACL" {Check-SCM-DACL}
+			# "SCMDACL" {Check-SCM-DACL} # TODO
 			"ScreenSaverEXE" { Check-ScreenSaverEXE }
 			"SEMgrWallet" { Check-SEMgrWallet }
 			"ServiceHijacks" { Check-Service-Hijacks }
