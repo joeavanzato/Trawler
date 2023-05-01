@@ -37,6 +37,7 @@ Additionally, if you identify obvious false positives, please let me know by ope
 
 ### CLI Parameters
 ```
+-scanoptions : Tab-through possible detections and select a sub-set using comma-delimited terms (eg. .\trawler.ps1 -scanoptions Services,Processes)
 -hide : Suppress Detection output to console
 -snapshot : Capture a "persistence snapshot" of the current system, defaulting to "$PSScriptRoot\snapshot.csv"
 -snapshotpath : Define a custom file-path for saving snapshot output to.
