@@ -234,7 +234,7 @@ function ValidatePaths {
 }
 
 
-# TODO - JSON Detection Outputto easily encapsulate more details
+# TODO - JSON Detection Output to easily encapsulate more details
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
 # TODO - Browser Extension Analysis
 # TODO - Temporary RID Hijacking
@@ -332,6 +332,7 @@ $rat_terms = @(
     "tacticalrmm"
     "teamviewer"
     "tightvnc"
+    "ultraviewer"
     "vnc"
     "winvnc"
     "vncviewer"
@@ -16588,6 +16589,7 @@ function Check-RATS {
         #"TeamViewer (Reg 3)" = "Registry::{0}SYSTEM\ControlSet001\Services\TeamViewer" -f $regtarget_hklm
         "UltraVNC (Log 1)" = "$env_programdata\uvnc bvba\WinVNC.log"
         "UltraVNC (Log 2)" = "$env_programdata\uvnc bvba\mslogon.log"
+        "UltraViewer (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\UltraViewer"
         "XMReality" = ""
         "Viewabo" = ""
         "ZoHo Assist (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\ZohoMeeting"
