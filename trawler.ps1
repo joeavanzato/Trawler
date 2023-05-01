@@ -569,7 +569,7 @@ function Check-ScheduledTasks {
                     Risk = 'Medium'
                     Source = 'Scheduled Tasks'
                     Technique = "T1053: Scheduled Task/Job"
-                    Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                    Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs+", RAT Keyword: "+$term
                 }
                 Write-Detection $detection
             }
@@ -1888,7 +1888,7 @@ function Check-Processes {
                     Risk = 'Medium'
                     Source = 'Processes'
                     Technique = "T1059: Command and Scripting Interpreter"
-                    Meta = "Process Name: "+ $process.ProcessName+", CommandLine: "+ $process.CommandLine+", Executable: "+$process.ExecutablePath
+                    Meta = "Process Name: "+ $process.ProcessName+", CommandLine: "+ $process.CommandLine+", Executable: "+$process.ExecutablePath+", RAT Keyword: "+$term
                 }
                 Write-Detection $detection
             }
