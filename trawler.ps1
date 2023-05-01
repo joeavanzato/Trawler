@@ -21,8 +21,14 @@
     .PARAMETER loadsnapshot
 		The fully-qualified file-path to a previous snapshot to be loaded for allow-listing
 
+	.PARAMETER ScanOptions
+		Set to pick specific scanners to run. Multiple can be used when separated by a comma. (Supports tab completion)
+
 	.EXAMPLE
 		.\trawler.ps1 -outpath "C:\detections.csv"
+
+	.EXAMPLE
+		.\trawler.ps1 -outpath "C:\detections.csv" -ScanOptions ScheduledTasks, BITS
 	
 	.OUTPUTS
 		None
@@ -36,33 +42,129 @@
 	.LINK
 		https://github.com/joeavanzato/Trawler
 #>
+[CmdletBinding()]
 param
 (
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'The fully-qualified file-path where detection output should be stored as a CSV, defaults to $PSScriptRoot\detections.csv')]
-	    [string]$outpath = "$PSScriptRoot\detections.csv",
+		Mandatory = $false,
+		HelpMessage = 'The fully-qualified file-path where detection output should be stored as a CSV, defaults to $PSScriptRoot\detections.csv')]
+	[string]
+	$outpath = "$PSScriptRoot\detections.csv",
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'Should a snapshot CSV be generated')]
-	    [switch]$snapshot,
+		Mandatory = $false,
+		HelpMessage = 'Should a snapshot CSV be generated')]
+	[switch]
+	$snapshot,
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'Suppress Detection Output to Console')]
-	    [switch]$hide,
+		Mandatory = $false,
+		HelpMessage = 'Suppress Detection Output to Console')]
+	[switch]
+	$hide,
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
-	    [string]$snapshotpath = "$PSScriptRoot\snapshot.csv",
+		Mandatory = $false,
+		HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
+	[string]
+	$snapshotpath = "$PSScriptRoot\snapshot.csv",
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'The fully-qualified file-path where the snapshot CSV to be loaded is located')]
-	    [string]$loadsnapshot,
+		Mandatory = $false,
+		HelpMessage = 'The fully-qualified file-path where the snapshot CSV to be loaded is located')]
+	[string]
+	$loadsnapshot,
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'The drive to target for analysis - for example, if mounting an imaged system as a second drive on an analysis device, specify via -drivetarget "D:" (NOT YET IMPLEMENTED)')]
-	    [string]$drivetarget
+		Mandatory = $false,
+		HelpMessage = 'The drive to target for analysis - for example, if mounting an imaged system as a second drive on an analysis device, specify via -drivetarget "D:" (NOT YET IMPLEMENTED)')]
+	[string]
+	$drivetarget,
+	[Parameter(
+		Mandatory = $false,
+		HelpMessage = "Allows for targeting certain scanners and ignoring others. Use 'All' to run all scanners.")]
+	[ValidateSet(
+		"ActiveSetup",
+		"All",
+		"AMSIProviders",
+		"AppCertDLLs",
+		"AppInitDLLs",
+		"ApplicationShims",
+		"AppPaths",
+		"AssociationHijack",
+		"AutoDialDLL",
+		"BIDDll",
+		"BITS",
+		"COMHijacks",
+		"CommandAutoRunProcessors",
+		"Connections",
+		"ContextMenu",
+		"DebuggerHijacks",
+		"DNSServerLevelPluginDLL",
+		"eRegChecks",
+		"ErrorHandlerCMD",
+		"ExplorerHelperUtilities",
+		"FolderOpen",
+		"GPOExtensions",
+		"GPOScripts",
+		"HTMLHelpDLL",
+		"IFEO",
+		"InternetSettingsLUIDll",
+		"KnownManagedDebuggers",
+		"LNK",
+		"LSA",
+		"MicrosoftTelemetryCommands",
+		"ModifiedWindowsAccessibilityFeature",
+		"MSDTCDll",
+		"Narrator",
+		"NaturalLanguageDevelopmentDLLs",
+		"NetSHDLLs",
+		"NotepadPPPlugins",
+		"OfficeAI",
+		"OfficeGlobalDotName",
+		"Officetest",
+		"OfficeTrustedLocations",
+		"OutlookStartup",
+		"PATHHijacks",
+		"PeerDistExtensionDll",
+		"PolicyManager",
+		"PowerShellProfiles",
+		"PrintMonitorDLLs",
+		"PrintProcessorDLLs",
+		"Processes",
+		"ProcessModules",
+		"RATS",
+		"RDPShadowConsent",
+		"RDPStartupPrograms",
+		"RegistryChecks",
+		"RemoteUACSetting",
+		"ScheduledTasks",
+		"SCMDACL",
+		"ScreenSaverEXE",
+		"SEMgrWallet",
+		"ServiceHijacks",
+		"Services",
+		"SethcHijack",
+		"SilentProcessExitMonitoring",
+		"Startups",
+		"SuspiciousCertificates",
+		"SuspiciousFileLocation",
+		"TerminalProfiles",
+		"TerminalServicesDLL",
+		"TerminalServicesInitialProgram",
+		"TimeProviderDLLs",
+		"TrustProviderDLL",
+		"UninstallStrings",
+		"UserInitMPRScripts",
+		"Users",
+		"UtilmanHijack",
+		"WellKnownCOM",
+		"WERRuntimeExceptionHandlers",
+		"WindowsLoadKey",
+		"WindowsUnsignedFiles",
+		"WindowsUpdateTestDlls",
+		"WinlogonHelperDLLs",
+		"WMIConsumers",
+		"Wow64LayerAbuse"
+	)]
+	$ScanOptions = "All"
 )
+
 # TODO - Refactor below into setup function
 # Script Level Variable Setup
 if ($snapshot.IsPresent){
@@ -70,21 +172,25 @@ if ($snapshot.IsPresent){
 } else {
     $snapshot = $false
 }
+
 if ($hide.IsPresent){
     $hide_console_output = $true
 } else {
     $hide_console_output = $false
 }
+
 if ($PSBoundParameters.ContainsKey('loadsnapshot')){
     $loadsnapshotdata = $true
 } else {
     $loadsnapshotdata = $false
 }
+
 if ($PSBoundParameters.ContainsKey('drivetarget')){
     $drivechange = $true
 } else {
     $drivechange = $false
 }
+
 $detection_list = New-Object -TypeName "System.Collections.ArrayList"
 
 
@@ -17235,6 +17341,90 @@ function Clean-Up {
     }
 }
 
+$possibleScanOptions = @(
+	"ActiveSetup",
+	"AMSIProviders",
+	"AppCertDLLs",
+	"AppInitDLLs",
+	"ApplicationShims",
+	"AppPaths",
+	"AssociationHijack",
+	"AutoDialDLL",
+	"BIDDll",
+	"BITS",
+	"COMHijacks",
+	"CommandAutoRunProcessors",
+	"Connections",
+	"ContextMenu",
+	"DebuggerHijacks",
+	"DNSServerLevelPluginDLL",
+	"eRegChecks",
+	"ErrorHandlerCMD",
+	"ExplorerHelperUtilities",
+	"FolderOpen",
+	"GPOExtensions",
+	"GPOScripts",
+	"HTMLHelpDLL",
+	"IFEO",
+	"InternetSettingsLUIDll",
+	"KnownManagedDebuggers",
+	"LNK",
+	"LSA",
+	"MicrosoftTelemetryCommands",
+	"ModifiedWindowsAccessibilityFeature",
+	"MSDTCDll",
+	"Narrator",
+	"NaturalLanguageDevelopmentDLLs",
+	"NetSHDLLs",
+	"NotepadPPPlugins",
+	"OfficeAI",
+	"OfficeGlobalDotName",
+	"Officetest",
+	"OfficeTrustedLocations",
+	"OutlookStartup",
+	"PATHHijacks",
+	"PeerDistExtensionDll",
+	"PolicyManager",
+	"PowerShellProfiles",
+	"PrintMonitorDLLs",
+	"PrintProcessorDLLs",
+	"Processes",
+	"ProcessModules",
+	"RATS",
+	"RDPShadowConsent",
+	"RDPStartupPrograms",
+	"RegistryChecks",
+	"RemoteUACSetting",
+	"ScheduledTasks",
+	"SCMDACL",
+	"ScreenSaverEXE",
+	"SEMgrWallet",
+	"ServiceHijacks",
+	"Services",
+	"SethcHijack",
+	"SilentProcessExitMonitoring",
+	"Startups",
+	"SuspiciousCertificates",
+	"SuspiciousFileLocation",
+	"TerminalProfiles",
+	"TerminalServicesDLL",
+	"TerminalServicesInitialProgram",
+	"TimeProviderDLLs",
+	"TrustProviderDLL",
+	"UninstallStrings",
+	"UserInitMPRScripts",
+	"Users",
+	"UtilmanHijack",
+	"WellKnownCOM",
+	"WERRuntimeExceptionHandlers",
+	"WindowsLoadKey",
+	"WindowsUnsignedFiles",
+	"WindowsUpdateTestDlls",
+	"WinlogonHelperDLLs",
+	"WMIConsumers",
+	"Wow64LayerAbuse"
+)
+
 function Logo {
     $logo = "
   __________  ___ _       ____    __________ 
@@ -17253,92 +17443,103 @@ function Main {
     Logo
     ValidatePaths
     Drive-Change
+
     if ($loadsnapshotdata -and $snapshot -eq $false){
         Read-Snapshot
     } elseif ($loadsnapshotdata -and $snapshot) {
         Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
-    Check-ScheduledTasks
-    Check-Users
-    Check-Services
-    Check-Processes
-    Check-Connections
-    Check-WMIConsumers
-    Check-Startups
-    Check-BITS
-    Check-Modified-Windows-Accessibility-Feature
-    Check-Debugger-Hijacks
-    Check-PowerShell-Profiles
-    Check-Outlook-Startup
-    ###Check-Registry-Checks
-    Check-COM-Hijacks
-    Service-Reg-Checks
-    Check-LNK
-    Check-Process-Modules
-    Check-Windows-Unsigned-Files
-    Check-Service-Hijacks
-    Check-PATH-Hijacks
-    Check-Association-Hijack
-    Check-Suspicious-Certificates
-    Check-Office-Trusted-Locations
-    Check-GPO-Scripts
-    Check-TerminalProfiles
-    Check-PeerDistExtensionDll
-    Check-InternetSettingsLUIDll
-    Check-ErrorHandlerCMD
-    Check-BIDDll
-    Check-WindowsUpdateTestDlls
-    Check-KnownManagedDebuggers
-    Check-Wow64LayerAbuse
-    Check-MicrosoftTelemetryCommands
-    Check-ActiveSetup
-    Check-PolicyManager
-    Check-UninstallStrings
-    Check-SEMgrWallet
-    Check-WERRuntimeExceptionHandlers
-    Check-SilentProcessExitMonitoring
-    Check-WinlogonHelperDLLs
-    Check-UtilmanHijack
-    Check-SethcHijack
-    Check-RDPShadowConsent
-    Check-RemoteUACSetting
-    Check-PrintMonitorDLLs
-    Check-LSA
-    Check-DNSServerLevelPluginDLL
-    Check-ExplorerHelperUtilities
-    Check-TerminalServicesInitialProgram
-    Check-RDPStartupPrograms
-    Check-TimeProviderDLLs
-    Check-PrintProcessorDLLs
-    Check-UserInitMPRScripts
-    Check-ScreenSaverEXE
-    Check-NetSHDLLs
-    Check-AppCertDLLs
-    Check-AppInitDLLs
-    Check-ApplicationShims
-    Check-IFEO
-    Check-FolderOpen
-    Check-WellKnownCOM
-    Check-Officetest
-    Check-OfficeGlobalDotName
-    Check-TerminalServicesDLL
-    Check-AutoDialDLL
-    Check-CommandAutoRunProcessors
-    Check-TrustProviderDLL
-    Check-NaturalLanguageDevelopmentDLLs
-    Check-WindowsLoadKey
-    Check-AMSIProviders
-    Check-AppPaths
-    Check-GPOExtensions
-    Check-HTMLHelpDLL
-    Check-RATS
-    Check-ContextMenu
-    Check-OfficeAI
-    # TODO Check-SCM-DACL
-    Check-Notepad++-Plugins
-    Check-MSDTCDll
-    Check-Narrator
-    Check-Suspicious-File-Locations
+
+	if ($ScanOptions -eq "All") {
+		$ScanOptions = $possibleScanOptions
+	}
+
+	foreach ($option in $ScanOptions){
+		switch ($option) {
+			"ActiveSetup" { Check-ActiveSetup }
+			"AMSIProviders" { Check-AMSIProviders }
+			"AppCertDLLs" { Check-AppCertDLLs }
+			"AppInitDLLs" { Check-AppInitDLLs }
+			"ApplicationShims" { Check-ApplicationShims }
+			"AppPaths" { Check-AppPaths }
+			"AssociationHijack" { Check-Association-Hijack }
+			"AutoDialDLL" { Check-AutoDialDLL }
+			"BIDDll" { Check-BIDDll }
+			"BITS" { Check-BITS }
+			"COMHijacks" { Check-COM-Hijacks }
+			"CommandAutoRunProcessors" { Check-CommandAutoRunProcessors }
+			"Connections" { Check-Connections }
+			"ContextMenu" { Check-ContextMenu }
+			"DebuggerHijacks" { Check-Debugger-Hijacks }
+			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
+			"eRegChecks" { Check-Registry-Checks }
+			"ErrorHandlerCMD" { Check-ErrorHandlerCMD }
+			"ExplorerHelperUtilities" { Check-ExplorerHelperUtilities }
+			"FolderOpen" { Check-FolderOpen }
+			"GPOExtensions" { Check-GPOExtensions }
+			"GPOScripts" { Check-GPO-Scripts }
+			"HTMLHelpDLL" { Check-HTMLHelpDLL }
+			"IFEO" { Check-IFEO }
+			"InternetSettingsLUIDll" { Check-InternetSettingsLUIDll }
+			"KnownManagedDebuggers" { Check-KnownManagedDebuggers }
+			"LNK" { Check-LNK }
+			"LSA" { Check-LSA }
+			"MicrosoftTelemetryCommands" { Check-MicrosoftTelemetryCommands }
+			"ModifiedWindowsAccessibilityFeature" { Check-Modified-Windows-Accessibility-Feature }
+			"MSDTCDll" { Check-MSDTCDll }
+			"Narrator" { Check-Narrator }
+			"NaturalLanguageDevelopmentDLLs" { Check-NaturalLanguageDevelopmentDLLs }
+			"NetSHDLLs" { Check-NetSHDLLs }
+			"NotepadPPPlugins" { Check-Notepad++-Plugins }
+			"OfficeAI" { Check-OfficeAI }
+			"OfficeGlobalDotName" { Check-OfficeGlobalDotName }
+			"Officetest" { Check-Officetest }
+			"OfficeTrustedLocations" { Check-Office-Trusted-Locations }
+			"OutlookStartup" { Check-Outlook-Startup }
+			"PATHHijacks" { Check-PATH-Hijacks }
+			"PeerDistExtensionDll" { Check-PeerDistExtensionDll }
+			"PolicyManager" { Check-PolicyManager }
+			"PowerShellProfiles" { Check-PowerShell-Profiles }
+			"PrintMonitorDLLs" { Check-PrintMonitorDLLs }
+			"PrintProcessorDLLs" { Check-PrintProcessorDLLs }
+			"Processes" { Check-Processes }
+			"ProcessModules" { Check-Process-Modules }
+			"RATS" { Check-RATS }
+			"RDPShadowConsent" { Check-RDPShadowConsent }
+			"RDPStartupPrograms" { Check-RDPStartupPrograms }
+			# "RegistryChecks" {Check-Registry-Checks}
+			"RemoteUACSetting" { Check-RemoteUACSetting }
+			"ScheduledTasks" { Check-ScheduledTasks }
+			# "SCMDACL" {Check-SCM-DACL}
+			"ScreenSaverEXE" { Check-ScreenSaverEXE }
+			"SEMgrWallet" { Check-SEMgrWallet }
+			"ServiceHijacks" { Check-Service-Hijacks }
+			"Services" { Check-Services }
+			"SethcHijack" { Check-SethcHijack }
+			"SilentProcessExitMonitoring" { Check-SilentProcessExitMonitoring }
+			"Startups" { Check-Startups }
+			"SuspiciousCertificates" { Check-Suspicious-Certificates }
+			"SuspiciousFileLocation" { Check-Suspicious-File-Locations }
+			"TerminalProfiles" { Check-TerminalProfiles }
+			"TerminalServicesDLL" { Check-TerminalServicesDLL }
+			"TerminalServicesInitialProgram" { Check-TerminalServicesInitialProgram }
+			"TimeProviderDLLs" { Check-TimeProviderDLLs }
+			"TrustProviderDLL" { Check-TrustProviderDLL }
+			"UninstallStrings" { Check-UninstallStrings }
+			"UserInitMPRScripts" { Check-UserInitMPRScripts }
+			"Users" { Check-Users }
+			"UtilmanHijack" { Check-UtilmanHijack }
+			"WellKnownCOM" { Check-WellKnownCOM }
+			"WERRuntimeExceptionHandlers" { Check-WERRuntimeExceptionHandlers }
+			"WindowsLoadKey" { Check-WindowsLoadKey }
+			"WindowsUnsignedFiles" { Check-Windows-Unsigned-Files }
+			"WindowsUpdateTestDlls" { Check-WindowsUpdateTestDlls }
+			"WinlogonHelperDLLs" { Check-WinlogonHelperDLLs }
+			"WMIConsumers" { Check-WMIConsumers }
+			"Wow64LayerAbuse" { Check-Wow64LayerAbuse }
+		}
+	}
+
     Clean-Up
     Detection-Metrics
 }
