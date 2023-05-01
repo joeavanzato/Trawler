@@ -21,8 +21,14 @@
     .PARAMETER loadsnapshot
 		The fully-qualified file-path to a previous snapshot to be loaded for allow-listing
 
+	.PARAMETER ScanOptions
+		Set to pick specific scanners to run. Multiple can be used when separated by a comma. (Supports tab completion)
+
 	.EXAMPLE
 		.\trawler.ps1 -outpath "C:\detections.csv"
+
+	.EXAMPLE
+		.\trawler.ps1 -outpath "C:\detections.csv" -ScanOptions ScheduledTasks, BITS
 	
 	.OUTPUTS
 		None
@@ -36,33 +42,129 @@
 	.LINK
 		https://github.com/joeavanzato/Trawler
 #>
+[CmdletBinding()]
 param
 (
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'The fully-qualified file-path where detection output should be stored as a CSV, defaults to $PSScriptRoot\detections.csv')]
-	    [string]$outpath = "$PSScriptRoot\detections.csv",
+		Mandatory = $false,
+		HelpMessage = 'The fully-qualified file-path where detection output should be stored as a CSV, defaults to $PSScriptRoot\detections.csv')]
+	[string]
+	$outpath = "$PSScriptRoot\detections.csv",
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'Should a snapshot CSV be generated')]
-	    [switch]$snapshot,
+		Mandatory = $false,
+		HelpMessage = 'Should a snapshot CSV be generated')]
+	[switch]
+	$snapshot,
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'Suppress Detection Output to Console')]
-	    [switch]$hide,
+		Mandatory = $false,
+		HelpMessage = 'Suppress Detection Output to Console')]
+	[switch]
+	$hide,
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
-	    [string]$snapshotpath = "$PSScriptRoot\snapshot.csv",
+		Mandatory = $false,
+		HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
+	[string]
+	$snapshotpath = "$PSScriptRoot\snapshot.csv",
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'The fully-qualified file-path where the snapshot CSV to be loaded is located')]
-	    [string]$loadsnapshot,
+		Mandatory = $false,
+		HelpMessage = 'The fully-qualified file-path where the snapshot CSV to be loaded is located')]
+	[string]
+	$loadsnapshot,
 	[Parameter(
-        Mandatory = $false,
-        HelpMessage = 'The drive to target for analysis - for example, if mounting an imaged system as a second drive on an analysis device, specify via -drivetarget "D:" (NOT YET IMPLEMENTED)')]
-	    [string]$drivetarget
+		Mandatory = $false,
+		HelpMessage = 'The drive to target for analysis - for example, if mounting an imaged system as a second drive on an analysis device, specify via -drivetarget "D:" (NOT YET IMPLEMENTED)')]
+	[string]
+	$drivetarget,
+	[Parameter(
+		Mandatory = $false,
+		HelpMessage = "Allows for targeting certain scanners and ignoring others. Use 'All' to run all scanners.")]
+	[ValidateSet(
+		"ActiveSetup",
+		"All",
+		"AMSIProviders",
+		"AppCertDLLs",
+		"AppInitDLLs",
+		"ApplicationShims",
+		"AppPaths",
+		"AssociationHijack",
+		"AutoDialDLL",
+		"BIDDll",
+		"BITS",
+		"COMHijacks",
+		"CommandAutoRunProcessors",
+		"Connections",
+		"ContextMenu",
+		"DebuggerHijacks",
+		"DNSServerLevelPluginDLL",
+		"eRegChecks",
+		"ErrorHandlerCMD",
+		"ExplorerHelperUtilities",
+		"FolderOpen",
+		"GPOExtensions",
+		"GPOScripts",
+		"HTMLHelpDLL",
+		"IFEO",
+		"InternetSettingsLUIDll",
+		"KnownManagedDebuggers",
+		"LNK",
+		"LSA",
+		"MicrosoftTelemetryCommands",
+		"ModifiedWindowsAccessibilityFeature",
+		"MSDTCDll",
+		"Narrator",
+		"NaturalLanguageDevelopmentDLLs",
+		"NetSHDLLs",
+		"NotepadPPPlugins",
+		"OfficeAI",
+		"OfficeGlobalDotName",
+		"Officetest",
+		"OfficeTrustedLocations",
+		"OutlookStartup",
+		"PATHHijacks",
+		"PeerDistExtensionDll",
+		"PolicyManager",
+		"PowerShellProfiles",
+		"PrintMonitorDLLs",
+		"PrintProcessorDLLs",
+		"Processes",
+		"ProcessModules",
+		"RATS",
+		"RDPShadowConsent",
+		"RDPStartupPrograms",
+		"RegistryChecks",
+		"RemoteUACSetting",
+		"ScheduledTasks",
+		"SCMDACL",
+		"ScreenSaverEXE",
+		"SEMgrWallet",
+		"ServiceHijacks",
+		"Services",
+		"SethcHijack",
+		"SilentProcessExitMonitoring",
+		"Startups",
+		"SuspiciousCertificates",
+		"SuspiciousFileLocation",
+		"TerminalProfiles",
+		"TerminalServicesDLL",
+		"TerminalServicesInitialProgram",
+		"TimeProviderDLLs",
+		"TrustProviderDLL",
+		"UninstallStrings",
+		"UserInitMPRScripts",
+		"Users",
+		"UtilmanHijack",
+		"WellKnownCOM",
+		"WERRuntimeExceptionHandlers",
+		"WindowsLoadKey",
+		"WindowsUnsignedFiles",
+		"WindowsUpdateTestDlls",
+		"WinlogonHelperDLLs",
+		"WMIConsumers",
+		"Wow64LayerAbuse"
+	)]
+	$ScanOptions = "All"
 )
+
 # TODO - Refactor below into setup function
 # Script Level Variable Setup
 if ($snapshot.IsPresent){
@@ -70,21 +172,25 @@ if ($snapshot.IsPresent){
 } else {
     $snapshot = $false
 }
+
 if ($hide.IsPresent){
     $hide_console_output = $true
 } else {
     $hide_console_output = $false
 }
+
 if ($PSBoundParameters.ContainsKey('loadsnapshot')){
     $loadsnapshotdata = $true
 } else {
     $loadsnapshotdata = $false
 }
+
 if ($PSBoundParameters.ContainsKey('drivetarget')){
     $drivechange = $true
 } else {
     $drivechange = $false
 }
+
 $detection_list = New-Object -TypeName "System.Collections.ArrayList"
 
 
@@ -16718,62 +16824,60 @@ function Check-Suspicious-File-Locations {
     }
 }
 
-function Write-Detection($det)  {
-    # det is a custom object which will contain various pieces of metadata for the detection
-    # Name - The name of the detection logic.
-    # Risk (Very Low, Low, Medium, High, Very High)
-    # Source - The source 'module' reporting the detection
-    # Technique - The most relevant MITRE Technique
-    # Meta - String containing reference material specific to the received detection
-    $detection_list.Add($det) | Out-Null
-    if ($det.Risk -eq 'Very Low' -or $det.Risk -eq 'Low') {
-        $fg_color = 'Green'
-    } elseif ($det.Risk -eq 'Medium'){
-        $fg_color = 'Yellow'
-    } elseif ($det.Risk -eq 'High') {
-        $fg_color = 'Red'
-    } elseif ($det.Risk -eq 'Very High') {
-        $fg_color = 'Magenta'
-    } else {
-        $fg_color = 'Yellow'
-    }
-    if ($hide_console_output -eq $false){
-        Write-Host [!] Detection: $det.Name - Risk: $det.Risk -ForegroundColor $fg_color
-        Write-Host [%] $det.Meta -ForegroundColor White
-    }
-    if ($output_writable){
-       $det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
-    }
+function Write-Detection($det) {
+	# det is a custom object which will contain various pieces of metadata for the detection
+	# Name - The name of the detection logic.
+	# Risk (Very Low, Low, Medium, High, Very High)
+	# Source - The source 'module' reporting the detection
+	# Technique - The most relevant MITRE Technique
+	# Meta - String containing reference material specific to the received detection
+	$detection_list.Add($det) | Out-Null
+
+	switch ($det.Risk) {
+		"Very Low" { $fg_color = "Green" }
+		"Low" { $fg_color = "Green" }
+		"Medium" { $fg_color = "Yellow" }
+		"High" { $fg_color = "Red" }
+		"Very High" { $fg_color = "Magenta" }
+		Default { $fg_color = "Yellow" }
+	}
+
+	if (-not($hide_console_output)) {
+		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
+		Write-Host "[%] $($det.Meta)" -ForegroundColor White
+	}
+
+	if ($output_writable) {
+		$det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
+	}
 }
 
 function Detection-Metrics {
-    $total_dets = 0
-    $vlow_dets = 0
-    $low_dets = 0
-    $medium_dets = 0
-    $high_dets = 0
-    $vhigh_dets = 0
-    ForEach ($detection in $detection_list){
-        $total_dets += 1
-        if ($detection.Risk -eq 'Very Low'){
-            $vlow_dets += 1
-        } elseif ($detection.Risk -eq 'Low'){
-            $low_dets += 1
-        } elseif ($detection.Risk -eq 'Medium'){
-            $medium_dets += 1
-        } elseif ($detection.Risk -eq 'High'){
-            $high_dets += 1
-        } elseif ($detection.Risk -eq 'Very High'){
-            $vhigh_dets += 1
-        }
-    }
-    Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor "White"
-    Write-Message "Total Detections: $total_dets"
-    Write-Message "Very-Low Risk Detections: $vlow_dets"
-    Write-Message "Low Risk Detections: $low_dets"
-    Write-Message "Medium Risk Detections: $medium_dets"
-    Write-Message "High Risk Detections: $high_dets"
-    Write-Message "Very-High Risk Detections: $vhigh_dets"
+	$vlow_dets = 0
+	$low_dets = 0
+	$medium_dets = 0
+	$high_dets = 0
+	$vhigh_dets = 0
+
+	foreach ($detection in $detection_list) {
+		switch ($detection.Risk) {
+			"Very Low" { $vlow_dets += 1 }
+			"Low" { $low_dets += 1 }
+			"Medium" { $medium_dets += 1 }
+			"High" { $high_dets += 1 }
+			"Very High" { $vhigh_dets += 1 }
+		}
+	}
+
+	$total_dets = $vlow_dets + $low_dets + $medium_dets + $high_dets + $vhigh_dets
+
+	Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor "White"
+	Write-Message "Total Detections: $total_dets"
+	Write-Message "Very-Low Risk Detections: $vlow_dets"
+	Write-Message "Low Risk Detections: $low_dets"
+	Write-Message "Medium Risk Detections: $medium_dets"
+	Write-Message "High Risk Detections: $high_dets"
+	Write-Message "Very-High Risk Detections: $vhigh_dets"
 }
 
 function Write-Message ($message){
@@ -16860,157 +16964,226 @@ function Read-Snapshot(){
     $script:allowlist_rats = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_office_trusted_locations = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_contextmenuhandlers = New-Object -TypeName "System.Collections.ArrayList"
-    ForEach ($item in $csv_data){
-        if ($item.Source -eq "Scheduled Tasks"){
-            # Using scheduled task name and exe path
-            # TODO - Incorporate Task Arguments
-            $allowtable_scheduledtask[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "Users"){
-            $allowlist_users.Add($item.Key) | Out-Null
-        } elseif ($item.Source -eq "ContextMenuHandlers"){
-            $allowlist_contextmenuhandlers.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "IFEO"){
-            $allowtable_ifeodebuggers[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "AppShims"){
-            $allowlist_appshims.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "OfficeTrustedLocations"){
-            $allowlist_office_trusted_locations.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "RATS"){
-            $allowlist_rats.Add($item.Key) | Out-Null
-        } elseif ($item.Source -eq "CommandAutorunProcessor"){
-            $allowlist_cmdautorunproc.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "GlobalDotName"){
-            $allowlist_globaldotname.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "FolderOpen"){
-            $allowlist_folderopen.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "UserInitMPR"){
-            $allowlist_userinitmpr.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "NetshDLLs"){
-            $allowlist_netshdlls.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "AppCertDLLs"){
-            $allowlist_appcertdlls.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "AppInitDLLs"){
-            $allowlist_appinitdlls.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "LSASecurity"){
-            $allowlist_lsasecurity.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "TimeProviders"){
-            $allowlist_timeproviders.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "ExplorerHelpers"){
-            $allowlist_explorerhelpers.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "RDPStartup"){
-            $allowlist_rdpstartup.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "DNSPlugin"){
-            $allowlist_dnsplugin.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "TerminalServicesIP"){
-            $allowlist_termsrvinitialprogram.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "RDPShadow"){
-            $allowtable_rdpshadow[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "RemoteUAC"){
-            $allowtable_remoteuac[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "BIDDLL"){
-            $allowlist_biddll.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "WinlogonHelpers"){
-            $allowlist_winlogonhelpers.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "ProcessConnections"){
-            $allowlist_listeningprocs.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "PolicyManagerPreCheck" -or $item.Source -eq "PolicyManagerTransport"){
-            $allowlist_policymanagerdlls.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "WinUpdateTestDLL"){
-            $allowlist_winupdatetest.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "ActiveSetup"){
-            $allowlist_activesetup.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "MiniDumpAuxiliaryDLL"){
-            $allowlist_minidumpauxdlls.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "WOW64Compat"){
-            $allowlist_WOW64Compat.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "MSCHijack"){
-            $allowlist_MSCHijack.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "TelemetryCommands"){
-            $allowlist_telemetry.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "UninstallString"){
-            $allowtable_uninstallstrings[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "QuietUninstallString"){
-            $allowtable_quietuninstallstrings[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "SilentProcessExit"){
-            $allowtable_silentprocessexit[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "Services"){
-            # Using Service Name and Full Path
-            $allowtable_services[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "Processes"){
-            # Using Process Executable Path
-            $allowlist_process_exes.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "Connections"){
-            # Using Remote Address
-            $allowlist_remote_addresses.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "WMI Consumers"){
-            # Using Name and CommandLineTemplate/ScriptFilePath
-            $allowtable_wmi_consumers[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "Startup"){
-            # Using execution 'command'
-            $allowlist_startup_commands.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "BITS"){
-            # Using Name and 'Command'
-            $allowtable_bits[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "Debuggers"){
-            # Using Name and Debugger File Path
-            $allowtable_debuggers[$item.Key] = $item.Value
-            $allowlist_debuggers.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "Outlook"){
-            # Using DLL Name as value
-            $allowlist_outlookstartup.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "COM"){
-            # Using reg path and associated file
-            $allowtable_com[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "Services_REG"){
-            # Using reg path and value
-            $allowtable_services_reg[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "Modules"){
-            # Using DLL Name as value
-            $allowlist_modules.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "UnsignedWindows"){
-            # Using file fullpath
-            $allowlist_unsignedfiles.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "PATHHijack"){
-            # Using file fullpath
-            $allowlist_pathhijack.Add($item.Key) | Out-Null
-        } elseif ($item.Source -eq "AssociationHijack"){
-            # Using file shortname and associated command
-            $allowtable_fileassocations[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "Certificates"){
-            # Using Issuer and Subject
-            $allowtable_certificates[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "OfficeAddins"){
-            # Using full path
-            $allowlist_officeaddins.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "GPOScripts"){
-            # Using full path
-            $allowlist_gposcripts.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "KnownManagedDebuggers"){
-            # Using full path
-            $allowlist_knowndebuggers.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "UninstallString"){
-            # Using command
-            $allowlist_uninstallstrings.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "WERHandlers"){
-            # Using filepath
-            $allowlist_werhandlers.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "PrintMonitors"){
-            # Using key name and DLL path
-            $allowtable_printmonitors[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "PrintProcessors"){
-            # Using key name and DLL path
-            $allowtable_printprocessors[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "NLPDlls"){
-            # Using DLL path
-            $allowlist_nlpdlls.Add($item.Value) | Out-Null
-        } elseif ($item.Source -eq "AppPaths"){
-            # Using Reg Key and associated value
-            $allowtable_apppaths[$item.Key] = $item.Value
-        } elseif ($item.Source -eq "GPOExtensions"){
-            # Using Reg Key and associated value
-            $allowlist_gpoextensions.Add($item.Value) | Out-Null
-        }
-    }
+    
+	foreach ($item in $csv_data) {
+		switch ($item.Source) {
+			"Scheduled Tasks" {
+				# Using scheduled task name and exe path
+				# TODO - Incorporate Task Arguments
+				$allowtable_scheduledtask[$item.Key] = $item.Value
+			}
+			"Users" {
+				$allowlist_users.Add($item.Key) | Out-Null
+			}
+			"ContextMenuHandlers" {
+				$allowlist_contextmenuhandlers.Add($item.Value) | Out-Null
+			}
+			"IFEO" {
+				$allowtable_ifeodebuggers[$item.Key] = $item.Value
+			}
+			"AppShims" {
+				$allowlist_appshims.Add($item.Value) | Out-Null
+			} 
+			"OfficeTrustedLocations" {
+				$allowlist_office_trusted_locations.Add($item.Value) | Out-Null
+			} 
+			"RATS" {
+				$allowlist_rats.Add($item.Key) | Out-Null
+			} 
+			"CommandAutorunProcessor" {
+				$allowlist_cmdautorunproc.Add($item.Value) | Out-Null
+			} 
+			"GlobalDotName" {
+				$allowlist_globaldotname.Add($item.Value) | Out-Null
+			} 
+			"FolderOpen" {
+				$allowlist_folderopen.Add($item.Value) | Out-Null
+			} 
+			"UserInitMPR" {
+				$allowlist_userinitmpr.Add($item.Value) | Out-Null
+			} 
+			"NetshDLLs" {
+				$allowlist_netshdlls.Add($item.Value) | Out-Null
+			} 
+			"AppCertDLLs" {
+				$allowlist_appcertdlls.Add($item.Value) | Out-Null
+			} 
+			"AppInitDLLs" {
+				$allowlist_appinitdlls.Add($item.Value) | Out-Null
+			} 
+			"LSASecurity" {
+				$allowlist_lsasecurity.Add($item.Value) | Out-Null
+			} 
+			"TimeProviders" {
+				$allowlist_timeproviders.Add($item.Value) | Out-Null
+			} 
+			"ExplorerHelpers" {
+				$allowlist_explorerhelpers.Add($item.Value) | Out-Null
+			} 
+			"RDPStartup" {
+				$allowlist_rdpstartup.Add($item.Value) | Out-Null
+			} 
+			"DNSPlugin" {
+				$allowlist_dnsplugin.Add($item.Value) | Out-Null
+			} 
+			"TerminalServicesIP" {
+				$allowlist_termsrvinitialprogram.Add($item.Value) | Out-Null
+			} 
+			"RDPShadow" {
+				$allowtable_rdpshadow[$item.Key] = $item.Value
+			} 
+			"RemoteUAC" {
+				$allowtable_remoteuac[$item.Key] = $item.Value
+			} 
+			"BIDDLL" {
+				$allowlist_biddll.Add($item.Value) | Out-Null
+			} 
+			"WinlogonHelpers" {
+				$allowlist_winlogonhelpers.Add($item.Value) | Out-Null
+			} 
+			"ProcessConnections" {
+				$allowlist_listeningprocs.Add($item.Value) | Out-Null
+			}
+			"PolicyManagerPreCheck" {
+				$allowlist_policymanagerdlls.Add($item.Value) | Out-Null
+			}
+			"PolicyManagerTransport" {
+				$allowlist_policymanagerdlls.Add($item.Value) | Out-Null
+			} 
+			"WinUpdateTestDLL" {
+				$allowlist_winupdatetest.Add($item.Value) | Out-Null
+			} 
+			"ActiveSetup" {
+				$allowlist_activesetup.Add($item.Value) | Out-Null
+			} 
+			"MiniDumpAuxiliaryDLL" {
+				$allowlist_minidumpauxdlls.Add($item.Value) | Out-Null
+			} 
+			"WOW64Compat" {
+				$allowlist_WOW64Compat.Add($item.Value) | Out-Null
+			} 
+			"MSCHijack" {
+				$allowlist_MSCHijack.Add($item.Value) | Out-Null
+			} 
+			"TelemetryCommands" {
+				$allowlist_telemetry.Add($item.Value) | Out-Null
+			} 
+			"UninstallString" {
+				$allowtable_uninstallstrings[$item.Key] = $item.Value
+			} 
+			"QuietUninstallString" {
+				$allowtable_quietuninstallstrings[$item.Key] = $item.Value
+			} 
+			"SilentProcessExit" {
+				$allowtable_silentprocessexit[$item.Key] = $item.Value
+			} 
+			"Services" {
+				# Using Service Name and Full Path
+				$allowtable_services[$item.Key] = $item.Value
+			} 
+			"Processes" {
+				# Using Process Executable Path
+				$allowlist_process_exes.Add($item.Value) | Out-Null
+			} 
+			"Connections" {
+				# Using Remote Address
+				$allowlist_remote_addresses.Add($item.Value) | Out-Null
+			} 
+			"WMI Consumers" {
+				# Using Name and CommandLineTemplate/ScriptFilePath
+				$allowtable_wmi_consumers[$item.Key] = $item.Value
+			} 
+			"Startup" {
+				# Using execution 'command'
+				$allowlist_startup_commands.Add($item.Value) | Out-Null
+			} 
+			"BITS" {
+				# Using Name and 'Command'
+				$allowtable_bits[$item.Key] = $item.Value
+			} 
+			"Debuggers" {
+				# Using Name and Debugger File Path
+				$allowtable_debuggers[$item.Key] = $item.Value
+				$allowlist_debuggers.Add($item.Value) | Out-Null
+			} 
+			"Outlook" {
+				# Using DLL Name as value
+				$allowlist_outlookstartup.Add($item.Value) | Out-Null
+			} 
+			"COM" {
+				# Using reg path and associated file
+				$allowtable_com[$item.Key] = $item.Value
+			} 
+			"Services_REG" {
+				# Using reg path and value
+				$allowtable_services_reg[$item.Key] = $item.Value
+			} 
+			"Modules" {
+				# Using DLL Name as value
+				$allowlist_modules.Add($item.Value) | Out-Null
+			} 
+			"UnsignedWindows" {
+				# Using file fullpath
+				$allowlist_unsignedfiles.Add($item.Value) | Out-Null
+			} 
+			"PATHHijack" {
+				# Using file fullpath
+				$allowlist_pathhijack.Add($item.Key) | Out-Null
+			} 
+			"AssociationHijack" {
+				# Using file shortname and associated command
+				$allowtable_fileassocations[$item.Key] = $item.Value
+			} 
+			"Certificates" {
+				# Using Issuer and Subject
+				$allowtable_certificates[$item.Key] = $item.Value
+			} 
+			"OfficeAddins" {
+				# Using full path
+				$allowlist_officeaddins.Add($item.Value) | Out-Null
+			} 
+			"GPOScripts" {
+				# Using full path
+				$allowlist_gposcripts.Add($item.Value) | Out-Null
+			} 
+			"KnownManagedDebuggers" {
+				# Using full path
+				$allowlist_knowndebuggers.Add($item.Value) | Out-Null
+			} 
+			"UninstallString" {
+				# Using command
+				$allowlist_uninstallstrings.Add($item.Value) | Out-Null
+			} 
+			"WERHandlers" {
+				# Using filepath
+				$allowlist_werhandlers.Add($item.Value) | Out-Null
+			} 
+			"PrintMonitors" {
+				# Using key name and DLL path
+				$allowtable_printmonitors[$item.Key] = $item.Value
+			} 
+			"PrintProcessors" {
+				# Using key name and DLL path
+				$allowtable_printprocessors[$item.Key] = $item.Value
+			} 
+			"NLPDlls" {
+				# Using DLL path
+				$allowlist_nlpdlls.Add($item.Value) | Out-Null
+			} 
+			"AppPaths" {
+				# Using Reg Key and associated value
+				$allowtable_apppaths[$item.Key] = $item.Value
+			} 
+			"GPOExtensions" {
+				# Using Reg Key and associated value
+				$allowlist_gpoextensions.Add($item.Value) | Out-Null
+			}
+			
+			Default {
+				Write-Warning "Unknown snapshot source found $($item.Source)"
+			}
+		}
+	}
 }
 
 function Check-IfAllowed($allowmap, $key, $val, $det){
@@ -17168,6 +17341,90 @@ function Clean-Up {
     }
 }
 
+$possibleScanOptions = @(
+	"ActiveSetup",
+	"AMSIProviders",
+	"AppCertDLLs",
+	"AppInitDLLs",
+	"ApplicationShims",
+	"AppPaths",
+	"AssociationHijack",
+	"AutoDialDLL",
+	"BIDDll",
+	"BITS",
+	"COMHijacks",
+	"CommandAutoRunProcessors",
+	"Connections",
+	"ContextMenu",
+	"DebuggerHijacks",
+	"DNSServerLevelPluginDLL",
+	"eRegChecks",
+	"ErrorHandlerCMD",
+	"ExplorerHelperUtilities",
+	"FolderOpen",
+	"GPOExtensions",
+	"GPOScripts",
+	"HTMLHelpDLL",
+	"IFEO",
+	"InternetSettingsLUIDll",
+	"KnownManagedDebuggers",
+	"LNK",
+	"LSA",
+	"MicrosoftTelemetryCommands",
+	"ModifiedWindowsAccessibilityFeature",
+	"MSDTCDll",
+	"Narrator",
+	"NaturalLanguageDevelopmentDLLs",
+	"NetSHDLLs",
+	"NotepadPPPlugins",
+	"OfficeAI",
+	"OfficeGlobalDotName",
+	"Officetest",
+	"OfficeTrustedLocations",
+	"OutlookStartup",
+	"PATHHijacks",
+	"PeerDistExtensionDll",
+	"PolicyManager",
+	"PowerShellProfiles",
+	"PrintMonitorDLLs",
+	"PrintProcessorDLLs",
+	"Processes",
+	"ProcessModules",
+	"RATS",
+	"RDPShadowConsent",
+	"RDPStartupPrograms",
+	"RegistryChecks",
+	"RemoteUACSetting",
+	"ScheduledTasks",
+	"SCMDACL",
+	"ScreenSaverEXE",
+	"SEMgrWallet",
+	"ServiceHijacks",
+	"Services",
+	"SethcHijack",
+	"SilentProcessExitMonitoring",
+	"Startups",
+	"SuspiciousCertificates",
+	"SuspiciousFileLocation",
+	"TerminalProfiles",
+	"TerminalServicesDLL",
+	"TerminalServicesInitialProgram",
+	"TimeProviderDLLs",
+	"TrustProviderDLL",
+	"UninstallStrings",
+	"UserInitMPRScripts",
+	"Users",
+	"UtilmanHijack",
+	"WellKnownCOM",
+	"WERRuntimeExceptionHandlers",
+	"WindowsLoadKey",
+	"WindowsUnsignedFiles",
+	"WindowsUpdateTestDlls",
+	"WinlogonHelperDLLs",
+	"WMIConsumers",
+	"Wow64LayerAbuse"
+)
+
 function Logo {
     $logo = "
   __________  ___ _       ____    __________ 
@@ -17186,92 +17443,103 @@ function Main {
     Logo
     ValidatePaths
     Drive-Change
+
     if ($loadsnapshotdata -and $snapshot -eq $false){
         Read-Snapshot
     } elseif ($loadsnapshotdata -and $snapshot) {
         Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
-    Check-ScheduledTasks
-    Check-Users
-    Check-Services
-    Check-Processes
-    Check-Connections
-    Check-WMIConsumers
-    Check-Startups
-    Check-BITS
-    Check-Modified-Windows-Accessibility-Feature
-    Check-Debugger-Hijacks
-    Check-PowerShell-Profiles
-    Check-Outlook-Startup
-    ###Check-Registry-Checks
-    Check-COM-Hijacks
-    Service-Reg-Checks
-    Check-LNK
-    Check-Process-Modules
-    Check-Windows-Unsigned-Files
-    Check-Service-Hijacks
-    Check-PATH-Hijacks
-    Check-Association-Hijack
-    Check-Suspicious-Certificates
-    Check-Office-Trusted-Locations
-    Check-GPO-Scripts
-    Check-TerminalProfiles
-    Check-PeerDistExtensionDll
-    Check-InternetSettingsLUIDll
-    Check-ErrorHandlerCMD
-    Check-BIDDll
-    Check-WindowsUpdateTestDlls
-    Check-KnownManagedDebuggers
-    Check-Wow64LayerAbuse
-    Check-MicrosoftTelemetryCommands
-    Check-ActiveSetup
-    Check-PolicyManager
-    Check-UninstallStrings
-    Check-SEMgrWallet
-    Check-WERRuntimeExceptionHandlers
-    Check-SilentProcessExitMonitoring
-    Check-WinlogonHelperDLLs
-    Check-UtilmanHijack
-    Check-SethcHijack
-    Check-RDPShadowConsent
-    Check-RemoteUACSetting
-    Check-PrintMonitorDLLs
-    Check-LSA
-    Check-DNSServerLevelPluginDLL
-    Check-ExplorerHelperUtilities
-    Check-TerminalServicesInitialProgram
-    Check-RDPStartupPrograms
-    Check-TimeProviderDLLs
-    Check-PrintProcessorDLLs
-    Check-UserInitMPRScripts
-    Check-ScreenSaverEXE
-    Check-NetSHDLLs
-    Check-AppCertDLLs
-    Check-AppInitDLLs
-    Check-ApplicationShims
-    Check-IFEO
-    Check-FolderOpen
-    Check-WellKnownCOM
-    Check-Officetest
-    Check-OfficeGlobalDotName
-    Check-TerminalServicesDLL
-    Check-AutoDialDLL
-    Check-CommandAutoRunProcessors
-    Check-TrustProviderDLL
-    Check-NaturalLanguageDevelopmentDLLs
-    Check-WindowsLoadKey
-    Check-AMSIProviders
-    Check-AppPaths
-    Check-GPOExtensions
-    Check-HTMLHelpDLL
-    Check-RATS
-    Check-ContextMenu
-    Check-OfficeAI
-    # TODO Check-SCM-DACL
-    Check-Notepad++-Plugins
-    Check-MSDTCDll
-    Check-Narrator
-    Check-Suspicious-File-Locations
+
+	if ($ScanOptions -eq "All") {
+		$ScanOptions = $possibleScanOptions
+	}
+
+	foreach ($option in $ScanOptions){
+		switch ($option) {
+			"ActiveSetup" { Check-ActiveSetup }
+			"AMSIProviders" { Check-AMSIProviders }
+			"AppCertDLLs" { Check-AppCertDLLs }
+			"AppInitDLLs" { Check-AppInitDLLs }
+			"ApplicationShims" { Check-ApplicationShims }
+			"AppPaths" { Check-AppPaths }
+			"AssociationHijack" { Check-Association-Hijack }
+			"AutoDialDLL" { Check-AutoDialDLL }
+			"BIDDll" { Check-BIDDll }
+			"BITS" { Check-BITS }
+			"COMHijacks" { Check-COM-Hijacks }
+			"CommandAutoRunProcessors" { Check-CommandAutoRunProcessors }
+			"Connections" { Check-Connections }
+			"ContextMenu" { Check-ContextMenu }
+			"DebuggerHijacks" { Check-Debugger-Hijacks }
+			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
+			"eRegChecks" { Check-Registry-Checks }
+			"ErrorHandlerCMD" { Check-ErrorHandlerCMD }
+			"ExplorerHelperUtilities" { Check-ExplorerHelperUtilities }
+			"FolderOpen" { Check-FolderOpen }
+			"GPOExtensions" { Check-GPOExtensions }
+			"GPOScripts" { Check-GPO-Scripts }
+			"HTMLHelpDLL" { Check-HTMLHelpDLL }
+			"IFEO" { Check-IFEO }
+			"InternetSettingsLUIDll" { Check-InternetSettingsLUIDll }
+			"KnownManagedDebuggers" { Check-KnownManagedDebuggers }
+			"LNK" { Check-LNK }
+			"LSA" { Check-LSA }
+			"MicrosoftTelemetryCommands" { Check-MicrosoftTelemetryCommands }
+			"ModifiedWindowsAccessibilityFeature" { Check-Modified-Windows-Accessibility-Feature }
+			"MSDTCDll" { Check-MSDTCDll }
+			"Narrator" { Check-Narrator }
+			"NaturalLanguageDevelopmentDLLs" { Check-NaturalLanguageDevelopmentDLLs }
+			"NetSHDLLs" { Check-NetSHDLLs }
+			"NotepadPPPlugins" { Check-Notepad++-Plugins }
+			"OfficeAI" { Check-OfficeAI }
+			"OfficeGlobalDotName" { Check-OfficeGlobalDotName }
+			"Officetest" { Check-Officetest }
+			"OfficeTrustedLocations" { Check-Office-Trusted-Locations }
+			"OutlookStartup" { Check-Outlook-Startup }
+			"PATHHijacks" { Check-PATH-Hijacks }
+			"PeerDistExtensionDll" { Check-PeerDistExtensionDll }
+			"PolicyManager" { Check-PolicyManager }
+			"PowerShellProfiles" { Check-PowerShell-Profiles }
+			"PrintMonitorDLLs" { Check-PrintMonitorDLLs }
+			"PrintProcessorDLLs" { Check-PrintProcessorDLLs }
+			"Processes" { Check-Processes }
+			"ProcessModules" { Check-Process-Modules }
+			"RATS" { Check-RATS }
+			"RDPShadowConsent" { Check-RDPShadowConsent }
+			"RDPStartupPrograms" { Check-RDPStartupPrograms }
+			# "RegistryChecks" {Check-Registry-Checks}
+			"RemoteUACSetting" { Check-RemoteUACSetting }
+			"ScheduledTasks" { Check-ScheduledTasks }
+			# "SCMDACL" {Check-SCM-DACL}
+			"ScreenSaverEXE" { Check-ScreenSaverEXE }
+			"SEMgrWallet" { Check-SEMgrWallet }
+			"ServiceHijacks" { Check-Service-Hijacks }
+			"Services" { Check-Services }
+			"SethcHijack" { Check-SethcHijack }
+			"SilentProcessExitMonitoring" { Check-SilentProcessExitMonitoring }
+			"Startups" { Check-Startups }
+			"SuspiciousCertificates" { Check-Suspicious-Certificates }
+			"SuspiciousFileLocation" { Check-Suspicious-File-Locations }
+			"TerminalProfiles" { Check-TerminalProfiles }
+			"TerminalServicesDLL" { Check-TerminalServicesDLL }
+			"TerminalServicesInitialProgram" { Check-TerminalServicesInitialProgram }
+			"TimeProviderDLLs" { Check-TimeProviderDLLs }
+			"TrustProviderDLL" { Check-TrustProviderDLL }
+			"UninstallStrings" { Check-UninstallStrings }
+			"UserInitMPRScripts" { Check-UserInitMPRScripts }
+			"Users" { Check-Users }
+			"UtilmanHijack" { Check-UtilmanHijack }
+			"WellKnownCOM" { Check-WellKnownCOM }
+			"WERRuntimeExceptionHandlers" { Check-WERRuntimeExceptionHandlers }
+			"WindowsLoadKey" { Check-WindowsLoadKey }
+			"WindowsUnsignedFiles" { Check-Windows-Unsigned-Files }
+			"WindowsUpdateTestDlls" { Check-WindowsUpdateTestDlls }
+			"WinlogonHelperDLLs" { Check-WinlogonHelperDLLs }
+			"WMIConsumers" { Check-WMIConsumers }
+			"Wow64LayerAbuse" { Check-Wow64LayerAbuse }
+		}
+	}
+
     Clean-Up
     Detection-Metrics
 }
