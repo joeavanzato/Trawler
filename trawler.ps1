@@ -1922,7 +1922,7 @@ function Check-Connections {
     foreach ($conn in $tcp_connections) {
         #allowlist_remote_addresses
 
-        $proc = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue | Select-Object Name,Path
+        $proc = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue | Select-Object Name, Path
 
 		Write-SnapshotMessage -Key $conn.RemoteAddress -Value $conn.RemoteAddress -Source 'Connections'
 
@@ -16438,7 +16438,7 @@ function Write-SnapshotMessage() {
 		[Parameter(Mandatory=$true)]
 		[string]
 		$Key,
-		[Parameter(Mandatory=$true)]
+		[Parameter()]
 		[string]
 		$Value,
 		[Parameter(Mandatory=$true)]
