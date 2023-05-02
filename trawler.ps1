@@ -1741,7 +1741,7 @@ function Check-Services {
         }
     }
     foreach ($service in $service_list){
-		Write-SnapshotMessage -Key $service.Name -Value $service.PathName -Value "Services"
+		Write-SnapshotMessage -Key $service.Name -Value $service.PathName -Source "Services"
 
         if ($loadsnapshot){
             $detection = [PSCustomObject]@{
