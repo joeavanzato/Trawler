@@ -29,9 +29,8 @@ BeforeAll {
     mock Export-CSV
     mock Write-Host
     $outpath = ".\detection_test.csv"
+    $snapshotpath = ".\snapshot_test.csv"
 }
-
-
 
 Describe "Write-Detection" {
     BeforeEach {
@@ -114,5 +113,51 @@ Describe "Write-Message" {
             Should -Invoke -CommandName Write-Host -Times 1 -Exactly
         }
     }
-
 }
+
+Describe "Write-SnapshotMessage" {
+    BeforeEach {
+        mock Export-CSV
+        $script:snapshotpath_writable = $true
+        $snapshot = $true
+        $key = "KeyTest"
+        $value = "ValueTest"
+        $source = "SourceTest"
+    }
+    Context "Snapshot Enabled and Path Writeable" {
+
+        It "Writes Message to CSV" {
+            Write-SnapshotMessage -Key $key -Value $value -Source $source
+            Should -Invoke -CommandName Export-CSV -Times 1 -Exactly
+        }
+    }
+    Context "Snapshot Disabled and Path Writeable" {
+        BeforeEach {
+            $snapshot = $false
+        }
+        It "Returns without writing message to CSV" {
+            Write-SnapshotMessage -Key $key -Value $value -Source $source
+            Should -Invoke -CommandName Export-CSV -Times 0 -Exactly
+        }
+    }
+    Context "Snapshot Enabled and Path Not-Writeable" {
+        BeforeEach {
+            $script:snapshotpath_writable = $false
+        }
+        It "Returns without writing message to CSV" {
+            Write-SnapshotMessage -Key $key -Value $value -Source $source
+            Should -Invoke -CommandName Export-CSV -Times 0 -Exactly
+        }
+    }
+    Context "Snapshot Disabled and Path Not-Writeable" {
+        BeforeEach {
+            $snapshot = $false
+            $script:snapshotpath_writable = $false
+        }
+        It "Returns without writing message to CSV" {
+            Write-SnapshotMessage -Key $key -Value $value -Source $source
+            Should -Invoke -CommandName Export-CSV -Times 0 -Exactly
+        }
+    }
+}
+
