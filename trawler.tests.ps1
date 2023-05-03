@@ -161,3 +161,259 @@ Describe "Write-SnapshotMessage" {
     }
 }
 
+Describe "Main" {
+    BeforeAll {
+        mock Write-Host
+        mock Read-Snapshot
+        mock Logo
+        mock ValidatePaths
+        mock Drive-Change
+        mock Clean-Up
+        mock Detection-Metrics
+        mock Check-ActiveSetup
+        mock Check-AMSIProviders
+        mock Check-AppCertDLLs
+        mock Check-AppInitDLLs
+        mock Check-ApplicationShims
+        mock Check-AppPaths
+        mock Check-Association-Hijack
+        mock Check-AutoDialDLL
+        mock Check-BIDDll
+        mock Check-BITS
+        mock Check-COM-Hijacks
+        mock Check-CommandAutoRunProcessors
+        mock Check-Connections
+        mock Check-ContextMenu
+        mock Check-Debugger-Hijacks
+        mock Check-DNSServerLevelPluginDLL
+        mock Check-Registry-Checks
+        mock Check-ErrorHandlerCMD
+        mock Check-ExplorerHelperUtilities
+        mock Check-FolderOpen
+        mock Check-GPOExtensions
+        mock Check-GPO-Scripts
+        mock Check-HTMLHelpDLL
+        mock Check-IFEO
+        mock Check-InternetSettingsLUIDll
+        mock Check-KnownManagedDebuggers
+        mock Check-LNK
+        mock Check-LSA
+        mock Check-MicrosoftTelemetryCommands
+        mock Check-Modified-Windows-Accessibility-Feature
+        mock Check-MSDTCDll
+        mock Check-Narrator
+        mock Check-NaturalLanguageDevelopmentDLLs
+        mock Check-NetSHDLLs
+        mock Check-Notepad++-Plugins
+        mock Check-OfficeAI
+        mock Check-OfficeGlobalDotName
+        mock Check-Officetest
+        mock Check-Office-Trusted-Locations
+        mock Check-Outlook-Startup
+        mock Check-PATH-Hijacks
+        mock Check-PeerDistExtensionDll
+        mock Check-PolicyManager
+        mock Check-PowerShell-Profiles
+        mock Check-PrintMonitorDLLs
+        mock Check-PrintProcessorDLLs
+        mock Check-Processes
+        mock Check-Process-Modules
+        mock Check-RATS
+        mock Check-RDPShadowConsent
+        mock Check-RDPStartupPrograms
+        mock Check-RemoteUACSetting
+        mock Check-ScheduledTasks
+        mock Check-ScreenSaverEXE
+        mock Check-SEMgrWallet
+        mock Check-Service-Hijacks
+        mock Check-Services
+        mock Check-SethcHijack
+        mock Check-SilentProcessExitMonitoring
+        mock Check-Startups
+        mock Check-Suspicious-Certificates
+        mock Check-Suspicious-File-Locations
+        mock Check-TerminalProfiles
+        mock Check-TerminalServicesDLL
+        mock Check-TerminalServicesInitialProgram
+        mock Check-TimeProviderDLLs
+        mock Check-TrustProviderDLL
+        mock Check-UninstallStrings
+        mock Check-UserInitMPRScripts
+        mock Check-Users
+        mock Check-UtilmanHijack
+        mock Check-WellKnownCOM
+        mock Check-WERRuntimeExceptionHandlers
+        mock Check-WindowsLoadKey
+        mock Check-Windows-Unsigned-Files
+        mock Check-WindowsUpdateTestDlls
+        mock Check-WinlogonHelperDLLs
+        mock Check-WMIConsumers
+        mock Check-Wow64LayerAbuse
+
+        $ScanOptions = "None"
+    }
+    Context "Main - No Options, Default" {
+        It "Should write the logo, validate provided paths, check drive-change logic, run clean-up and then finalize with detection-metrics" {
+            Main
+            Should -Invoke -CommandName Logo -Times 1 -Exactly
+            Should -Invoke -CommandName ValidatePaths -Times 1 -Exactly
+            Should -Invoke -CommandName Drive-Change -Times 1 -Exactly
+            Should -Invoke -CommandName Clean-Up -Times 1 -Exactly
+            Should -Invoke -CommandName Detection-Metrics -Times 1 -Exactly
+        }
+    }
+    Context "Snapshot Disabled, LoadSnapShot Enabled" {
+        BeforeEach {
+            $loadsnapshotdata = $true
+            $snapshot = $false
+        }
+        It "Should Read-Snapshot Data from CSV" {
+            Main
+            Should -Invoke -CommandName Logo -Times 1 -Exactly
+            Should -Invoke -CommandName Read-Snapshot -Times 1 -Exactly
+            Should -Invoke -CommandName ValidatePaths -Times 1 -Exactly
+            Should -Invoke -CommandName Drive-Change -Times 1 -Exactly
+            Should -Invoke -CommandName Clean-Up -Times 1 -Exactly
+            Should -Invoke -CommandName Detection-Metrics -Times 1 -Exactly
+        }
+    }
+    Context "Snapshot Enabled, LoadSnapShot Enabled" {
+        BeforeEach {
+            $loadsnapshotdata = $true
+            $snapshot = $true
+        }
+        It "Should Not Read-Snapshot Data from CSV" {
+            Main
+            Should -Invoke -CommandName Logo -Times 1 -Exactly
+            Should -Invoke -CommandName Read-Snapshot -Times 0 -Exactly
+            Should -Invoke -CommandName ValidatePaths -Times 1 -Exactly
+            Should -Invoke -CommandName Drive-Change -Times 1 -Exactly
+            Should -Invoke -CommandName Clean-Up -Times 1 -Exactly
+            Should -Invoke -CommandName Detection-Metrics -Times 1 -Exactly
+        }
+    }
+    Context "Snapshot Enabled, LoadSnapShot Disabled" {
+        BeforeEach {
+            $loadsnapshotdata = $false
+            $snapshot = $true
+        }
+        It "Should Not Read-Snapshot Data from CSV" {
+            Main
+            Should -Invoke -CommandName Logo -Times 1 -Exactly
+            Should -Invoke -CommandName Read-Snapshot -Times 0 -Exactly
+            Should -Invoke -CommandName ValidatePaths -Times 1 -Exactly
+            Should -Invoke -CommandName Drive-Change -Times 1 -Exactly
+            Should -Invoke -CommandName Clean-Up -Times 1 -Exactly
+            Should -Invoke -CommandName Detection-Metrics -Times 1 -Exactly
+        }
+    }
+    Context "Verifying Default Functionality for ScanOptions" {
+        BeforeEach {
+            $ScanOptions = "All"
+        }
+        It "Should execute all included checks" {
+            Main
+            Should -Invoke -CommandName Logo -Times 1 -Exactly
+            Should -Invoke -CommandName ValidatePaths -Times 1 -Exactly
+            Should -Invoke -CommandName Drive-Change -Times 1 -Exactly
+            Should -Invoke -CommandName Clean-Up -Times 1 -Exactly
+            Should -Invoke -CommandName Detection-Metrics -Times 1 -Exactly
+            Should -Invoke -CommandName Check-ActiveSetup -Times 1 -Exactly
+            Should -Invoke -CommandName Check-AMSIProviders -Times 1 -Exactly
+            Should -Invoke -CommandName Check-AppCertDLLs -Times 1 -Exactly
+            Should -Invoke -CommandName Check-AppInitDLLs -Times 1 -Exactly
+            Should -Invoke -CommandName Check-ApplicationShims -Times 1 -Exactly
+            Should -Invoke -CommandName Check-AppPaths -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Association-Hijack -Times 1 -Exactly
+            Should -Invoke -CommandName Check-AutoDialDLL -Times 1 -Exactly
+            Should -Invoke -CommandName Check-BIDDll -Times 1 -Exactly
+            Should -Invoke -CommandName Check-BITS -Times 1 -Exactly
+            Should -Invoke -CommandName Check-COM-Hijacks -Times 1 -Exactly
+            Should -Invoke -CommandName Check-CommandAutoRunProcessors -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Connections -Times 1 -Exactly
+            Should -Invoke -CommandName Check-ContextMenu -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Debugger-Hijacks -Times 1 -Exactly
+            Should -Invoke -CommandName Check-DNSServerLevelPluginDLL -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Registry-Checks -Times 1 -Exactly
+            Should -Invoke -CommandName Check-ErrorHandlerCMD -Times 1 -Exactly
+            Should -Invoke -CommandName Check-ExplorerHelperUtilities -Times 1 -Exactly
+            Should -Invoke -CommandName Check-FolderOpen -Times 1 -Exactly
+            Should -Invoke -CommandName Check-GPOExtensions -Times 1 -Exactly
+            Should -Invoke -CommandName Check-GPO-Scripts -Times 1 -Exactly
+            Should -Invoke -CommandName Check-HTMLHelpDLL -Times 1 -Exactly
+            Should -Invoke -CommandName Check-IFEO -Times 1 -Exactly
+            Should -Invoke -CommandName Check-InternetSettingsLUIDll -Times 1 -Exactly
+            Should -Invoke -CommandName Check-KnownManagedDebuggers -Times 1 -Exactly
+            Should -Invoke -CommandName Check-LNK -Times 1 -Exactly
+            Should -Invoke -CommandName Check-LSA -Times 1 -Exactly
+            Should -Invoke -CommandName Check-MicrosoftTelemetryCommands -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Modified-Windows-Accessibility-Feature -Times 1 -Exactly
+            Should -Invoke -CommandName Check-MSDTCDll -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Narrator -Times 1 -Exactly
+            Should -Invoke -CommandName Check-NaturalLanguageDevelopmentDLLs -Times 1 -Exactly
+            Should -Invoke -CommandName Check-NetSHDLLs -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Notepad++-Plugins -Times 1 -Exactly
+            Should -Invoke -CommandName Check-OfficeAI -Times 1 -Exactly
+            Should -Invoke -CommandName Check-OfficeGlobalDotName -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Officetest -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Office-Trusted-Locations -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Outlook-Startup -Times 1 -Exactly
+            Should -Invoke -CommandName Check-PATH-Hijacks -Times 1 -Exactly
+            Should -Invoke -CommandName Check-PeerDistExtensionDll -Times 1 -Exactly
+            Should -Invoke -CommandName Check-PolicyManager -Times 1 -Exactly
+            Should -Invoke -CommandName Check-PowerShell-Profiles -Times 1 -Exactly
+            Should -Invoke -CommandName Check-PrintMonitorDLLs -Times 1 -Exactly
+            Should -Invoke -CommandName Check-PrintProcessorDLLs -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Processes -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Process-Modules -Times 1 -Exactly
+            Should -Invoke -CommandName Check-RATS -Times 1 -Exactly
+            Should -Invoke -CommandName Check-RDPShadowConsent -Times 1 -Exactly
+            Should -Invoke -CommandName Check-RDPStartupPrograms -Times 1 -Exactly
+            Should -Invoke -CommandName Check-RemoteUACSetting -Times 1 -Exactly
+            Should -Invoke -CommandName Check-ScheduledTasks -Times 1 -Exactly
+            Should -Invoke -CommandName Check-ScreenSaverEXE -Times 1 -Exactly
+            Should -Invoke -CommandName Check-SEMgrWallet -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Service-Hijacks -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Services -Times 1 -Exactly
+            Should -Invoke -CommandName Check-SethcHijack -Times 1 -Exactly
+            Should -Invoke -CommandName Check-SilentProcessExitMonitoring -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Startups -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Suspicious-Certificates -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Suspicious-File-Locations -Times 1 -Exactly
+            Should -Invoke -CommandName Check-TerminalProfiles -Times 1 -Exactly
+            Should -Invoke -CommandName Check-TerminalServicesDLL -Times 1 -Exactly
+            Should -Invoke -CommandName Check-TerminalServicesInitialProgram -Times 1 -Exactly
+            Should -Invoke -CommandName Check-TimeProviderDLLs -Times 1 -Exactly
+            Should -Invoke -CommandName Check-TrustProviderDLL -Times 1 -Exactly
+            Should -Invoke -CommandName Check-UninstallStrings -Times 1 -Exactly
+            Should -Invoke -CommandName Check-UserInitMPRScripts -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Users -Times 1 -Exactly
+            Should -Invoke -CommandName Check-UtilmanHijack -Times 1 -Exactly
+            Should -Invoke -CommandName Check-WellKnownCOM -Times 1 -Exactly
+            Should -Invoke -CommandName Check-WERRuntimeExceptionHandlers -Times 1 -Exactly
+            Should -Invoke -CommandName Check-WindowsLoadKey -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Windows-Unsigned-Files -Times 1 -Exactly
+            Should -Invoke -CommandName Check-WindowsUpdateTestDlls -Times 1 -Exactly
+            Should -Invoke -CommandName Check-WinlogonHelperDLLs -Times 1 -Exactly
+            Should -Invoke -CommandName Check-WMIConsumers -Times 1 -Exactly
+            Should -Invoke -CommandName Check-Wow64LayerAbuse -Times 1 -Exactly
+        }
+    }
+    Context "Verifying Scan Options Functionality" {
+        BeforeEach {
+            $ScanOptions = "ActiveSetup", "AMSIProviders"
+        }
+        It "Should only execute Check-ActiveSetup and CheckAMSIProviders" {
+            Main
+            Should -Invoke -CommandName Logo -Times 1 -Exactly
+            Should -Invoke -CommandName ValidatePaths -Times 1 -Exactly
+            Should -Invoke -CommandName Drive-Change -Times 1 -Exactly
+            Should -Invoke -CommandName Clean-Up -Times 1 -Exactly
+            Should -Invoke -CommandName Detection-Metrics -Times 1 -Exactly
+            Should -Invoke -CommandName Check-ActiveSetup -Times 1 -Exactly
+            Should -Invoke -CommandName Check-AMSIProviders -Times 1 -Exactly
+            Should -Invoke -CommandName Check-AppInitDLLs -Times 0 -Exactly
+        }
+    }
+}
+
