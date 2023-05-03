@@ -445,3 +445,43 @@ Describe "Clean-Up" {
     }
 }
 
+Describe "Drive-Change" {
+    Context "Drive ReTargeting Disabled" {
+        BeforeEach {
+            $drivechange = $false
+            mock Get-ChildItem
+        }
+        It "Should Execute Get-ChildItem Once" {
+            Drive-Change
+            Should -Invoke -CommandName Get-ChildItem -Times 1 -Exactly
+        }
+        It "Should create script level variables for various configurations" {
+          $script:env_homedrive | Should -Be $env:homedrive
+          $script:env_assumedhomedrive | Should -Be $env:homedrive
+          $script:env_programdata | Should -Be $env:programdata
+          $script:regtarget_hklm | Should -Be "HKEY_LOCAL_MACHINE\"
+          $script:regtarget_hkcu | Should -Be "HKEY_CURRENT_USER\"
+          $script:regtarget_hkcr | Should -Be "HKEY_CLASSES_ROOT\"
+          $script:currentcontrolset | Should -Be "CurrentControlSet"
+        }
+    }
+    Context "Drive ReTargeting Enabled" {
+        # Can't fully test because using 'exit' - need to refactor Drive-Change to avoid exit in a cleaner way
+        BeforeEach {
+            $drivechange = $true
+            mock Load-Hive
+            $drivetarget = "C:"
+        }
+        #It "Should Execute Load-Hive" {
+        #    Drive-Change
+        #    Should -Invoke -CommandName Load-Hive -BeGreaterThan 1
+        #}
+        #It "Should create script level variables for various configurations" {
+        #    Drive-Change
+        #    $script:env_homedrive = $drivetarget
+        #    $script:env_assumedhomedrive = 'C:'
+        #    $script:env_programdata = $drivetarget + "\ProgramData"
+        #}
+    }
+}
+
