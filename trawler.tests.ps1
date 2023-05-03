@@ -1,11 +1,27 @@
 
-#Import-Module .\trawler.ps1 -Force -Scope Global
+# Invoke-Pester -CodeCoverage  .\trawler.ps1
+# Invoke-Pester
+
 . .\trawler.ps1
 
 BeforeAll {
-    $script:detection = [PSCustomObject]@{
+    $detection = [PSCustomObject]@{
         Name = 'Test Detection'
         Risk = 'Medium'
+        Source = 'Test'
+        Technique = "T0000: Test"
+        Meta = "Test"
+    }
+    $low_detection = [PSCustomObject]@{
+        Name = 'Test Detection'
+        Risk = 'Low'
+        Source = 'Test'
+        Technique = "T0000: Test"
+        Meta = "Test"
+    }
+    $high_detection = [PSCustomObject]@{
+        Name = 'Test Detection'
+        Risk = 'High'
         Source = 'Test'
         Technique = "T0000: Test"
         Meta = "Test"
@@ -63,4 +79,40 @@ Describe "Write-Detection" {
             $detection_list.Count | Should -Be 1
         }
     }
+}
+
+Describe "Detection-Metrics" {
+    BeforeEach {
+        $detection_list = New-Object -TypeName "System.Collections.ArrayList"
+        mock Export-CSV
+        $outpath = ".\detection_test.csv"
+        $output_writable = $true
+    }
+    Context "General Detection Metrics" {
+        It "Writes 7 lines to console" {
+            Detection-Metrics
+            Should -Invoke -CommandName Write-Host -Times 7 -Exactly
+        }
+    }
+    Context "General Detection Metrics" {
+        It "Adds 2 detections and counts them" {
+            Write-Detection $low_detection
+            Detection-Metrics
+            Should -Invoke -CommandName Export-CSV -Times 1 -Exactly
+            $detection_list.Count | Should -Be 1
+        }
+    }
+}
+
+Describe "Write-Message" {
+    BeforeEach {
+        mock Write-Host
+    }
+    Context "Write Message" {
+        It "Writes 1 line to console" {
+            Write-Message
+            Should -Invoke -CommandName Write-Host -Times 1 -Exactly
+        }
+    }
+
 }
