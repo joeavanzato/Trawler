@@ -2280,23 +2280,24 @@ function Check-Outlook-Startup {
     foreach ($user in $profile_names){
         $path = "$env_homedrive\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Word\STARTUP"
         $items = Get-ChildItem -Path $path -File -ErrorAction SilentlyContinue | Select-Object * | Where-Object {$_.extension -in $office_addin_extensions}
-        foreach ($item in $items){
-			Write-SnapshotMessage -Key $item.FullName -Value $item.FullName -Source 'Office'
+        # Removing this as we are performing this functionality else-where for Office Trusted Location Scanning.
+        #foreach ($item in $items){
+		#	Write-SnapshotMessage -Key $item.FullName -Value $item.FullName -Source 'Office'
 
 			# If the allowlist contains the curren task name
-            if ($loadsnapshot -and ($allowlist_outlookstartup.Contains($item.FullName))){
-                continue
-            }
+        #    if ($loadsnapshot -and ($allowlist_outlookstartup.Contains($item.FullName))){
+        #        continue
+        #    }
 
-            $detection = [PSCustomObject]@{
-                Name = 'Potential Persistence via Office Startup Addin'
-                Risk = 'Medium'
-                Source = 'Office'
-                Technique = "T1137.006: Office Application Startup: Add-ins"
-                Meta = "File: "+$item.FullName+", Last Write Time: "+$item.LastWriteTime
-            }
+        #    $detection = [PSCustomObject]@{
+        #        Name = 'Potential Persistence via Office Startup Addin'
+        #        Risk = 'Medium'
+        #        Source = 'Office'
+        #        Technique = "T1137.006: Office Application Startup: Add-ins"
+        #        Meta = "File: "+$item.FullName+", Last Write Time: "+$item.LastWriteTime
+        #    }
             #Write-Detection $detection - Removing this as it is a duplicate of the new Office Scanning Functionality which will cover the same checks
-        }
+        #}
         $path = "$env_homedrive\Users\"+$user.Name+"\AppData\Roaming\Microsoft\Outlook\VbaProject.OTM"
         if (Test-Path $path) {
 			Write-SnapshotMessage -Key $path -Value $item.FullName -Source 'Outlook'
