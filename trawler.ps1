@@ -13186,7 +13186,7 @@ function Check-Association-Hijack {
             foreach ($item in $items) {
                 $path = $item.Name
                 if ($path.EndsWith('file')){
-                    $basefile = $path.Split("\")[1]
+                    $basefile = $path.Split("\")[-1]
                     $open_path = $path+"\shell\open\command"
                     if (Test-Path -Path "Registry::$open_path"){
                         $key = Get-ItemProperty -Path "Registry::$open_path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -13195,17 +13195,16 @@ function Check-Association-Hijack {
                                 #Write-Host $open_path $_.Value
                                 $exe = $_.Value
                                 $detection_triggered = $false
-								Write-SnapshotMessage -Key $basefile -Value $exe -Source 'AssociationHijack'
-
+								Write-SnapshotMessage -Key $open_path -Value $exe -Source 'AssociationHijack'
                                 if ($loadsnapshot){
                                     $detection = [PSCustomObject]@{
                                         Name = 'Allowlist Mismatch: Possible File Association Hijack - Mismatch on Expected Value'
                                         Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                        Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                        Meta = "FileType: " + $open_path +", Expected Association: "+ $allowtable_fileassocations[$open_path] + ", Current Association: " + $exe
                                     }
-                                    $result = Check-IfAllowed $allowtable_fileassocations $basefile $exe $detection
+                                    $result = Check-IfAllowed $allowtable_fileassocations $open_path $exe $detection
                                     if ($result){
                                         continue
                                     }
@@ -13218,7 +13217,7 @@ function Check-Association-Hijack {
                                             Risk = 'High'
                                             Source = 'Registry'
                                             Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                            Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                            Meta = "FileType: " + $open_path +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
                                         }
                                         Write-Detection $detection
                                         return
@@ -13233,7 +13232,7 @@ function Check-Association-Hijack {
                                         Risk = 'High'
                                         Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                        Meta = "FileType: " + $basefile + ", Current Association: " + $exe
+                                        Meta = "FileType: " + $open_path + ", Current Association: " + $exe
                                     }
                                     Write-Detection $detection
                                     return
@@ -13244,7 +13243,7 @@ function Check-Association-Hijack {
                                         Risk = 'High'
                                         Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                        Meta = "FileType: " + $basefile + ", Current Association: " + $exe
+                                        Meta = "FileType: " + $open_path + ", Current Association: " + $exe
                                     }
                                     Write-Detection $detection
                                 }
@@ -13261,7 +13260,7 @@ function Check-Association-Hijack {
         foreach ($item in $items) {
             $path = $item.Name
             if ($path.EndsWith('file')){
-                $basefile = $path.Split("\")[1]
+                $basefile = $path.Split("\")[-1]
                 $open_path = $path+"\shell\open\command"
                 if (Test-Path -Path "Registry::$open_path"){
                     $key = Get-ItemProperty -Path "Registry::$open_path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -13270,7 +13269,7 @@ function Check-Association-Hijack {
                             #Write-Host $open_path $_.Value
                             $exe = $_.Value
                             $detection_triggered = $false
-							Write-SnapshotMessage -Key $basefile -Value $exe -Source 'AssociationHijack'
+							Write-SnapshotMessage -Key $open_path -Value $exe -Source 'AssociationHijack'
 
                             if ($loadsnapshot){
                                 $detection = [PSCustomObject]@{
@@ -13278,9 +13277,9 @@ function Check-Association-Hijack {
                                     Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                    Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                    Meta = "FileType: " + $open_path +", Expected Association: "+ $allowtable_fileassocations[$open_path] + ", Current Association: " + $exe
                                 }
-                                $result = Check-IfAllowed $allowtable_fileassocations $basefile $exe $detection
+                                $result = Check-IfAllowed $allowtable_fileassocations $open_path $exe $detection
                                 if ($result){
                                     continue
                                 }
@@ -13293,7 +13292,7 @@ function Check-Association-Hijack {
                                         Risk = 'High'
                                         Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                        Meta = "FileType: " + $basefile +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                        Meta = "FileType: " + $open_path +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
                                     }
                                     Write-Detection $detection
                                     return
@@ -13308,7 +13307,7 @@ function Check-Association-Hijack {
                                     Risk = 'High'
                                     Source = 'Registry'
                                     Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                    Meta = "FileType: " + $basefile + ", Current Association: " + $exe
+                                    Meta = "FileType: " + $open_path + ", Current Association: " + $exe
                                 }
                                 Write-Detection $detection
                                 return
@@ -13319,7 +13318,7 @@ function Check-Association-Hijack {
                                     Risk = 'High'
                                     Source = 'Registry'
                                     Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                    Meta = "FileType: " + $basefile + ", Current Association: " + $exe
+                                    Meta = "FileType: " + $open_path + ", Current Association: " + $exe
                                 }
                                 Write-Detection $detection
                             }
