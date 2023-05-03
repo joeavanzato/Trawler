@@ -83,7 +83,6 @@ Describe "Write-Detection" {
 Describe "Detection-Metrics" {
     BeforeEach {
         $detection_list = New-Object -TypeName "System.Collections.ArrayList"
-        mock Export-CSV
         $outpath = ".\detection_test.csv"
         $output_writable = $true
     }
@@ -104,9 +103,6 @@ Describe "Detection-Metrics" {
 }
 
 Describe "Write-Message" {
-    BeforeEach {
-        mock Write-Host
-    }
     Context "Write Message" {
         It "Writes 1 line to console" {
             Write-Message
@@ -117,7 +113,6 @@ Describe "Write-Message" {
 
 Describe "Write-SnapshotMessage" {
     BeforeEach {
-        mock Export-CSV
         $script:snapshotpath_writable = $true
         $snapshot = $true
         $key = "KeyTest"
@@ -163,7 +158,6 @@ Describe "Write-SnapshotMessage" {
 
 Describe "Main" {
     BeforeAll {
-        mock Write-Host
         mock Read-Snapshot
         mock Logo
         mock ValidatePaths
@@ -413,6 +407,40 @@ Describe "Main" {
             Should -Invoke -CommandName Check-ActiveSetup -Times 1 -Exactly
             Should -Invoke -CommandName Check-AMSIProviders -Times 1 -Exactly
             Should -Invoke -CommandName Check-AppInitDLLs -Times 0 -Exactly
+        }
+    }
+}
+
+Describe "Logo" {
+    Context "Writing Logo to Console" {
+        It "Should Write 4 lines to the console" {
+            Logo
+            Should -Invoke -CommandName Write-Host -Times 4 -Exactly
+        }
+    }
+}
+
+Describe "Clean-Up" {
+    Context "Checking Clean-Up Script with no drive change" {
+        BeforeEach {
+            $drivechange = $false
+            $new_psdrives_list = @()
+            mock Unload-Hive
+        }
+        It "Should Do Nothing" {
+            Clean-Up
+            Should -Invoke -CommandName Unload-Hive -Times 0 -Exactly
+        }
+    }
+    Context "Checking Clean-Up Script with no drive change" {
+        BeforeEach {
+            $drivechange = $true
+            $new_psdrives_list = @("TEST1", "TEST2")
+            mock Unload-Hive
+        }
+            It "Should Attempt to Unload Each Drive present in new_psdrives_list" {
+            Clean-Up
+            Should -Invoke -CommandName Unload-Hive -Times 2 -Exactly
         }
     }
 }
