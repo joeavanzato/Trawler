@@ -30,6 +30,9 @@ BeforeAll {
     mock Write-Host
     $outpath = ".\detection_test.csv"
     $snapshotpath = ".\snapshot_test.csv"
+    $regtarget_hklm = (Get-PSDrive TestRegistry).Root+"\"
+    $env_assumedhomedrive = "C:"
+    $env_homedrive = "TestDrive:"
 }
 
 Describe "Write-Detection" {
@@ -486,30 +489,80 @@ Describe "Drive-Change" {
 }
 
 Describe "Check-Suspicious-File-Locations" {
-    It "writes 3 detections for suspicious exe files" {
+    BeforeEach {
         $env_homedrive = "TestDrive:"
+        Mock Write-Detection
+    }
+    It "should write 3 detections for suspicious exe files" {
         $testPath = New-Item "$env_homedrive\Users\Public\test.exe" -ItemType File -Force
         $testPath2 = New-Item "$env_homedrive\Users\Administrator\test.exe" -ItemType File -Force
         $testPath3 = New-Item "$env_homedrive\Users\Public\hello\test.exe" -ItemType File -Force
-        Mock Write-Detection
         Check-Suspicious-File-Locations
         Should -Invoke -CommandName Write-Detection -Times 3 -Exactly
+        Remove-Item $testPath -Force -ErrorAction SilentlyContinue
+        Remove-Item $testPath2 -Force -ErrorAction SilentlyContinue
+        Remove-Item $testPath3 -Force -ErrorAction SilentlyContinue
+    }
+    It "should write 0 detections for suspicious exe files" {
+        Check-Suspicious-File-Locations
+        Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
     }
 }
 
 Describe "Check-Narrator" {
-    It "should write 1 detection" {
+    BeforeEach {
         $env_homedrive = "TestDrive:"
-        $testPath = New-Item "$env_homedrive\Windows\System32\Speech\Engines\TTS\MSTTSLocEnUS.DLL" -ItemType File -Force
         Mock Write-Detection
+    }
+    It "should write 1 detection" {
+        $testPath = New-Item "$env_homedrive\Windows\System32\Speech\Engines\TTS\MSTTSLocEnUS.DLL" -ItemType File -Force
         Check-Narrator
         Should -Invoke -CommandName Write-Detection -Times 1 -Exactly
         Remove-Item $testPath -Force -ErrorAction SilentlyContinue
     }
     It "should write 0 detections" {
+        Check-Narrator
+        Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
+    }
+}
+
+Describe "Check-MSDTCDll" {
+    BeforeEach {
+        $path = "TestRegistry:\SOFTWARE\Microsoft\MSDTC"
+        New-Item $path -Name "MTxOCI" -Force
+        New-ItemProperty  -Path "$path\MTxOCI" -Name "OracleOciLib" -Value "oci.dll"
+        Mock Write-Detection
+    }
+    It "should write 0 detections" {
+        Check-MSDTCDll
+        Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
+    }
+    It "should write 6 detection" {
+        Set-ItemProperty  -Path "$path\MTxOCI" -Name "OracleOciLib" -Value "test.dll"
+        Set-ItemProperty  -Path "$path\MTxOCI" -Name "OracleOciLibPath" -Value "$env_assumedhomedrive\Users\Public\test.dll"
+        Set-ItemProperty  -Path "$path\MTxOCI" -Name "OracleSqlLib" -Value "test.dll"
+        Set-ItemProperty  -Path "$path\MTxOCI" -Name "OracleSqlLibPath" -Value "$env_assumedhomedrive\Users\Public\test.dll"
+        Set-ItemProperty  -Path "$path\MTxOCI" -Name "OracleXaLib" -Value "test.dll"
+        Set-ItemProperty  -Path "$path\MTxOCI" -Name "OracleXaLibPath" -Value "$env_assumedhomedrive\Users\Public\test.dll"
+        Check-MSDTCDll
+        Should -Invoke -CommandName Write-Detection -Times 6 -Exactly
+    }
+}
+
+Describe "Check-Notepad++-Plugins" {
+    BeforeEach {
         $env_homedrive = "TestDrive:"
         Mock Write-Detection
-        Check-Narrator
+    }
+    It "should write 1 detections" {
+        $testPath = New-Item "$env_homedrive\Program Files\Notepad++\plugins\test\test.dll" -ItemType File -Force
+        Check-Notepad++-Plugins
+        Should -Invoke -CommandName Write-Detection -Times 1 -Exactly
+        Remove-Item $testPath -Force -ErrorAction SilentlyContinue
+    }
+    It "should write 0 detections" {
+        New-Item "$env_homedrive\Program Files\Notepad++\plugins\Config\nppPluginList.dll" -ItemType File -Force
+        Check-Notepad++-Plugins
         Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
     }
 }
