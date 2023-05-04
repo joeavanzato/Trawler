@@ -17106,4 +17106,8 @@ function Main {
     Detection-Metrics
 }
 
-Main
+
+if ($MyInvocation.InvocationName -match ".+.ps1")
+{
+    Main
+}
