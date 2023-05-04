@@ -487,11 +487,10 @@ Describe "Drive-Change" {
 
 Describe "Check-Suspicious-File-Locations" {
     It "writes 3 detections for suspicious exe files" {
-        Mock Get-ChildItem {[PSCustomObject] @{
-            Name="$env:homedrive\Users\Public\test.exe"
-            CreationTime=1
-            LastWriteTime=1
-        }}
+        $env_homedrive = "TestDrive:"
+        $testPath = New-Item "$env_homedrive\Users\Public\test.exe" -ItemType File -Force
+        $testPath2 = New-Item "$env_homedrive\Users\Administrator\test.exe" -ItemType File -Force
+        $testPath3 = New-Item "$env_homedrive\Users\Public\hello\test.exe" -ItemType File -Force
         Mock Write-Detection
         Check-Suspicious-File-Locations
         Should -Invoke -CommandName Write-Detection -Times 3 -Exactly
@@ -500,13 +499,15 @@ Describe "Check-Suspicious-File-Locations" {
 
 Describe "Check-Narrator" {
     It "should write 1 detection" {
-        Mock Test-Path {$true}
+        $env_homedrive = "TestDrive:"
+        $testPath = New-Item "$env_homedrive\Windows\System32\Speech\Engines\TTS\MSTTSLocEnUS.DLL" -ItemType File -Force
         Mock Write-Detection
         Check-Narrator
         Should -Invoke -CommandName Write-Detection -Times 1 -Exactly
+        Remove-Item $testPath -Force -ErrorAction SilentlyContinue
     }
     It "should write 0 detections" {
-        Mock Test-Path {$false}
+        $env_homedrive = "TestDrive:"
         Mock Write-Detection
         Check-Narrator
         Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
