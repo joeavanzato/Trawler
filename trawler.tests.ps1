@@ -485,3 +485,31 @@ Describe "Drive-Change" {
     }
 }
 
+Describe "Check-Suspicious-File-Locations" {
+    It "writes 3 detections for suspicious exe files" {
+        Mock Get-ChildItem {[PSCustomObject] @{
+            Name="$env:homedrive\Users\Public\test.exe"
+            CreationTime=1
+            LastWriteTime=1
+        }}
+        Mock Write-Detection
+        Check-Suspicious-File-Locations
+        Should -Invoke -CommandName Write-Detection -Times 3 -Exactly
+    }
+}
+
+Describe "Check-Narrator" {
+    It "should write 1 detection" {
+        Mock Test-Path {$true}
+        Mock Write-Detection
+        Check-Narrator
+        Should -Invoke -CommandName Write-Detection -Times 1 -Exactly
+    }
+    It "should write 0 detections" {
+        Mock Test-Path {$false}
+        Mock Write-Detection
+        Check-Narrator
+        Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
+    }
+}
+
