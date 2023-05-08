@@ -214,7 +214,7 @@ function ValidatePaths {
         try {
             $script:snapshotpath = Get-ValidOutPath -path $snapshotpath
             Write-Message "Snapshot Output Path: $snapshotpath"
-            [System.IO.File]::OpenWrite($snapshotpath).close()
+            [System.IO.File]::OpenWrite($snapshotpath).Close()
             Clear-Content $snapshotpath
             $script:snapshotpath_writable = $true
         }
