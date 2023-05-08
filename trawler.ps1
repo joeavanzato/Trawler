@@ -16093,7 +16093,6 @@ function Check-RATS {
         "ZoHo Assist (Dir 3)" = "$env_homedrive\Program Files (x86)\GoTo Resolve*"
         "ZoHo Assist (Dir 4)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\GoTo"
     }
-    # TODO - Loop through and replace current username in C:\Users\*\ style paths to hunt in all dirs
     if (Test-Path "$env_homedrive\Users")
     {
         $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
