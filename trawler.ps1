@@ -2040,9 +2040,13 @@ function Check-Startups {
     $paths = @(
         "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
         "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunEx"
+        "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx"
         "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
         "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
         "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunEx"
+        "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx"
         "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
     )
     if ($nevermind) {
