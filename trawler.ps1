@@ -16465,8 +16465,6 @@ function Read-Snapshot(){
         exit
     }
     $csv_data = Import-CSV $loadsnapshot
-	$script:AllowData = $csv_data
-	
     $script:allowtable_scheduledtask = @{}
     $script:allowlist_users = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowtable_services = @{}
@@ -16771,56 +16769,6 @@ function Check-IfAllowed($allowmap, $key, $val, $det){
     } else {
         Write-Warning "Invalid AllowMap Type Specified"
     }
-}
-
-function Check-AllowList() {
-	[CmdletBinding()]
-	param (
-		[Parameter()]
-		[string]
-		$Source,
-		[Parameter()]
-		[string]
-		$Key,
-		[Parameter()]
-		[string]
-		$Value
-	)
-
-	$checkList = $AllowData | Where-Object Source -eq $Source
-
-	return $checkList.Key -contains $Key -or $checkList.Value -contains $Value
-}
-
-function Check-AllowHashTable() {
-	[CmdletBinding()]
-	param (
-		[Parameter()]
-		[Hashtable]
-		$Source,
-		[Parameter()]
-		[string]
-		$Key,
-		[Parameter()]
-		[string]
-		$Value,
-		[Parameter()]
-		[object]
-		$Detection
-	)
-
-	$checkList = ($AllowData | Where-Object Source -eq $Source) | Where-Object Key -eq $Key | Select-Object * -Unique
-
-	if (!$checkList) {
-		return $false
-	}
-
-	if ($checkList.Key -eq $Key -and $checkList.Value -eq $Value) {
-		return $true 
-	} else {
-		Write-Detection $Detection
-		return $false
-	}
 }
 
 function Drive-Change {
