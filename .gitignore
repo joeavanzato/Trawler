@@ -1,9 +1,2 @@
-
-.idea/inspectionProfiles/profiles_settings.xml
-.idea/misc.xml
-.idea/modules.xml
-.idea/Trawler.iml
-.idea/vcs.xml
-detections.csv
+.idea/
 *.csv
-.idea/inspectionProfiles/Project_Default.xml

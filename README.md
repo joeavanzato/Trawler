@@ -1,5 +1,5 @@
 <p align="center">
-<img src="logo.png" height="200">
+<img src="assets/logo.png" height="200">
 </p>
 <h1 align="center">
 Dredging Windows for Persistence 
@@ -93,13 +93,13 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 
 ## Example Images
 <p align="center">
-<img src="sample.PNG">
+<img src="assets/sample.PNG">
 </p>
 <p align="center">
-<img src="sample2.PNG">
+<img src="assets/sample2.PNG">
 </p>
 <p align="center">
-<img src="sample3.PNG">
+<img src="assets/sample3.PNG">
 </p>
 
 ## What is inspected?
