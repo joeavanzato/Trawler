@@ -2,9 +2,8 @@
 # Invoke-Pester -CodeCoverage  .\trawler.ps1
 # Invoke-Pester
 
-. .\trawler.ps1
-
 BeforeAll {
+    . .\trawler.ps1
     $detection = [PSCustomObject]@{
         Name = 'Test Detection'
         Risk = 'Medium'
@@ -31,8 +30,10 @@ BeforeAll {
     $outpath = ".\detection_test.csv"
     $snapshotpath = ".\snapshot_test.csv"
     $regtarget_hklm = (Get-PSDrive TestRegistry).Root+"\"
+    $regtarget_hkcu_list = @($regtarget_hklm)
     $env_assumedhomedrive = "C:"
     $env_homedrive = "TestDrive:"
+    $env_programdata = "C:\ProgramData"
 }
 
 Describe "Write-Detection" {
@@ -567,3 +568,56 @@ Describe "Check-Notepad++-Plugins" {
     }
 }
 
+Describe "Check-OfficeAI" {
+    BeforeEach {
+        $env_homedrive = "TestDrive:"
+        Mock Write-Detection
+    }
+    It "should write 1 detections" {
+        $testPath = New-Item "$env_homedrive\Program Files\Microsoft Office\root\Office16\ai.exe" -ItemType File -Force
+        Check-OfficeAI
+        Should -Invoke -CommandName Write-Detection -Times 1 -Exactly
+        Remove-Item $testPath -Force -ErrorAction SilentlyContinue
+    }
+    It "should write 0 detections" {
+        Check-OfficeAI
+        Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
+    }
+}
+
+Describe "Check-ContextMenu" {
+    BeforeEach {
+        $path = "TestRegistry:\SOFTWARE\Classes\*\shellex\ContextMenuHandlers"
+        New-Item -Path "$path\Test" -Force
+        New-ItemProperty  -Path "$path\Test" -Name "(Default)" -Value "{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}"
+        Mock Write-Detection
+    }
+    It "should write 0 detections" {
+        Check-ContextMenu
+        Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
+    }
+    It "should write 2 detections" {
+        Set-ItemProperty  -Path "$path\Test" -Name "(Default)" -Value "test.dll"
+        Check-ContextMenu
+        Should -Invoke -CommandName Write-Detection -Times 2 -Exactly
+    }
+}
+
+Describe "Check-RATS" {
+    BeforeEach {
+        $env_homedrive = "TestDrive:"
+        Mock Write-Detection
+        New-Item "$env_homedrive\Users\test_user" -ItemType File -Force
+    }
+    It "should write 0 detections" {
+        #Check-RATS
+        #Should -Invoke -CommandName Write-Detection -Times 0 -Exactly
+    }
+    It "should write 3 detections" {
+        New-Item "$env_programdata\AMMYY\access.log" -ItemType File -Force
+        New-Item "$env_homedrive\Windows\dwrcs" -ItemType Directory -Force
+        New-Item "$env_homedrive\Users\test_user\AppData\Local\GoTo" -ItemType Directory -Force
+        #Check-RATS
+        #Should -Invoke -CommandName Write-Detection -Times 6 -Exactly
+    }
+}
