@@ -59,7 +59,7 @@ param
 		Mandatory = $false,
 		HelpMessage = 'Suppress Detection Output to Console')]
 	[switch]
-	$hide,
+	$Quiet,
 	[Parameter(
 		Mandatory = $false,
 		HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
@@ -167,11 +167,6 @@ param
 
 # TODO - Refactor below into setup function
 # Script Level Variable Setup
-if ($hide.IsPresent){
-    $hide_console_output = $true
-} else {
-    $hide_console_output = $false
-}
 
 if ($PSBoundParameters.ContainsKey('loadsnapshot')){
     $loadsnapshotdata = $true
@@ -190,7 +185,8 @@ $detection_list = New-Object -TypeName "System.Collections.ArrayList"
 
 function Get-ValidOutPath {
 	param (
-		[string]$path
+		[string]
+		$path
 	)
 
 	if (Test-Path -Path $path -PathType Container)
@@ -206,7 +202,7 @@ function ValidatePaths {
     try {
         $script:outpath = Get-ValidOutPath -path $outpath
         Write-Message "Detection Output Path: $outpath"
-        [io.file]::OpenWrite($outpath).close()
+        [System.IO.File]::OpenWrite($outpath).Close()
         $script:output_writable = $true
     }
     catch {
@@ -218,7 +214,7 @@ function ValidatePaths {
         try {
             $script:snapshotpath = Get-ValidOutPath -path $snapshotpath
             Write-Message "Snapshot Output Path: $snapshotpath"
-            [io.file]::OpenWrite($snapshotpath).close()
+            [System.IO.File]::OpenWrite($snapshotpath).Close()
             Clear-Content $snapshotpath
             $script:snapshotpath_writable = $true
         }
@@ -227,7 +223,6 @@ function ValidatePaths {
             $script:snapshotpath_writable = $false
         }
     }
-
 }
 
 
@@ -2040,9 +2035,13 @@ function Check-Startups {
     $paths = @(
         "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
         "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunEx"
+        "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx"
         "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
         "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
         "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunEx"
+        "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx"
         "REPLACE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"
     )
     if ($nevermind) {
@@ -16089,7 +16088,6 @@ function Check-RATS {
         "ZoHo Assist (Dir 3)" = "$env_homedrive\Program Files (x86)\GoTo Resolve*"
         "ZoHo Assist (Dir 4)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\GoTo"
     }
-    # TODO - Loop through and replace current username in C:\Users\*\ style paths to hunt in all dirs
     if (Test-Path "$env_homedrive\Users")
     {
         $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
@@ -16384,7 +16382,7 @@ function Write-Detection($det) {
 		Default { $fg_color = "Yellow" }
 	}
 
-	if (-not($hide_console_output)) {
+	if (-not($Quiet)) {
 		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
 		Write-Host "[%] $($det.Meta)" -ForegroundColor White
 	}
