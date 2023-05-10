@@ -16393,31 +16393,14 @@ function Write-Detection($det) {
 }
 
 function Detection-Metrics {
-	$vlow_dets = 0
-	$low_dets = 0
-	$medium_dets = 0
-	$high_dets = 0
-	$vhigh_dets = 0
+	Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor White
+	Write-Message "Total Detections: $($detection_list.Count)"
 
-	foreach ($detection in $detection_list) {
-		switch ($detection.Risk) {
-			"Very Low" { $vlow_dets += 1 }
-			"Low" { $low_dets += 1 }
-			"Medium" { $medium_dets += 1 }
-			"High" { $high_dets += 1 }
-			"Very High" { $vhigh_dets += 1 }
+	foreach ($str in ($detection_list | Group-Object Risk | Select-Object Name, Count | Out-String).Split([System.Environment]::NewLine)) {
+		if (-not ([System.String]::IsNullOrWhiteSpace($str))){
+			Write-Message $str
 		}
 	}
-
-	$total_dets = $vlow_dets + $low_dets + $medium_dets + $high_dets + $vhigh_dets
-
-	Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor "White"
-	Write-Message "Total Detections: $total_dets"
-	Write-Message "Very-Low Risk Detections: $vlow_dets"
-	Write-Message "Low Risk Detections: $low_dets"
-	Write-Message "Medium Risk Detections: $medium_dets"
-	Write-Message "High Risk Detections: $high_dets"
-	Write-Message "Very-High Risk Detections: $vhigh_dets"
 }
 
 function Write-Message ($message){
