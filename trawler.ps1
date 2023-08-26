@@ -4318,7 +4318,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{48e7caab-b918-4e58-a94d-505519c795dc}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{48F24523-C8A9-4B95-B848-7BD3D0FE14D7}\InprocServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{48F4CE0C-BC11-4C9B-A165-2097308F9C25}\InProcServer32" = "$homedrive\\Windows\\System32\\wpncore\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{48F61E71-E203-4B69-AE20-3F222B5BEC89}\InProcServer32" = "$homedrive\\Program Files (x86)\\Microsoft\\EdgeUpdate\\.*\psmachine.*\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{48F61E71-E203-4B69-AE20-3F222B5BEC89}\InProcServer32" = "$homedrive\\Program Files (x86)\\Microsoft\\EdgeUpdate\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{493CD38D-ED47-4855-BBD0-B887DB871A87}\InprocServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{493D909F-6CF0-4328-85F5-16A31E12DA58}\InProcServer32" = "$homedrive\\Windows\\System32\\AppxPackaging\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{4955DD33-B159-11D0-8FCF-00AA006BCC59}\InProcServer32" = "$homedrive\\Windows\\system32\\msimtf\.dll"
