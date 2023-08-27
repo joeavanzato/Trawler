@@ -11397,14 +11397,22 @@ function Check-COM-Hijacks {
 
                             $verified_match = $false
                             if ($default_hklm_com_lookups.ContainsKey($data.Name)){
-                                if ($_.Value -match $default_hklm_com_lookups[$data.Name]){
-                                    $verified_match = $true
+                                try{
+                                    if ($_.Value -match $default_hklm_com_lookups[$data.Name]){
+                                        $verified_match = $true
+                                    }
+                                } catch {
+                                    Write-Reportable-Issue "Regex Error while parsing string: $($default_hklm_com_lookups[$data.Name])"
                                 }
                             }
 
                             if ($default_hklm_com_server_lookups.ContainsKey($data.Name) -and $verified_match -ne $true){
-                                if ($_.Value -match $default_hklm_com_server_lookups[$data.Name]){
-                                    $verified_match = $true
+                                try{
+                                    if ($_.Value -match $default_hklm_com_server_lookups[$data.Name]){
+                                        $verified_match = $true
+                                    }
+                                } catch {
+                                    Write-Reportable-Issue "Regex Error while parsing string: $($default_hklm_com_server_lookups[$data.Name])"
                                 }
                             }
 
@@ -11470,14 +11478,23 @@ function Check-COM-Hijacks {
 
                                 $verified_match = $false
                                 if ($default_hkcu_com_lookups.ContainsKey($data.Name)){
-                                    if ($_.Value -match $default_hkcu_com_lookups[$data.Name]){
-                                        $verified_match = $true
+                                    try{
+                                        if ($_.Value -match $default_hkcu_com_lookups[$data.Name]){
+                                            $verified_match = $true
+                                        }
+                                    } catch {
+                                        Write-Reportable-Issue "Regex Error while parsing string: $($default_hkcu_com_lookups[$data.Name])"
                                     }
+
                                 }
 
                                 if ($default_hkcu_com_server_lookups.ContainsKey($data.Name) -and $verified_match -ne $true){
-                                    if ($_.Value -match $default_hkcu_com_server_lookups[$data.Name]){
-                                        $verified_match = $true
+                                    try{
+                                        if ($_.Value -match $default_hkcu_com_server_lookups[$data.Name]){
+                                            $verified_match = $true
+                                        }
+                                    } catch {
+                                        Write-Reportable-Issue "Regex Error while parsing string: $($default_hkcu_com_server_lookups[$data.Name])"
                                     }
                                 }
 
@@ -11499,6 +11516,11 @@ function Check-COM-Hijacks {
             }
         }
     }
+}
+
+function Write-Reportable-Issue($msg) {
+    Write-Warning $msg
+    Write-Warning "Please report this issue at https://github.com/joeavanzato/Trawler/issues"
 }
 
 function Service-Reg-Checks {
