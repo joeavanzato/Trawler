@@ -96,6 +96,7 @@ param
 		"Connections",
 		"ContextMenu",
 		"DebuggerHijacks",
+        "DiskCleanupHandlers",
 		"DNSServerLevelPluginDLL",
 		"eRegChecks",
 		"ErrorHandlerCMD",
@@ -16415,6 +16416,70 @@ function Check-BootVerificationProgram {
     }
 }
 
+function Check-DiskCleanupHandlers {
+    # Supports Retargeting/Snapshot
+    Write-Message "Checking DiskCleanupHandlers"
+    $default_cleanup_handlers = @(
+        "C:\Windows\System32\DATACLEN.DLL",
+        "C:\Windows\System32\PeerDistCleaner.dll",
+        "C:\Windows\System32\D3DSCache.dll",
+        "C:\Windows\system32\domgmt.dll",
+        "C:\Windows\System32\pnpclean.dll",
+        "C:\Windows\System32\occache.dll",
+        "C:\Windows\System32\ieframe.dll",
+        "C:\Windows\System32\LanguagePackDiskCleanup.dll",
+        "C:\Windows\system32\setupcln.dll",
+        "C:\Windows\system32\shell32.dll",
+        "C:\Windows\system32\wmp.dll",
+        "C:\Windows\System32\thumbcache.dll",
+        "C:\Windows\system32\scavengeui.dll",
+        "C:\Windows\System32\fhcleanup.dll"
+    )
+    $path = "$regtarget_hklm`SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\"
+    if (Test-Path -LiteralPath "Registry::$path") {
+        $items = Get-ChildItem -LiteralPath "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        foreach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -LiteralPath $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq '(Default)') {
+                    $target_prog = ''
+                    $tmp_path = "$regtarget_hkcr`CLSID\$($_.Value)\InProcServer32"
+                    if (Test-Path -LiteralPath "Registry::$tmp_path"){
+                        $data_tmp = Get-ItemProperty -LiteralPath "Registry::$tmp_path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+                        $data_tmp.PSObject.Properties | ForEach-Object {
+                            if ($_.Name -eq '(Default)'){
+                                $target_prog = $_.Value
+                            }
+                        }
+                    }
+                    if ($target_prog -in $default_cleanup_handlers){
+                        continue
+                    }
+					Write-SnapshotMessage -Key $item.Name -Value $target_prog -Source 'DiskCleanupHandlers'
+                    $pass = $false
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_diskcleanuphandlers $_.target_prog $_.target_prog
+                        if ($result){
+                            $pass = $true
+                        }
+                    }
+                    if ($pass -eq $false){
+                        $detection = [PSCustomObject]@{
+                            Name = 'Non-Default DiskCleanupHandler Program'
+                            Risk = 'Low'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Key: "+$item.Name+", Program: "+$target_prog
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+}
+
 function Write-Detection($det) {
 	# det is a custom object which will contain various pieces of metadata for the detection
 	# Name - The name of the detection logic.
@@ -16561,6 +16626,7 @@ function Read-Snapshot(){
     $script:allowlist_office_trusted_locations = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_contextmenuhandlers = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_bootverificationprogram = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_diskcleanuphandlers = New-Object -TypeName "System.Collections.ArrayList"
     
 	foreach ($item in $csv_data) {
 		switch ($item.Source) {
@@ -16574,6 +16640,9 @@ function Read-Snapshot(){
 			}
 			"ContextMenuHandlers" {
 				$allowlist_contextmenuhandlers.Add($item.Value) | Out-Null
+			}
+			"DiskCleanupHandlers" {
+				$allowlist_diskcleanuphandlers.Add($item.Value) | Out-Null
 			}
 			"BootVerificationProgram" {
 				$allowlist_bootverificationprogram.Add($item.Value) | Out-Null
@@ -17002,11 +17071,13 @@ $possibleScanOptions = @(
 	"AutoDialDLL",
 	"BIDDll",
 	"BITS",
+    "BootVerificationProgram",
 	"COMHijacks",
 	"CommandAutoRunProcessors",
 	"Connections",
 	"ContextMenu",
 	"DebuggerHijacks",
+    "DiskCleanupHandlers",
 	"DNSServerLevelPluginDLL",
 	"eRegChecks",
 	"ErrorHandlerCMD",
@@ -17123,6 +17194,7 @@ function Main {
 			"ContextMenu" { Check-ContextMenu }
 			"DebuggerHijacks" { Check-Debugger-Hijacks }
 			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
+            "DiskCleanupHandlers" { Check-DiskCleanupHandlers }
 			"eRegChecks" { Check-Registry-Checks }
 			"ErrorHandlerCMD" { Check-ErrorHandlerCMD }
 			"ExplorerHelperUtilities" { Check-ExplorerHelperUtilities }
