@@ -90,6 +90,7 @@ param
 		"AutoDialDLL",
 		"BIDDll",
 		"BITS",
+        "BootVerificationProgram",
 		"COMHijacks",
 		"CommandAutoRunProcessors",
 		"Connections",
@@ -16386,6 +16387,34 @@ function Check-Suspicious-File-Locations {
     }
 }
 
+function Check-BootVerificationProgram {
+    # Supports Dynamic Snapshotting
+    # Supports Drive Retargeting
+    Write-Message "Checking BootVerificationProgram"
+    $path = "Registry::$regtarget_hklm`SYSTEM\CurrentControlSet\Control\BootVerificationProgram"
+    if (Test-Path -Path $path) {
+        $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        if ($data.ImagePath -ne $null){
+            Write-SnapshotMessage -Key "ImagePath" -Value $data.ImagePath -Source 'BootVerificationProgram'
+
+            if ($loadsnapshot){
+                $result = Check-AllowList $allowlist_bootverificationprogram "ImagePath" $data.ImagePath
+                if ($result){
+                    continue
+                }
+            }
+            $detection = [PSCustomObject]@{
+                Name = 'BootVerificationProgram will launch associated program as a service on startup.'
+                Risk = 'High'
+                Source = 'Registry'
+                Technique = "T1112: Modify Registry"
+                Meta = "Registry Path: "+$path+", Program: "+$data.ImagePath
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
 function Write-Detection($det) {
 	# det is a custom object which will contain various pieces of metadata for the detection
 	# Name - The name of the detection logic.
@@ -16531,6 +16560,7 @@ function Read-Snapshot(){
     $script:allowlist_rats = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_office_trusted_locations = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_contextmenuhandlers = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_bootverificationprogram = New-Object -TypeName "System.Collections.ArrayList"
     
 	foreach ($item in $csv_data) {
 		switch ($item.Source) {
@@ -16544,6 +16574,9 @@ function Read-Snapshot(){
 			}
 			"ContextMenuHandlers" {
 				$allowlist_contextmenuhandlers.Add($item.Value) | Out-Null
+			}
+			"BootVerificationProgram" {
+				$allowlist_bootverificationprogram.Add($item.Value) | Out-Null
 			}
 			"IFEO" {
 				$allowtable_ifeodebuggers[$item.Key] = $item.Value
@@ -17083,6 +17116,7 @@ function Main {
 			"AutoDialDLL" { Check-AutoDialDLL }
 			"BIDDll" { Check-BIDDll }
 			"BITS" { Check-BITS }
+            "BootVerificationProgram" { Check-BootVerificationProgram }
 			"COMHijacks" { Check-COM-Hijacks }
 			"CommandAutoRunProcessors" { Check-CommandAutoRunProcessors }
 			"Connections" { Check-Connections }
