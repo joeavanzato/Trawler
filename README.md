@@ -18,7 +18,7 @@ Currently, trawler can detect most of the persistence techniques specifically ca
 * Analysis and Remediation Guidance Documentation (https://github.com/joeavanzato/Trawler/wiki/Analysis-and-Remediation-Guidance)
 * Dynamic Risk Assignment for each detection
 * Built-in Allow Lists for common Windows configurations spanning Windows 10/Server 2012|2016|2019|2022 to reduce noise
-* Capture persistence metadata from 'golden' enterprise image for use as a dynamic allow-list at runtime
+* Capture persistence metadata from 'golden' enterprise image (snapshot) for use as a dynamic allow-list at runtime
 * Analyze mounted disk images via drive re-targeting
 
 ## How do I use it?
@@ -38,7 +38,7 @@ Additionally, if you identify obvious false positives, please let me know by ope
 ### CLI Parameters
 ```
 -scanoptions : Tab-through possible detections and select a sub-set using comma-delimited terms (eg. .\trawler.ps1 -scanoptions Services,Processes)
--hide : Suppress Detection output to console
+-quiet : Suppress Detection output to console
 -snapshot : Capture a "persistence snapshot" of the current system, defaulting to "$PSScriptRoot\snapshot.csv"
 -snapshotpath : Define a custom file-path for saving snapshot output to.
 -outpath : Define a custom file-path for saving detection output to (defaults to "$PSScriptRoot\detections.csv")
@@ -53,7 +53,6 @@ PersistenceSniper is an awesome tool - I've used it heavily in the past - but th
   * PersistenceSniper (for the most part) does not contain any type of allow-listing - therefore, there is more noise generated when considering items such as Services, Scheduled Tasks, general COM DLL scanning, etc.
 * trawler's output is much more simplified - Name, Risk, Source, MITRE Technique and Metadata are the only items provided for each detection to help analysts jump-start their persistence hunting efforts
 * Regex is used in many checks to help detect 'suspicious' keywords or patterns in various critical areas including scanned file contents, registry values, etc.
-* trawler supports 'snapshotting' a system (for example, an enterprise golden image) then using the generated snapshot as an allow-list to reduce noise.
 * trawler supports 'drive-retargeting' to check dead-boxes mounted to an analysis machine.
 
 Overall, these tools are extremely similar but approach the problem from slightly different angles - PersistenceSniper provides all information back to the analyst for review while Trawler tries to limit what is returned to only results that are likely to be potential adversary persistence mechanisms.  As such, there is a possibility for false-negatives with trawler if an adversary completely mimics an allow-listed item.
@@ -183,6 +182,7 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * MSDTC Registry Hijacks
 * Narrator DLL Hijack (MSTTSLocEnUS.DLL)
 * Suspicious File Location Checks
+* BootVerificationProgram Check
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
