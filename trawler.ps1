@@ -42,6 +42,11 @@
 	.LINK
 		https://github.com/joeavanzato/Trawler
 #>
+
+# TODO - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon - Notify Value - Investigate for value/defaults and add to appropriate Winlogon Helper check [https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/winlogonnotificationpackage.md]
+
+
+
 [CmdletBinding()]
 param
 (
@@ -96,6 +101,7 @@ param
 		"Connections",
 		"ContextMenu",
 		"DebuggerHijacks",
+        "DisableLowIL",
         "DiskCleanupHandlers",
 		"DNSServerLevelPluginDLL",
 		"eRegChecks",
@@ -14108,7 +14114,7 @@ function Check-EventViewerMSC {
 function Check-MicrosoftTelemetryCommands {
     # Supports Dynamic Snapshotting
     # Supports Drive Retargeting
-    Write-Message "Checking Microsoft Telemetry"
+    Write-Message "Checking Microsoft TelemetryController"
     # Microsoft Telemetry Commands
     $allowed_telemetry_commands = @(
         "$env:systemroot\system32\CompatTelRunner.exe -m:appraiser.dll -f:DoScheduledTelemetryRun"
@@ -16480,6 +16486,59 @@ function Check-DiskCleanupHandlers {
     }
 }
 
+function Check-DisableLowILProcessIsolation {
+    # Supports Drive Retargeting
+    # Supports Snapshotting
+    Write-Message "Checking for COM Objects running without Low Integrity Isolation"
+    $path = "$regtarget_hklm`Software\Classes\CLSID"
+    $allowlist = @(
+        "@C:\\Program Files\\Microsoft Office\\Root\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\Office16\\oregres\.dll.*"
+        "@wmploc\.dll.*"
+        "@C:\\Windows\\system32\\mssvp\.dll.*"
+        "@C:\\Program Files\\Common Files\\System\\wab32res\.dll.*"
+    )
+    if (Test-Path -LiteralPath "Registry::$path") {
+        $items = Get-ChildItem -LiteralPath "Registry::$path" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        foreach ($item in $items) {
+            $path = "Registry::"+$item.Name
+            $data = Get-ItemProperty -LiteralPath $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+            $data.PSObject.Properties | ForEach-Object {
+                if ($_.Name -eq 'DisableLowILProcessIsolation' -and $_.Value -eq 1) {
+					Write-SnapshotMessage -Key $item.Name -Value $item.Name -Source 'DisableLowIL'
+                    if ($data.DisplayName){
+                        $displayname =  $data.DisplayName
+                    } else {
+                        $displayname = ""
+                    }
+                    $pass = $false
+                    if ($loadsnapshot){
+                        $result = Check-IfAllowed $allowlist_disablelowil $item.Name $item.Name
+                        if ($result){
+                            $pass = $true
+                        }
+                    }
+                    foreach ($allow in $allowlist){
+                        if ($displayname -match $allow){
+                            $pass = $true
+                            break
+                        }
+                    }
+                    if ($pass -eq $false){
+                        $detection = [PSCustomObject]@{
+                            Name = 'COM Object Registered with flag disabling low-integrity process isolation'
+                            Risk = 'Medium'
+                            Source = 'Registry'
+                            Technique = "T1546: Event Triggered Execution"
+                            Meta = "Key: "+$item.Name+", Display Name: "+$displayname
+                        }
+                        Write-Detection $detection
+                    }
+                }
+            }
+        }
+    }
+}
+
 function Write-Detection($det) {
 	# det is a custom object which will contain various pieces of metadata for the detection
 	# Name - The name of the detection logic.
@@ -16627,6 +16686,7 @@ function Read-Snapshot(){
     $script:allowlist_contextmenuhandlers = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_bootverificationprogram = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_diskcleanuphandlers = New-Object -TypeName "System.Collections.ArrayList"
+    $script:allowlist_disablelowil = New-Object -TypeName "System.Collections.ArrayList"
     
 	foreach ($item in $csv_data) {
 		switch ($item.Source) {
@@ -16640,6 +16700,9 @@ function Read-Snapshot(){
 			}
 			"ContextMenuHandlers" {
 				$allowlist_contextmenuhandlers.Add($item.Value) | Out-Null
+			}
+            "DisableLowIL" {
+				$allowlist_disablelowil.Add($item.Value) | Out-Null
 			}
 			"DiskCleanupHandlers" {
 				$allowlist_diskcleanuphandlers.Add($item.Value) | Out-Null
@@ -17078,6 +17141,7 @@ $possibleScanOptions = @(
 	"ContextMenu",
 	"DebuggerHijacks",
     "DiskCleanupHandlers",
+    "DisableLowIL",
 	"DNSServerLevelPluginDLL",
 	"eRegChecks",
 	"ErrorHandlerCMD",
@@ -17194,6 +17258,7 @@ function Main {
 			"ContextMenu" { Check-ContextMenu }
 			"DebuggerHijacks" { Check-Debugger-Hijacks }
 			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
+            "DisableLowIL" { Check-DisableLowILProcessIsolation }
             "DiskCleanupHandlers" { Check-DiskCleanupHandlers }
 			"eRegChecks" { Check-Registry-Checks }
 			"ErrorHandlerCMD" { Check-ErrorHandlerCMD }
