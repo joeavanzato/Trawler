@@ -16530,6 +16530,7 @@ function Check-DisableLowILProcessIsolation {
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", Display Name: "+$displayname
+                            Reference = "https://medium.com/@matterpreter/life-is-pane-persistence-via-preview-handlers-3c0216c5ef9e-b73a9515c9a8"
                         }
                         Write-Detection $detection
                     }
@@ -16560,10 +16561,13 @@ function Write-Detection($det) {
 	if (-not($Quiet)) {
 		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
 		Write-Host "[%] $($det.Meta)" -ForegroundColor White
+        if (!$det.Reference){
+            $det | Add-Member -MemberType NoteProperty -Name Reference -Value "N/A"
+        }
 	}
 
 	if ($output_writable) {
-		$det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
+		$det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8 -Force
 	}
 }
 
