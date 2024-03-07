@@ -13804,6 +13804,7 @@ function Check-PeerDistExtensionDll {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                    Reference = "https://www.hexacorn.com/blog/2022/01/23/beyond-good-ol-run-key-part-138/"
                 }
                 Write-Detection $detection
             }
@@ -13826,6 +13827,7 @@ function Check-InternetSettingsLUIDll {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                    Reference = "https://www.hexacorn.com/blog/2022/01/22/beyond-good-ol-run-key-part-137/"
                 }
                 Write-Detection $detection
             }
@@ -13911,6 +13913,7 @@ function Check-BIDDll {
                             Source = 'Registry'
                             Technique = "T1574: Hijack Execution Flow"
                             Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                            Reference = "https://www.hexacorn.com/blog/2019/07/13/beyond-good-ol-run-key-part-111/"
                         }
                         Write-Detection $detection
                     }
@@ -13989,6 +13992,7 @@ function Check-KnownManagedDebuggers {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, DLL: "+$_.Name
+                    Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
                 Write-Detection $detection
             }
@@ -14033,6 +14037,7 @@ function Check-MiniDumpAuxiliaryDLLs {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, DLL: "+$_.Name
+                    Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
                 Write-Detection $detection
             }
@@ -14579,6 +14584,7 @@ function Check-RDPShadowConsent {
                         Source = 'Registry'
                         Technique = "T1098: Account Manipulation"
                         Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                        Reference = "https://blog.bitsadmin.com/spying-on-users-using-rdp-shadowing"
                     }
                     $result = Check-IfAllowed $allowtable_rdpshadow $_.Name $_.Value $detection
                     if ($result -eq $true) {
@@ -14593,6 +14599,7 @@ function Check-RDPShadowConsent {
                     Source = 'Registry'
                     Technique = "T1098: Account Manipulation"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Reference = "https://blog.bitsadmin.com/spying-on-users-using-rdp-shadowing"
                 }
                 Write-Detection $detection
             }
@@ -14618,6 +14625,7 @@ function Check-RemoteUACSetting {
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
                         Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Reference = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction"
                     }
                     $result = Check-IfAllowed $allowtable_remoteuac $_.Name $_.Value $detection
                     if ($result -eq $true) {
@@ -14632,6 +14640,7 @@ function Check-RemoteUACSetting {
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Reference = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction"
                 }
                 Write-Detection $detection
             }
@@ -14681,6 +14690,7 @@ function Check-PrintMonitorDLLs {
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
                         Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
+                        Reference = "https://pentestlab.blog/2019/10/28/persistence-port-monitors/"
                     }
                     Write-Detection $detection
                 }
@@ -15722,7 +15732,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
         foreach ($item in $items) {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride){
+            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride -ne $null){
                 if ($data.StemmerDLLPathOverride -ne $null){
                     $dll = $data.StemmerDLLPathOverride
                 } elseif ($data.WBDLLPathOverride -ne $null){
@@ -15743,6 +15753,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
                     Meta = "Registry Path: "+$item.Name+", DLL: "+$dll
+                    Reference = "https://persistence-info.github.io/Data/naturallanguage6.html"
                 }
                 Write-Detection $detection
             }
@@ -16218,6 +16229,7 @@ function Check-ContextMenu {
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
                     }
@@ -16242,6 +16254,7 @@ function Check-ContextMenu {
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
                     }
@@ -16275,6 +16288,7 @@ function Check-OfficeAI {
                     Source = 'Windows Context Menu'
                     Technique = "T1546: Event Triggered Execution"
                     Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                    Reference = "https://twitter.com/Laughing_Mantis/status/1645268114966470662"
                 }
                 Write-Detection $detection
             }
@@ -16314,6 +16328,7 @@ function Check-Notepad++-Plugins {
                         Source = 'Notepad++'
                         Technique = "T1546: Event Triggered Execution"
                         Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                        Reference = "https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/"
                     }
                     Write-Detection $detection
                 }
@@ -16345,6 +16360,7 @@ function Check-MSDTCDll {
                         Source = 'Windows MSDTC'
                         Technique = "T1574: Hijack Execution Flow"
                         Meta = "Key: "+$path+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Expected Value: "+$matches[$_.Name]
+                        Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
                     }
                     Write-Detection $detection
                 }
@@ -16366,6 +16382,7 @@ function Check-Narrator {
             Source = 'Windows Narrator'
             Technique = "T1546: Event Triggered Execution"
             Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+            Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
         }
         Write-Detection $detection
     }
@@ -16416,6 +16433,7 @@ function Check-BootVerificationProgram {
                 Source = 'Registry'
                 Technique = "T1112: Modify Registry"
                 Meta = "Registry Path: "+$path+", Program: "+$data.ImagePath
+                Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/bootverificationprogram.md"
             }
             Write-Detection $detection
         }
@@ -16477,6 +16495,7 @@ function Check-DiskCleanupHandlers {
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", Program: "+$target_prog
+                            Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/diskcleanuphandler.md"
                         }
                         Write-Detection $detection
                     }
