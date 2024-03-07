@@ -2435,7 +2435,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{006E61DF-1A43-4F2C-B26F-780BAEA3A92D}\InProcServer32" = "$homedrive\\Windows\\System32\\hgcpl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0070746C-9A38-4236-822A-72CC4E5C8087}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{00722F5F-CB8F-44D3-AC27-CC37F76CFE92}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{008E91AA-A905-4206-A0FE-D4177E1C7BB1}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\psmachine.*\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{008E91AA-A905-4206-A0FE-D4177E1C7BB1}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0095b496-f121-4256-96a0-09179828cc16}\InprocServer32" = "$homedrive\\Windows\\System32\\IME\\shared\\imjkapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{009F3B45-8A6B-4360-B997-B2A009A16402}\InProcServer32" = "$homedrive\\Windows\\system32\\xwizards\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{00A77FF7-A514-493e-B721-CDF8CB0F5B59}\InProcServer32" = "$homedrive\\Windows\\system32\\systemcpl\.dll"
@@ -2885,7 +2885,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{0FB41BD0-3107-40A5-8D49-456E585947B2}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FC988D4-C935-4b97-A973-46282EA175C8}\InProcServer32" = "$homedrive\\Windows\\system32\\StructuredQuery\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FDE5092-AA2A-11D1-A7D4-0000F87571E3}\InProcServer32" = "$homedrive\\Windows\\System32\\GPEdit\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{0FD16473-86A0-4991-B88A-D48733BF9873}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\.*\psmachine.*\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{0FD16473-86A0-4991-B88A-D48733BF9873}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FE62585-2E14-4bf2-8D61-93954A5F1041}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Devices\.Picker\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FEB51A7-30AA-4201-BA5E-97B75740CBC6}\InprocServer32" = "$homedrive\\Windows\\System32\\UiaManager\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FF66430-C796-3EE7-902B-166C402CA288}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
@@ -13804,6 +13804,7 @@ function Check-PeerDistExtensionDll {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                    Reference = "https://www.hexacorn.com/blog/2022/01/23/beyond-good-ol-run-key-part-138/"
                 }
                 Write-Detection $detection
             }
@@ -13826,6 +13827,7 @@ function Check-InternetSettingsLUIDll {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                    Reference = "https://www.hexacorn.com/blog/2022/01/22/beyond-good-ol-run-key-part-137/"
                 }
                 Write-Detection $detection
             }
@@ -13911,6 +13913,7 @@ function Check-BIDDll {
                             Source = 'Registry'
                             Technique = "T1574: Hijack Execution Flow"
                             Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                            Reference = "https://www.hexacorn.com/blog/2019/07/13/beyond-good-ol-run-key-part-111/"
                         }
                         Write-Detection $detection
                     }
@@ -13989,6 +13992,7 @@ function Check-KnownManagedDebuggers {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, DLL: "+$_.Name
+                    Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
                 Write-Detection $detection
             }
@@ -14033,6 +14037,7 @@ function Check-MiniDumpAuxiliaryDLLs {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, DLL: "+$_.Name
+                    Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
                 Write-Detection $detection
             }
@@ -14579,6 +14584,7 @@ function Check-RDPShadowConsent {
                         Source = 'Registry'
                         Technique = "T1098: Account Manipulation"
                         Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                        Reference = "https://blog.bitsadmin.com/spying-on-users-using-rdp-shadowing"
                     }
                     $result = Check-IfAllowed $allowtable_rdpshadow $_.Name $_.Value $detection
                     if ($result -eq $true) {
@@ -14593,6 +14599,7 @@ function Check-RDPShadowConsent {
                     Source = 'Registry'
                     Technique = "T1098: Account Manipulation"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Reference = "https://blog.bitsadmin.com/spying-on-users-using-rdp-shadowing"
                 }
                 Write-Detection $detection
             }
@@ -14618,6 +14625,7 @@ function Check-RemoteUACSetting {
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
                         Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Reference = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction"
                     }
                     $result = Check-IfAllowed $allowtable_remoteuac $_.Name $_.Value $detection
                     if ($result -eq $true) {
@@ -14632,6 +14640,7 @@ function Check-RemoteUACSetting {
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Reference = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction"
                 }
                 Write-Detection $detection
             }
@@ -14681,6 +14690,7 @@ function Check-PrintMonitorDLLs {
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
                         Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
+                        Reference = "https://pentestlab.blog/2019/10/28/persistence-port-monitors/"
                     }
                     Write-Detection $detection
                 }
@@ -15722,7 +15732,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
         foreach ($item in $items) {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride){
+            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride -ne $null){
                 if ($data.StemmerDLLPathOverride -ne $null){
                     $dll = $data.StemmerDLLPathOverride
                 } elseif ($data.WBDLLPathOverride -ne $null){
@@ -15743,6 +15753,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
                     Meta = "Registry Path: "+$item.Name+", DLL: "+$dll
+                    Reference = "https://persistence-info.github.io/Data/naturallanguage6.html"
                 }
                 Write-Detection $detection
             }
@@ -16218,6 +16229,7 @@ function Check-ContextMenu {
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
                     }
@@ -16242,6 +16254,7 @@ function Check-ContextMenu {
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
                     }
@@ -16275,6 +16288,7 @@ function Check-OfficeAI {
                     Source = 'Windows Context Menu'
                     Technique = "T1546: Event Triggered Execution"
                     Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                    Reference = "https://twitter.com/Laughing_Mantis/status/1645268114966470662"
                 }
                 Write-Detection $detection
             }
@@ -16314,6 +16328,7 @@ function Check-Notepad++-Plugins {
                         Source = 'Notepad++'
                         Technique = "T1546: Event Triggered Execution"
                         Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                        Reference = "https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/"
                     }
                     Write-Detection $detection
                 }
@@ -16345,6 +16360,7 @@ function Check-MSDTCDll {
                         Source = 'Windows MSDTC'
                         Technique = "T1574: Hijack Execution Flow"
                         Meta = "Key: "+$path+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Expected Value: "+$matches[$_.Name]
+                        Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
                     }
                     Write-Detection $detection
                 }
@@ -16366,6 +16382,7 @@ function Check-Narrator {
             Source = 'Windows Narrator'
             Technique = "T1546: Event Triggered Execution"
             Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+            Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
         }
         Write-Detection $detection
     }
@@ -16416,6 +16433,7 @@ function Check-BootVerificationProgram {
                 Source = 'Registry'
                 Technique = "T1112: Modify Registry"
                 Meta = "Registry Path: "+$path+", Program: "+$data.ImagePath
+                Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/bootverificationprogram.md"
             }
             Write-Detection $detection
         }
@@ -16477,6 +16495,7 @@ function Check-DiskCleanupHandlers {
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", Program: "+$target_prog
+                            Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/diskcleanuphandler.md"
                         }
                         Write-Detection $detection
                     }
@@ -16530,6 +16549,7 @@ function Check-DisableLowILProcessIsolation {
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", Display Name: "+$displayname
+                            Reference = "https://medium.com/@matterpreter/life-is-pane-persistence-via-preview-handlers-3c0216c5ef9e-b73a9515c9a8"
                         }
                         Write-Detection $detection
                     }
@@ -16560,10 +16580,13 @@ function Write-Detection($det) {
 	if (-not($Quiet)) {
 		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
 		Write-Host "[%] $($det.Meta)" -ForegroundColor White
+        if (!$det.Reference){
+            $det | Add-Member -MemberType NoteProperty -Name Reference -Value "N/A"
+        }
 	}
 
 	if ($output_writable) {
-		$det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8
+		$det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8 -Force
 	}
 }
 
