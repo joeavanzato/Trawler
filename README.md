@@ -26,7 +26,7 @@ Just download and run trawler.ps1 from an Administrative PowerShell/cmd prompt -
 
 Or use this one-liner from an Administrative PowerShell terminal:
 ```
-iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/joeavanzato/Trawler/main/trawler.ps1'))
+irm "https://raw.githubusercontent.com/joeavanzato/Trawler/main/trawler.ps1" | iex
 ```
 
 Certain detections have allow-lists built-in to help remove noise from default Windows configurations (10/2016/2019/2022) - expected Scheduled Tasks, Services, etc.  Of course, it is always possible for attackers to hijack these directly and masquerade with great detail as a default OS process - take care to use multiple forms of analysis and detection when dealing with skillful adversaries.
