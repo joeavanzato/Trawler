@@ -57,7 +57,7 @@ param
 	$outpath = "$PSScriptRoot\detections.csv",
 	[Parameter(
 		Mandatory = $false,
-		HelpMessage = 'Should a snapshot CSV be generated')]
+		HelpMessage = 'Should a snapshot CSV be generated. Extenstions avaiable : csv, json')]
 	[switch]
 	$snapshot,
 	[Parameter(
@@ -211,6 +211,7 @@ function ValidatePaths {
         $script:outpath = Get-ValidOutPath -path $outpath
         Write-Message "Detection Output Path: $outpath"
         [System.IO.File]::OpenWrite($outpath).Close()
+		$script:output_json = (($outpath.split(".")[-1]) -eq "json")
         $script:output_writable = $true
     }
     catch {
@@ -16837,7 +16838,11 @@ function Write-Detection($det) {
 	}
 
 	if ($output_writable) {
-		$det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8 -Force
+		if (-Not ($output_json))
+		{
+			$det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8 -Force
+		}
+		
 	}
 }
 
@@ -17601,7 +17606,10 @@ function Main {
 			"Wow64LayerAbuse" { Check-Wow64LayerAbuse }
 		}
 	}
-
+	if($output_json)
+	{
+		$detection_list | ConvertTo-Json -depth 100 | Out-File $outpath
+	}
     Clean-Up
     Detection-Metrics
 }
