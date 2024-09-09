@@ -235,7 +235,6 @@ function ValidatePaths {
 }
 
 
-# TODO - JSON Detection Output to easily encapsulate more details
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
 # TODO - Browser Extension Analysis
 # TODO - Temporary RID Hijacking
