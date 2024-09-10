@@ -43,10 +43,6 @@
 		https://github.com/joeavanzato/Trawler
 #>
 
-# TODO - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon - Notify Value - Investigate for value/defaults and add to appropriate Winlogon Helper check [https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/winlogonnotificationpackage.md]
-
-
-
 [CmdletBinding()]
 param
 (
@@ -16690,6 +16686,7 @@ function Check-BootVerificationProgram {
         }
     }
 }
+
 
 function Check-DiskCleanupHandlers {
     # Supports Retargeting/Snapshot
