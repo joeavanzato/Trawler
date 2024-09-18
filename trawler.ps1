@@ -16825,7 +16825,8 @@ function Write-Detection($det) {
         }
 	}
 
-	if ($output_writable) {
+	# incrementally write to the csv otherwise the json output will be output in the Clean-Up method
+	if ($script:DetectionsPath.CanWrite -and $OutputFormat -eq "CSV") {
 		$det | Export-CSV $script:DetectionsPath.Path -Append -NoTypeInformation -Encoding UTF8 -Force
 	}
 }
