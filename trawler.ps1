@@ -252,7 +252,7 @@ $office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", "
 $rat_terms = @(
     #Remote Access Tool Indicators
     # Any Process Name, Scheduled Task or Service containing these keywords will be flagged.
-    "aeroadmin",
+    "aeroadmin"
     "action1"
     "ammyadmin"
     "aa_v"
@@ -333,6 +333,239 @@ $rat_terms = @(
     "Zohours"
     "ZohoMeeting"
     "zoho"
+    "rpcgrab"
+    "rpcsetup"
+    "action1_agent"
+    "aeroadmin"
+    "alitask"
+    "alpemix"
+    "ammyy_admin"
+    "anydesk"
+    "apc_host"
+    "ateraagent"
+    "syncrosetup"
+    "auvik.agent"
+    "auvik.engine"
+    "beamyourscreen"
+    "beamyourscreen-host"
+    "basupsrvc"
+    "basupsrvcupdate"
+    "basuptshelper"
+    "bomgar-scc"
+    "CagService"
+    "ctiserv"
+    "remote_host"
+    "cloudflared"
+    "connectwisechat-customer"
+    "connectwisecontrol"
+    "itsmagent"
+    "rviewer"
+    "crossloopservice"
+    "pcivideo"
+    "supporttool"
+    "dntus"
+    "dwrcs"
+    "domotz_bash"
+    "echoserver"
+    "echoware"
+    "ehorus standalone"
+    "remoteconsole"
+    "accessserver"
+    "ericomconnnectconfigurationtool"
+    "era"
+    "ezhelp"
+    "eratool"
+    "ezhelpclient"
+    "ezhelpclientmanager"
+    "fastclient"
+    "fastmaster"
+    "fixmeitclient"
+    "fleetdeck_agent_svc"
+    "gp3"
+    "gp4"
+    "gp5"
+    "getscreen"
+    "g2a"
+    "gotoassist"
+    "gotohttp"
+    "g2file"
+    "g2quick"
+    "g2svc"
+    "g2tray"
+    "goverrmc"
+    "govsrv"
+    "guacd"
+    "helpbeam"
+    "iit"
+    "intouch"
+    "hsloader"
+    "ihcserver"
+    "instanthousecall"
+    "iadmin"
+    "intelliadmin"
+    "iperius"
+    "iperiusremote"
+    "ITSMAgent"
+    "ItsmRsp"
+    "ITSMService"
+    "RDesktop"
+    "RHost"
+    "RmmService"
+    "islalwaysonmonitor"
+    "isllight"
+    "isllightservice"
+    "jumpclient"
+    "jumpdesktop"
+    "jumpservice"
+    "agentmon"
+    "ltsvc"
+    "ltsvcmon"
+    "lttray"
+    "issuser"
+    "landeskagentbootstrap"
+    "ldinv32"
+    "ldsensors"
+    "laplink"
+    "laplinkeverywhere"
+    "llrcservice"
+    "serverproxyservice"
+    "laplink"
+    "tsircusr"
+    "romfusclient"
+    "romserver"
+    "romviewer"
+    "lmiguardiansvc"
+    "lmiignition"
+    "logmein"
+    "logmeinsystray"
+    "support-logmeinrescue"
+    "lmi_rescue"
+    "mesh"
+    "mikogo"
+    "mikogolauncher"
+    "mikogo-service"
+    "mikogo-starter"
+    "mionet"
+    "mionetmanager"
+    "myivomanager"
+    "myivomgr"
+    "nhostsvc"
+    "nhstw32"
+    "nldrw32"
+    "rmserverconsolemediator"
+    "client32"
+    "pcictlui"
+    "neturo"
+    "ntrntservice"
+    "netviewer"
+    "ngrok"
+    "ninjarmmagent"
+    "nomachine"
+    "nxd"
+    "nateon"
+    "nateon"
+    "nateonmain"
+    "ocsinventory"
+    "ocsservice"
+    "prl_deskctl_agent"
+    "prl_deskctl_wizard"
+    "prl_pm_service"
+    "awhost32"
+    "pcaquickconnect"
+    "winaw32"
+    "mwcliun"
+    "pcnmgr"
+    "webexpcnow"
+    "pcvisit"
+    "pcvisit_client"
+    "pcvisit-easysupport"
+    "pocketcontroller"
+    "pocketcloudservice"
+    "wysebrowser"
+    "qq"
+    "qqpcmgr"
+    "konea"
+    "quickassist"
+    "radmin"
+    "tdp2tcp"
+    "rdp2tcp.py"
+    "remobo"
+    "remobo_client"
+    "remobo_tracker"
+    "rfusclient"
+    "rutserv"
+    "rutserv"
+    "rutview"
+    "rcengmgru"
+    "rcmgrsvc"
+    "remotesupportplayeru"
+    "rxstartsupport"
+    "remotepass-access"
+    "rpaccess"
+    "rpwhostscr"
+    "remotepcservice"
+    "rpcsuite"
+    "remoteview"
+    "rvagent"
+    "rvagtray"
+    "wisshell"
+    "wmc"
+    "wmc_deployer"
+    "wmcsvc"
+    "royalts"
+    "rudesktop"
+    "rustdesk"
+    "screenconnect"
+    "screenconnect.windowsclient"
+    "seetrolcenter"
+    "seetrolclient"
+    "seetrolmyservice"
+    "seetrolremote"
+    "seetrolsetting"
+    "showmypc"
+    "simplehelpcustomer"
+    "simpleservice"
+    "windowslauncher"
+    "remote access"
+    "simplegatewayservice"
+    "clientmrinit"
+    "mgntsvc"
+    "routernt"
+    "sragent"
+    "srmanager"
+    "srserver"
+    "srservice"
+    "supremo"
+    "supremohelper"
+    "supremoservice"
+    "supremosystem"
+    "tacticalrmm"
+    "teamviewer"
+    "teamviewer_service"
+    "teamviewerqs"
+    "tv_w32"
+    "tv_w64"
+    "pstlaunch"
+    "ptdskclient"
+    "ptdskhost"
+    "todesk"
+    "pcstarter"
+    "turbomeeting"
+    "turbomeetingstarter"
+    "ultraviewer"
+    "ultraviewer_desktop"
+    "ultraviewer_service"
+    "vncserver"
+    "vncserverui"
+    "vncviewer"
+    "winvnc"
+    "webrdp"
+    "weezo"
+    "weezohttpd"
+    "xeox-agent_x64"
+    "za_connect"
+    "zaservice"
+    "zohotray"
 )
 
 function Check-ScheduledTasks {
@@ -2424,7 +2657,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{006E61DF-1A43-4F2C-B26F-780BAEA3A92D}\InProcServer32" = "$homedrive\\Windows\\System32\\hgcpl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0070746C-9A38-4236-822A-72CC4E5C8087}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{00722F5F-CB8F-44D3-AC27-CC37F76CFE92}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{008E91AA-A905-4206-A0FE-D4177E1C7BB1}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\psmachine.*\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{008E91AA-A905-4206-A0FE-D4177E1C7BB1}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0095b496-f121-4256-96a0-09179828cc16}\InprocServer32" = "$homedrive\\Windows\\System32\\IME\\shared\\imjkapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{009F3B45-8A6B-4360-B997-B2A009A16402}\InProcServer32" = "$homedrive\\Windows\\system32\\xwizards\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{00A77FF7-A514-493e-B721-CDF8CB0F5B59}\InProcServer32" = "$homedrive\\Windows\\system32\\systemcpl\.dll"
@@ -2874,7 +3107,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{0FB41BD0-3107-40A5-8D49-456E585947B2}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FC988D4-C935-4b97-A973-46282EA175C8}\InProcServer32" = "$homedrive\\Windows\\system32\\StructuredQuery\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FDE5092-AA2A-11D1-A7D4-0000F87571E3}\InProcServer32" = "$homedrive\\Windows\\System32\\GPEdit\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{0FD16473-86A0-4991-B88A-D48733BF9873}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\.*\psmachine.*\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{0FD16473-86A0-4991-B88A-D48733BF9873}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FE62585-2E14-4bf2-8D61-93954A5F1041}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Devices\.Picker\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FEB51A7-30AA-4201-BA5E-97B75740CBC6}\InprocServer32" = "$homedrive\\Windows\\System32\\UiaManager\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FF66430-C796-3EE7-902B-166C402CA288}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
@@ -13793,6 +14026,7 @@ function Check-PeerDistExtensionDll {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                    Reference = "https://www.hexacorn.com/blog/2022/01/23/beyond-good-ol-run-key-part-138/"
                 }
                 Write-Detection $detection
             }
@@ -13815,6 +14049,7 @@ function Check-InternetSettingsLUIDll {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                    Reference = "https://www.hexacorn.com/blog/2022/01/22/beyond-good-ol-run-key-part-137/"
                 }
                 Write-Detection $detection
             }
@@ -13900,6 +14135,7 @@ function Check-BIDDll {
                             Source = 'Registry'
                             Technique = "T1574: Hijack Execution Flow"
                             Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                            Reference = "https://www.hexacorn.com/blog/2019/07/13/beyond-good-ol-run-key-part-111/"
                         }
                         Write-Detection $detection
                     }
@@ -13978,6 +14214,7 @@ function Check-KnownManagedDebuggers {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, DLL: "+$_.Name
+                    Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
                 Write-Detection $detection
             }
@@ -14022,6 +14259,7 @@ function Check-MiniDumpAuxiliaryDLLs {
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
                     Meta = "Key Location: $path, DLL: "+$_.Name
+                    Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
                 Write-Detection $detection
             }
@@ -14568,6 +14806,7 @@ function Check-RDPShadowConsent {
                         Source = 'Registry'
                         Technique = "T1098: Account Manipulation"
                         Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                        Reference = "https://blog.bitsadmin.com/spying-on-users-using-rdp-shadowing"
                     }
                     $result = Check-IfAllowed $allowtable_rdpshadow $_.Name $_.Value $detection
                     if ($result -eq $true) {
@@ -14582,6 +14821,7 @@ function Check-RDPShadowConsent {
                     Source = 'Registry'
                     Technique = "T1098: Account Manipulation"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Reference = "https://blog.bitsadmin.com/spying-on-users-using-rdp-shadowing"
                 }
                 Write-Detection $detection
             }
@@ -14607,6 +14847,7 @@ function Check-RemoteUACSetting {
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
                         Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Reference = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction"
                     }
                     $result = Check-IfAllowed $allowtable_remoteuac $_.Name $_.Value $detection
                     if ($result -eq $true) {
@@ -14621,6 +14862,7 @@ function Check-RemoteUACSetting {
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
                     Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Reference = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction"
                 }
                 Write-Detection $detection
             }
@@ -14670,6 +14912,7 @@ function Check-PrintMonitorDLLs {
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
                         Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
+                        Reference = "https://pentestlab.blog/2019/10/28/persistence-port-monitors/"
                     }
                     Write-Detection $detection
                 }
@@ -15711,7 +15954,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
         foreach ($item in $items) {
             $path = "Registry::"+$item.Name
             $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
-            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride){
+            if ($data.StemmerDLLPathOverride -ne $null -or $data.WBDLLPathOverride -ne $null){
                 if ($data.StemmerDLLPathOverride -ne $null){
                     $dll = $data.StemmerDLLPathOverride
                 } elseif ($data.WBDLLPathOverride -ne $null){
@@ -15732,6 +15975,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
                     Meta = "Registry Path: "+$item.Name+", DLL: "+$dll
+                    Reference = "https://persistence-info.github.io/Data/naturallanguage6.html"
                 }
                 Write-Detection $detection
             }
@@ -16007,7 +16251,8 @@ function Check-RATS {
     Write-Message "Checking Common RAT Artifacts"
 
     $application_logpaths = @{
-        "Action1" = ""
+        "Action1 (Dir 1)" = "$env_homedrive\Windows\Action1"
+        "Action1 (Log 1)" = "$env_homedrive\Windows\Action1\Action1_log_*.log"
         "AmmyAdmin (Log 1)" = "$env_programdata\AMMYY\access.log"
         "AmmyAdmin (Dir 1)" = "$env_programdata\AMMYY"
         "AnyDesk (Dir 1)" = "$env_programdata\AnyDesk"
@@ -16026,6 +16271,8 @@ function Check-RATS {
         "Atera\SplashTop (Log 1)" = "$env_homedrive\Program Files\ATERA Networks\AteraAgent\Packages\AgentPackageRunCommandInteractive\log.txt"
         "Atera\SplashTop (Log 2)" = "$env_homedrive\Program Files (x86)\Splashtop\Splashtop Remote\Server\log\*.txt"
         "Atera\SplashTop (Dir 1)" = "$env_homedrive\Program Files\ATERA Networks\AteraAgent"
+        "Atera\SplashTop (Dir 2)" = "$env_homedrive\Program Files\ATERA Networks"
+        "Atera\SplashTop (Dir 3)" = "$env_homedrive\Program Files (x86)\ATERA Networks"
         "Atera\SplashTop (Reg 1)" = "Registry::{0}SOFTWARE\Microsoft\Tracing\AteraAgent_RASAPI32" -f $regtarget_hklm
         "Atera\SplashTop (Reg 2)" = "Registry::{0}SOFTWARE\Microsoft\Tracing\AteraAgent_RASMANCS" -f $regtarget_hklm
         "Atera\SplashTop (Reg 3)" = "Registry::{0}SYSTEM\*\Services\EventLog\Application\AlphaAgent" -f $regtarget_hklm
@@ -16036,6 +16283,10 @@ function Check-RATS {
         "Atera\SplashTop (Reg 8)" = "Registry::{0}SYSTEM\*\Control\SafeBoot\Network\SplashtopRemoteService" -f $regtarget_hklm
         "Atera\SplashTop (Reg 9)" = "Registry::{0}SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print\Printers\Splashtop PDF Remote Printer" -f $regtarget_hklm
         "Atera\SplashTop (Reg 10)" = "Registry::{0}SOFTWARE\WOW6432Node\Splashtop Inc.\Splashtop Remote Server\ClientInfo" -f $regtarget_hklm
+        "Citrix\GoToMyPC (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\GoTo"
+        "Citrix\GoToMyPC (Log 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\GoTo\Logs\goto.log"
+        "Citrix\GoToMyPC (Reg 1)" = "Registry::{0}SOFTWARE\WOW6432Node\Citrix\GoToMyPc" -f $regtarget_hklm
+        "Citrix\GoToMyPC (Reg 2)" = "Registry::{0}SOFTWARE\Citrix\GoToMyPc\FileTransfer" -f $regtarget_hkcu
         "ConnectWise\ScreenConnect (Dir 1)" = "$env_programdata\ScreenConnect*"
         "ConnectWise\ScreenConnect (Dir 2)" = "$env_homedrive\Program Files (x86)\ScreenConnect*"
         "ConnectWise\ScreenConnect (Dir 3)" = "$env_homedrive\Program Files\ScreenConnect*"
@@ -16054,9 +16305,13 @@ function Check-RATS {
         "Kaseya VSA (Dir 1)" = "$env_programdata\Kaseya*"
         "Kaseya VSA (Dir 2)" = "$env_homedrive\Program Files (x86)\Kaseya*"
         "Kaseya VSA (Dir 3)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\Kaseya*"
+        "Level (Dir 1)" = "$env_homedrive\Program Files (x86)\Level"
+        "Level (Dir 2)" = "$env_homedrive\Program Files\Level"
+        "Level (Log 1)" = "$env_homedrive\Windows\Temp\level-windows-*"
         "LogMeIn (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\LogMeInIgnition*"
+        "LogMeIn (Dir 2)" = "$env_homedrive\ProgramData\LogMeIn"
         "NinjaOne" = ""
-        "Pulseway (Dir 1)" = "$env_homedrive\Users\*\AppData\Roaming\Pulseway Remote Control"
+        "Pulseway (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\Pulseway Remote Control"
         "Pulseway (Reg 1)" = "Registry::HKCU\Software\MMSOFT Design\Pulseway\Remote Desktop"
         "Pulseway (Reg 2)" = "Registry::{0}Software\MMSOFT Design\Pulseway\Remote Desktop" -f $regtarget_hklm
         "Radmin (Dir 1)" = "$env_homedrive\Program Files\Radmin*"
@@ -16079,15 +16334,18 @@ function Check-RATS {
         "Remote Utilities (Dir 2)" = "$env_homedrive\Program Files (x86)\Remote Utilities*"
         "Remote Utilities (Dir 3)" = "$env_homedrive\Program Files\Remote Utilities*"
         "Remote Utilities (Dir 4)" = "$env_programdata\Remote Utilities*"
+        "Remote Utilities (Dir 5)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\Remote Utilities Agent"
         "ScreenMeet (Dir 1)" = "$env_programdata\Projector Inc\ScreenMeet*"
         "ShowMyPC (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\Temp\ShowMyPC"
         "ShowMyPC (Dir 2)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\ShowMyPC"
         "SightCall" = ""
         "Surfly" = ""
+        "Supremo (Dir 1)" = "$env_programdata\SupremoRemoteDesktop"
         "Syncro (Dir 1)" = "$env_programdata\Syncro"
         "Syncro (Dir 2)" = "$env_homedrive\Program Files\RepairTech\Syncro"
         "TightVNC (Log 1)" = "$env_homedrive\Windows\System32\config\systemprofile\AppData\Roaming\TightVNC\tvnserver.log"
         "TightVNC (Log 2)" = "$env_programdata\TightVNC\tvnserver.log"
+        "TightVNC (Dir 1)" = "$env_programdata\TightVNC"
         "TeamViewer (Log 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\TeamViewer\Connections.txt"
         "TeamViewer (Log 2)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\Temp\TeamViewer\Connections_incoming.txt"
         "TeamViewer (Log 3)" = "$env_homedrive\Program Files\TeamViewer\Connections_incoming.txt"
@@ -16099,13 +16357,17 @@ function Check-RATS {
         #"TeamViewer (Reg 3)" = "Registry::{0}SYSTEM\ControlSet001\Services\TeamViewer" -f $regtarget_hklm
         "UltraVNC (Log 1)" = "$env_programdata\uvnc bvba\WinVNC.log"
         "UltraVNC (Log 2)" = "$env_programdata\uvnc bvba\mslogon.log"
+        "UltraVNC (Dir 1)" = "$env_programdata\uvnc bvba"
         "UltraViewer (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Roaming\UltraViewer"
+        "UltraViewer (Dir 2)" = "$env_homedrive\Program Files (x86)\Ultraviewer"
         "XMReality" = ""
         "Viewabo" = ""
+        "XEOX (Dir 1)" = "$env_homedrive\Program Files\XEOX"
         "ZoHo Assist (Dir 1)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\ZohoMeeting"
         "ZoHo Assist (Dir 2)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\GoTo Resolve Applet"
         "ZoHo Assist (Dir 3)" = "$env_homedrive\Program Files (x86)\GoTo Resolve*"
         "ZoHo Assist (Dir 4)" = "$env_homedrive\Users\USER_REPLACE\AppData\Local\GoTo"
+        "ZoHo Assist (Dir 5)" = "$env_programdata\ZohoMeeting"
     }
     if (Test-Path "$env_homedrive\Users")
     {
@@ -16207,6 +16469,7 @@ function Check-ContextMenu {
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
                     }
@@ -16231,6 +16494,7 @@ function Check-ContextMenu {
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
                     }
@@ -16264,6 +16528,7 @@ function Check-OfficeAI {
                     Source = 'Windows Context Menu'
                     Technique = "T1546: Event Triggered Execution"
                     Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                    Reference = "https://twitter.com/Laughing_Mantis/status/1645268114966470662"
                 }
                 Write-Detection $detection
             }
@@ -16303,6 +16568,7 @@ function Check-Notepad++-Plugins {
                         Source = 'Notepad++'
                         Technique = "T1546: Event Triggered Execution"
                         Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                        Reference = "https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/"
                     }
                     Write-Detection $detection
                 }
@@ -16334,6 +16600,7 @@ function Check-MSDTCDll {
                         Source = 'Windows MSDTC'
                         Technique = "T1574: Hijack Execution Flow"
                         Meta = "Key: "+$path+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Expected Value: "+$matches[$_.Name]
+                        Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
                     }
                     Write-Detection $detection
                 }
@@ -16355,6 +16622,7 @@ function Check-Narrator {
             Source = 'Windows Narrator'
             Technique = "T1546: Event Triggered Execution"
             Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+            Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
         }
         Write-Detection $detection
     }
@@ -16405,6 +16673,7 @@ function Check-BootVerificationProgram {
                 Source = 'Registry'
                 Technique = "T1112: Modify Registry"
                 Meta = "Registry Path: "+$path+", Program: "+$data.ImagePath
+                Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/bootverificationprogram.md"
             }
             Write-Detection $detection
         }
@@ -16466,6 +16735,7 @@ function Check-DiskCleanupHandlers {
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", Program: "+$target_prog
+                            Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/diskcleanuphandler.md"
                         }
                         Write-Detection $detection
                     }
@@ -16519,6 +16789,7 @@ function Check-DisableLowILProcessIsolation {
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
                             Meta = "Key: "+$item.Name+", Display Name: "+$displayname
+                            Reference = "https://medium.com/@matterpreter/life-is-pane-persistence-via-preview-handlers-3c0216c5ef9e-b73a9515c9a8"
                         }
                         Write-Detection $detection
                     }
@@ -16549,10 +16820,13 @@ function Write-Detection($det) {
 	if (-not($Quiet)) {
 		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
 		Write-Host "[%] $($det.Meta)" -ForegroundColor White
+        if (!$det.Reference){
+            $det | Add-Member -MemberType NoteProperty -Name Reference -Value "N/A"
+        }
 	}
 
 	if ($output_writable) {
-		$det | Export-CSV $script:DetectionsPath.Path -Append -NoTypeInformation -Encoding UTF8
+		$det | Export-CSV $script:DetectionsPath.Path -Append -NoTypeInformation -Encoding UTF8 -Force
 	}
 }
 
