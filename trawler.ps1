@@ -189,7 +189,8 @@ function New-TrawlerOutputItem() {
 		$FileName
 	)
 
-	$timestamp = Get-Date -Format "o"
+	$timestamp = [System.DateTimeOffset]::Now.ToUnixTimeSeconds()
+
 
 	$output = [PSCustomObject]@{
 		Path = [System.IO.Path]::Combine($OutputLocation, "$($FileName)_$($timestamp).$($OutputFormat.ToLower())")
@@ -17391,8 +17392,11 @@ function Unload-Hive($hive_fullpath, $hive_value){
 
 function Clean-Up {
 	if ($OutputFormat -eq "JSON") {
+        Write-Host $script:DetectionsPath.Path
 		$detection_list | ConvertTo-Json | Out-File $script:DetectionsPath.Path
-		$snapshot_list | ConvertTo-Json | Out-File $script:SnapshotPath.Path
+        if ($snapshot){
+            $snapshot_list | ConvertTo-Json | Out-File $script:SnapshotPath.Path
+        }
 	}
 	
     #Start-Sleep -seconds 5
