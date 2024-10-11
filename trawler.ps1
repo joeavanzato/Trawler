@@ -174,6 +174,10 @@ param
 	$ScanOptions = "All"
 )
 
+function Write-Message ($message){
+    Write-Host "[+] $message"
+}
+
 # if the output path doesn't exist, create it.
 if (!(Test-Path $OutputLocation)) {
 	New-Item $OutputLocation -Type Directory
@@ -185,7 +189,8 @@ function New-TrawlerOutputItem() {
 		$FileName
 	)
 
-	$timestamp = Get-Date -Format "o"
+	$timestamp = [System.DateTimeOffset]::Now.ToUnixTimeSeconds()
+
 
 	$output = [PSCustomObject]@{
 		Path = [System.IO.Path]::Combine($OutputLocation, "$($FileName)_$($timestamp).$($OutputFormat.ToLower())")
@@ -209,6 +214,7 @@ function New-TrawlerOutputItem() {
 # Create detection output csv
 $script:DetectionsPath = New-TrawlerOutputItem -FileName "detections"
 Write-Message "Detection Output Path: $($script:DetectionsPath.Path)"
+
 
 # Create snapshot output if specified
 if ($Snapshot) {
@@ -16842,9 +16848,6 @@ function Detection-Metrics {
 	}
 }
 
-function Write-Message ($message){
-    Write-Host "[+] $message"
-}
 
 # Snapshot acts as a custom allow-list for a specific gold-image or enterprise environment
 # Run trawler once like '.\trawler.ps1 -snapshot' to generate 'snapshot.csv
@@ -16881,7 +16884,7 @@ function Write-SnapshotMessage() {
 		$snapShotMessage | Export-CSV $script:SnapshotPath.Path -Append -NoTypeInformation -Encoding UTF8
 	}
 	else {
-		$snapshot_list.Add($snapShotMessage)
+		$snapshot_list.Add($snapShotMessage) | Out-Null
 	}
 }
 
@@ -17389,8 +17392,11 @@ function Unload-Hive($hive_fullpath, $hive_value){
 
 function Clean-Up {
 	if ($OutputFormat -eq "JSON") {
+        Write-Host $script:DetectionsPath.Path
 		$detection_list | ConvertTo-Json | Out-File $script:DetectionsPath.Path
-		$snapshot_list | ConvertTo-Json | Out-File $script:SnapshotPath.Path
+        if ($snapshot){
+            $snapshot_list | ConvertTo-Json | Out-File $script:SnapshotPath.Path
+        }
 	}
 	
     #Start-Sleep -seconds 5
