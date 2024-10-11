@@ -52,24 +52,25 @@ param
 (
 	[Parameter(
 		Mandatory = $false,
-		HelpMessage = 'The fully-qualified file-path where detection output should be stored as a CSV, defaults to $PSScriptRoot\detections.csv')]
+		HelpMessage = 'The directory where Trawler output will be saved, defaults to the location where the script ran from')]
 	[string]
-	$outpath = "$PSScriptRoot\detections.csv",
+	$OutputLocation = $PSScriptRoot,
 	[Parameter(
 		Mandatory = $false,
-		HelpMessage = 'Should a snapshot CSV be generated')]
+		HelpMessage = 'Type of snap shot to be created. Defaults to csv.')]
+	[ValidateSet("CSV", "JSON")]
+	$OutputFormat = "CSV",
+	[Parameter(
+		Mandatory = $false,
+		HelpMessage = 'Whether or not to write a snapshot output file'
+	)]
 	[switch]
-	$snapshot,
+	$Snapshot,
 	[Parameter(
 		Mandatory = $false,
 		HelpMessage = 'Suppress Detection Output to Console')]
 	[switch]
 	$Quiet,
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = 'The fully-qualified file-path where persistence snapshot output should be stored as a CSV, defaults to $PSScriptRoot\snapshot.csv')]
-	[string]
-	$snapshotpath = "$PSScriptRoot\snapshot.csv",
 	[Parameter(
 		Mandatory = $false,
 		HelpMessage = 'The fully-qualified file-path where the snapshot CSV to be loaded is located')]
@@ -173,65 +174,53 @@ param
 	$ScanOptions = "All"
 )
 
+# if the output path doesn't exist, create it.
+if (!(Test-Path $OutputLocation)) {
+	New-Item $OutputLocation -Type Directory
+}
+
+function New-TrawlerOutputItem() {
+	param (
+		[string]
+		$FileName
+	)
+
+	$timestamp = Get-Date -Format "o"
+
+	$output = [PSCustomObject]@{
+		Path = [System.IO.Path]::Combine($OutputLocation, "$($FileName)_$($timestamp).$($OutputFormat.ToLower())")
+		CanWrite = $false
+	}
+
+	try {
+        [System.IO.File]::OpenWrite($output.Path).Close()
+        $output.CanWrite = $true
+    }
+    catch {
+        Write-Warning "Unable to write to provided output path: $($output.Path)"
+    }
+
+	$output
+}
+
 # TODO - Refactor below into setup function
 # Script Level Variable Setup
 
-if ($PSBoundParameters.ContainsKey('loadsnapshot')){
-    $loadsnapshotdata = $true
-} else {
-    $loadsnapshotdata = $false
+# Create detection output csv
+$script:DetectionsPath = New-TrawlerOutputItem -FileName "detections"
+Write-Message "Detection Output Path: $($script:DetectionsPath.Path)"
+
+# Create snapshot output if specified
+if ($Snapshot) {
+	$script:SnapshotPath = New-TrawlerOutputItem -FileName "snapshot"
+	Write-Message "Snapshot Output Path: $($script:SnapshotPath.Path)"
 }
 
-if ($PSBoundParameters.ContainsKey('drivetarget')){
-    $drivechange = $true
-} else {
-    $drivechange = $false
-}
+$loadsnapshotdata = $PSBoundParameters.ContainsKey('loadsnapshot')
+$drivechange = $PSBoundParameters.ContainsKey('drivetarget')
 
 $detection_list = New-Object -TypeName "System.Collections.ArrayList"
-
-
-function Get-ValidOutPath {
-	param (
-		[string]
-		$path
-	)
-
-	if (Test-Path -Path $path -PathType Container)
-	{
-		Write-Host "The provided path is a folder, not a file. Please provide a file path." -Foregroundcolor "Yellow"
-		exit
-	}
-
-	return $path
-}
-
-function ValidatePaths {
-    try {
-        $script:outpath = Get-ValidOutPath -path $outpath
-        Write-Message "Detection Output Path: $outpath"
-        [System.IO.File]::OpenWrite($outpath).Close()
-        $script:output_writable = $true
-    }
-    catch {
-        Write-Warning "Unable to write to provided output path: $outpath"
-        $script:output_writable = $false
-    }
-
-    if ($snapshot) {
-        try {
-            $script:snapshotpath = Get-ValidOutPath -path $snapshotpath
-            Write-Message "Snapshot Output Path: $snapshotpath"
-            [System.IO.File]::OpenWrite($snapshotpath).Close()
-            Clear-Content $snapshotpath
-            $script:snapshotpath_writable = $true
-        }
-        catch {
-            Write-Warning "Unable to write to provided snapshot path: $snapshotpath"
-            $script:snapshotpath_writable = $false
-        }
-    }
-}
+$snapshot_list = New-Object -TypeName "System.Collections.ArrayList"
 
 
 # TODO - JSON Detection Output to easily encapsulate more details
@@ -16836,8 +16825,9 @@ function Write-Detection($det) {
         }
 	}
 
-	if ($output_writable) {
-		$det | Export-CSV $outpath -Append -NoTypeInformation -Encoding UTF8 -Force
+	# incrementally write to the csv otherwise the json output will be output in the Clean-Up method
+	if ($script:DetectionsPath.CanWrite -and $OutputFormat -eq "CSV") {
+		$det | Export-CSV $script:DetectionsPath.Path -Append -NoTypeInformation -Encoding UTF8 -Force
 	}
 }
 
@@ -16877,15 +16867,22 @@ function Write-SnapshotMessage() {
 	)
 
 	# Only write when writable and snapshot is specified
-	if (-not ($script:snapshotpath_writable -and $snapshot)) {
+	if (-not ($script:SnapshotPath.CanWrite)) {
 		return;
 	}
 
-	[PSCustomObject]@{
+	$snapShotMessage = [PSCustomObject]@{
 		Key = $Key
 		Value = $Value
 		Source = $Source
-	} | Export-CSV $snapshotpath -Append -NoTypeInformation -Encoding UTF8
+	}
+
+	if ($OutputFormat -eq "CSV") {
+		$snapShotMessage | Export-CSV $script:SnapshotPath.Path -Append -NoTypeInformation -Encoding UTF8
+	}
+	else {
+		$snapshot_list.Add($snapShotMessage)
+	}
 }
 
 function Read-Snapshot(){
@@ -16894,8 +16891,13 @@ function Read-Snapshot(){
         Write-Host "[!] Specified snapshot file does not exist!" -ForegroundColor "Yellow"
         exit
     }
-    $csv_data = Import-CSV $loadsnapshot
-	$script:AllowData = $csv_data
+	
+	if ($loadsnapshot.EndsWith(".csv")) {
+		$script:AllowData = Import-CSV $loadsnapshot
+	}
+	else {
+		$script:AllowData = Get-Content $loadsnapshot | ConvertFrom-Json
+	}
 	
     $script:allowtable_scheduledtask = @{}
     $script:allowlist_users = New-Object -TypeName "System.Collections.ArrayList"
@@ -16962,7 +16964,7 @@ function Read-Snapshot(){
     $script:allowlist_diskcleanuphandlers = New-Object -TypeName "System.Collections.ArrayList"
     $script:allowlist_disablelowil = New-Object -TypeName "System.Collections.ArrayList"
     
-	foreach ($item in $csv_data) {
+	foreach ($item in $script:AllowData) {
 		switch ($item.Source) {
 			"Scheduled Tasks" {
 				# Using scheduled task name and exe path
@@ -17386,6 +17388,11 @@ function Unload-Hive($hive_fullpath, $hive_value){
 }
 
 function Clean-Up {
+	if ($OutputFormat -eq "JSON") {
+		$detection_list | ConvertTo-Json | Out-File $script:DetectionsPath.Path
+		$snapshot_list | ConvertTo-Json | Out-File $script:SnapshotPath.Path
+	}
+	
     #Start-Sleep -seconds 5
     if ($drivechange){
         foreach ($hive in $new_psdrives_list.GetEnumerator()){
@@ -17500,12 +17507,11 @@ function Logo {
 
 function Main {
     Logo
-    ValidatePaths
     Drive-Change
 
-    if ($loadsnapshotdata -and $snapshot -eq $false){
+    if ($loadsnapshotdata -and (-not $script:SnapshotPath.CanWrite)){
         Read-Snapshot
-    } elseif ($loadsnapshotdata -and $snapshot) {
+    } elseif ($loadsnapshotdata -and $script:SnapshotPath.CanWrite) {
         Write-Host "[!] Cannot load and save snapshot simultaneously!" -ForegroundColor "Red"
     }
 
