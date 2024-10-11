@@ -767,7 +767,13 @@ function Check-ScheduledTasks {
                     Risk = 'Medium'
                     Source = 'Scheduled Tasks'
                     Technique = "T1053: Scheduled Task/Job"
-                    Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                    Meta = [PSCustomObject]@{
+                        Location = $task.Execute
+                        EntryName = $task.TaskName
+                        Arguments = $task.Arguments
+                        Author = $task.Author
+                        RunAs = $task.RunAs
+                    }
             }
 
             $result = Check-IfAllowed $allowtable_scheduledtask $task.TaskName $task.Execute $detection
@@ -795,7 +801,14 @@ function Check-ScheduledTasks {
                     Risk = 'Medium'
                     Source = 'Scheduled Tasks'
                     Technique = "T1053: Scheduled Task/Job"
-                    Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs+", RAT Keyword: "+$term
+                    Meta = [PSCustomObject]@{
+                        Location = $task.Execute
+                        EntryName = $task.TaskName
+                        Arguments = $task.Arguments
+                        Author = $task.Author
+                        RunAs = $task.RunAs
+                        SuspiciousEntry = $term
+                    }
                 }
                 Write-Detection $detection
             }
@@ -808,7 +821,13 @@ function Check-ScheduledTasks {
                 Risk = 'High'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                Meta = [PSCustomObject]@{
+                    Location = $task.Execute
+                    EntryName = $task.TaskName
+                    Arguments = $task.Arguments
+                    Author = $task.Author
+                    RunAs = $task.RunAs
+                }
             }
             Write-Detection $detection
             continue
@@ -821,7 +840,13 @@ function Check-ScheduledTasks {
                 Risk = 'High'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                Meta = [PSCustomObject]@{
+                    Location = $task.Execute
+                    EntryName = $task.TaskName
+                    Arguments = $task.Arguments
+                    Author = $task.Author
+                    RunAs = $task.RunAs
+                }
             }
             Write-Detection $detection
         }
@@ -835,7 +860,13 @@ function Check-ScheduledTasks {
                 Risk = 'High'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                Meta = [PSCustomObject]@{
+                    Location = $task.Execute
+                    EntryName = $task.TaskName
+                    Arguments = $task.Arguments
+                    Author = $task.Author
+                    RunAs = $task.RunAs
+                }
             }
             Write-Detection $detection
         }
@@ -850,7 +881,13 @@ function Check-ScheduledTasks {
                             Risk = 'High'
                             Source = 'Scheduled Tasks'
                             Technique = "T1053: Scheduled Task/Job"
-                            Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                            Meta = [PSCustomObject]@{
+                                Location = $task.Execute
+                                EntryName = $task.TaskName
+                                Arguments = $task.Arguments
+                                Author = $task.Author
+                                RunAs = $task.RunAs
+                            }
                         }
                         Write-Detection $detection
                         continue
@@ -861,7 +898,13 @@ function Check-ScheduledTasks {
                         Risk = 'Low'
                         Source = 'Scheduled Tasks'
                         Technique = "T1053: Scheduled Task/Job"
-                        Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs
+                        Meta = [PSCustomObject]@{
+                            Location = $task.Execute
+                            EntryName = $task.TaskName
+                            Arguments = $task.Arguments
+                            Author = $task.Author
+                            RunAs = $task.RunAs
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -875,7 +918,14 @@ function Check-ScheduledTasks {
                 Risk = 'Low'
                 Source = 'Scheduled Tasks'
                 Technique = "T1053: Scheduled Task/Job"
-                Meta = "Task Name: "+ $task.TaskName+", Task Executable: "+ $task.Execute+", Arguments: "+$task.Arguments+", Task Author: "+ $task.Author+", RunAs: "+$task.RunAs+", UserId: "+$task.UserId
+                Meta = [PSCustomObject]@{
+                    Location = $task.Execute
+                    EntryName = $task.TaskName
+                    Arguments = $task.Arguments
+                    Author = $task.Author
+                    RunAs = $task.RunAs
+                    UserId = $task.UserId
+                }
             }
             Write-Detection $detection
         }
@@ -911,7 +961,11 @@ function Check-Users {
             Risk = 'Medium'
             Source = 'Users'
             Technique = "T1136: Create Account"
-            Meta = "Name: "+$admin.Name +", Last Logon: "+ $admin_user.LastLogon+", Enabled: "+ $admin_user.Enabled
+            Meta = [PSCustomObject]@{
+                User = $admin.Name
+                LastLogon = $admin_user.LastLogon
+                Enabled = $admin_user.Enabled
+            }
         }
         Write-Detection $detection
     }
@@ -1980,7 +2034,10 @@ function Check-Services {
                 Risk = 'Medium'
                 Source = 'Services'
                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+                Meta = [PSCustomObject]@{
+                    Location = $service.PathName
+                    EntryName = $service.Name
+                }
             }
             $result = Check-IfAllowed $allowtable_services $service.Name $service.PathName $detection
             if ($result){
@@ -1995,7 +2052,11 @@ function Check-Services {
                     Risk = 'Medium'
                     Source = 'Services'
                     Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                    Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName+", RAT Keyword: "+$term
+                    Meta = [PSCustomObject]@{
+                        Location = $service.PathName
+                        EntryName = $service.Name
+                        SuspiciousEntry = $term
+                    }
                 }
                 Write-Detection $detection
             }
@@ -2007,7 +2068,10 @@ function Check-Services {
                 Risk = 'High'
                 Source = 'Services'
                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+                Meta = [PSCustomObject]@{
+                    Location = $service.PathName
+                    EntryName = $service.Name
+                }
             }
             Write-Detection $detection
         }
@@ -2027,7 +2091,10 @@ function Check-Services {
                 Risk = 'Low'
                 Source = 'Services'
                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+                Meta = [PSCustomObject]@{
+                    Location = $service.PathName
+                    EntryName = $service.Name
+                }
             }
             Write-Detection $detection
         }
@@ -2038,7 +2105,10 @@ function Check-Services {
                 Risk = 'Medium'
                 Source = 'Services'
                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+                Meta = [PSCustomObject]@{
+                    Location = $service.PathName
+                    EntryName = $service.Name
+                }
             }
             Write-Detection $detection
         }
@@ -2049,7 +2119,10 @@ function Check-Services {
                 Risk = 'Medium'
                 Source = 'Services'
                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+                Meta = [PSCustomObject]@{
+                    Location = $service.PathName
+                    EntryName = $service.Name
+                }
             }
             Write-Detection $detection
         }
@@ -2061,7 +2134,10 @@ function Check-Services {
                 Risk = 'High'
                 Source = 'Services'
                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName
+                Meta = [PSCustomObject]@{
+                    Location = $service.PathName
+                    EntryName = $service.Name
+                }
             }
             Write-Detection $detection
         }
@@ -2093,7 +2169,14 @@ function Check-Processes {
                     Risk = 'Medium'
                     Source = 'Processes'
                     Technique = "T1059: Command and Scripting Interpreter"
-                    Meta = "Process Name: "+ $process.ProcessName+", CommandLine: "+ $process.CommandLine+", Executable: "+$process.ExecutablePath+", RAT Keyword: "+$term
+                    Meta = [PSCustomObject]@{
+                        Location = $process.ExecutablePath
+                        ProcessName = $process.ProcessName
+                        CommandLine = $process.CommandLine
+                        PID = $process.ProcessId
+                        SuspiciousEntry = $term
+                        Created = $process.CreationDate
+                    }
                 }
                 Write-Detection $detection
             }
@@ -2104,7 +2187,13 @@ function Check-Processes {
                 Risk = 'Medium'
                 Source = 'Processes'
                 Technique = "T1059: Command and Scripting Interpreter"
-                Meta = "Process Name: "+ $process.ProcessName+", CommandLine: "+ $process.CommandLine+", Executable: "+$process.ExecutablePath
+                Meta = [PSCustomObject]@{
+                    Location = $process.ExecutablePath
+                    ProcessName = $process.ProcessName
+                    CommandLine = $process.CommandLine
+                    PID = $process.ProcessId
+                    Created = $process.CreationDate
+                }
             }
             Write-Detection $detection
         }
@@ -2116,7 +2205,13 @@ function Check-Processes {
                     Risk = 'High'
                     Source = 'Processes'
                     Technique = "T1059: Command and Scripting Interpreter"
-                    Meta = "Process Name: "+ $process.ProcessName+", CommandLine: "+ $process.CommandLine+", Executable: "+$process.ExecutablePath
+                    Meta = [PSCustomObject]@{
+                        Location = $process.ExecutablePath
+                        ProcessName = $process.ProcessName
+                        CommandLine = $process.CommandLine
+                        PID = $process.ProcessId
+                        Created = $process.CreationDate
+                    }
                 }
                 Write-Detection $detection
             }
@@ -2173,7 +2268,12 @@ function Check-Connections {
                 Risk = 'Very Low'
                 Source = 'Network Connections'
                 Technique = "T1071: Application Layer Protocol"
-                Meta = "Local Port: "+$conn.LocalPort+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
+                Meta = [PSCustomObject]@{
+                    Location = $proc.Path
+                    ProcessName = $proc.Name
+                    PID = $conn.OwningProcess
+                    LocalPort = $conn.LocalPort
+                }
             }
             Write-Detection $detection
         }
@@ -2183,7 +2283,15 @@ function Check-Connections {
                 Risk = 'Low'
                 Source = 'Network Connections'
                 Technique = "T1071: Application Layer Protocol"
-                Meta = "Local Port: "+$conn.LocalPort+", Remote Port: "+$conn.RemotePort+", Remote Address: "+$conn.RemoteAddress+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
+                Meta = [PSCustomObject]@{
+                    Location = $proc.Path
+                    ProcessName = $proc.Name
+                    PID = $conn.OwningProcess
+                    LocalPort = $conn.LocalPort
+                    LocalAddress = $conn.LocalAddress
+                    RemotePort = $conn.RemotePort
+                    RemoteAddress = $conn.RemoteAddress
+                }
             }
             Write-Detection $detection
         }
@@ -2195,7 +2303,15 @@ function Check-Connections {
                         Risk = 'High'
                         Source = 'Network Connections'
                         Technique = "T1071: Application Layer Protocol"
-                        Meta = "Local Port: "+$conn.LocalPort+", Remote Port: "+$conn.RemotePort+", Remote Address: "+$conn.RemoteAddress+", PID: "+$conn.OwningProcess+", Process Name: "+$proc.Name+", Process Path: "+$proc.Path
+                        Meta = [PSCustomObject]@{
+                            Location = $proc.Path
+                            ProcessName = $proc.Name
+                            PID = $conn.OwningProcess
+                            LocalPort = $conn.LocalPort
+                            LocalAddress = $conn.LocalAddress
+                            RemotePort = $conn.RemotePort
+                            RemoteAddress = $conn.RemoteAddress
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -2230,7 +2346,10 @@ function Check-WMIConsumers {
                 Risk = 'Medium'
                 Source = 'Services'
                 Technique = "T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription"
-                Meta = "Consumer Name: "+ $consumer.Name+", Consumer Value: "+ $val_
+                Meta = [PSCustomObject]@{
+                    EntryName = $consumer.Name
+                    EntryValue = $val_
+                }
             }
             $result = Check-IfAllowed $allowtable_wmi_consumers $consumer.Name $val_ $detection
             if ($result){
@@ -2245,7 +2364,11 @@ function Check-WMIConsumers {
                 Risk = 'High'
                 Source = 'WMI'
                 Technique = "T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription"
-                Meta = "Consumer Name: "+$consumer.Name+", Script Name: "+$consumer.ScriptFileName+", Script Text: "+$consumer.ScriptText
+                Meta = [PSCustomObject]@{
+                    Location = $consumer.ScriptFileName
+                    EntryName = $consumer.Name
+                    EntryValue = $consumer.ScriptText
+                }
             }
             Write-Detection $detection
         }
@@ -2257,7 +2380,11 @@ function Check-WMIConsumers {
                 Risk = 'High'
                 Source = 'WMI'
                 Technique = "T1546.003: Event Triggered Execution: Windows Management Instrumentation Event Subscription"
-                Meta = "Consumer Name: "+$consumer.Name+", Executable Path: "+$consumer.ExecutablePath+", CommandLine Template: "+$consumer.CommandLineTemplate
+                Meta = [PSCustomObject]@{
+                    Location = $consumer.ExecutablePath
+                    EntryName = $consumer.Name
+                    EntryValue = $consumer.CommandLineTemplate
+                }
             }
             Write-Detection $detection
         }
@@ -2318,7 +2445,12 @@ function Check-Startups {
             Risk = 'Low'
             Source = 'Startup'
             Technique = "T1037.005: Boot or Logon Initialization Scripts: Startup Items"
-            Meta = "Location: "+$item.Location+", Item Name: "+$item.Name+", Command: "+$item.Command+", User: "+$item.User
+            Meta = [PSCustomObject]@{
+                Location = $item.Location
+                EntryName = $item.Name
+                EntryValue = $item.Command
+                User = $item.User
+            }
         }
 
         Write-Detection $detection
@@ -2342,7 +2474,11 @@ function Check-Startups {
                         Risk = 'Low'
                         Source = 'Startup'
                         Technique = "T1037.005: Boot or Logon Initialization Scripts: Startup Items"
-                        Meta = "Location: $path_, Item Name: "+$_.Name+", Command: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path_
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -2377,7 +2513,13 @@ function Check-BITS {
                 Risk = 'Medium'
                 Source = 'BITS'
                 Technique = "T1197: BITS Jobs"
-                Meta = "Item Name: "+$item.DisplayName+", TransferType: "+$item.TransferType+", Job State: "+$item.JobState+", User: "+$item.OwnerAccount+", Command: "+$cmd
+                Meta = [PSCustomObject]@{
+                    EntryName = $item.DisplayName
+                    TransferType = $item.TransferType
+                    JobState = $item.JobState
+                    User = $item.OwnerAccount
+                    EntryValue = $cmd
+                }
             }
             $result = Check-IfAllowed $allowtable_bits $item.DisplayName $cmd $detection
             if ($result){
@@ -2389,7 +2531,13 @@ function Check-BITS {
             Risk = 'Low'
             Source = 'BITS'
             Technique = "T1197: BITS Jobs"
-            Meta = "Item Name: "+$item.DisplayName+", TransferType: "+$item.TransferType+", Job State: "+$item.JobState+", User: "+$item.OwnerAccount+", Command: "+$cmd
+            Meta = [PSCustomObject]@{
+                EntryName = $item.DisplayName
+                TransferType = $item.TransferType
+                JobState = $item.JobState
+                User = $item.OwnerAccount
+                EntryValue = $cmd
+            }
         }
         Write-Detection $detection
     }
@@ -2418,7 +2566,11 @@ function Check-Modified-Windows-Accessibility-Feature {
                     Risk = 'High'
                     Source = 'Windows'
                     Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
-                    Meta = "File: "+$file+", Created: "+$fdata.CreationTime+", Modified: "+$fdata.LastWriteTime
+                    Meta = [PSCustomObject]@{
+                        Location = $file
+                        Created = $fdata.CreationTime
+                        Modified = $fdata.LastWriteTime
+                    }
                 }
                 Write-Detection $detection
             }
@@ -2453,7 +2605,10 @@ function Check-PowerShell-Profiles {
             Risk = 'Medium'
             Source = 'PowerShell'
             Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
-            Meta = "Profile: "+$PROFILE.AllUsersAllHosts
+            Meta = [PSCustomObject]@{
+                Location = $alluserallhost
+                EntryValue = $PROFILE.AllUsersAllHosts
+            }
         }
         Write-Detection $detection
     }
@@ -2463,7 +2618,10 @@ function Check-PowerShell-Profiles {
             Risk = 'Medium'
             Source = 'PowerShell'
             Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
-            Meta = "Profile: "+$PROFILE.AllUsersCurrentHost
+            Meta = [PSCustomObject]@{
+                Location = $allusercurrenthost
+                EntryValue = $PROFILE.AllUsersCurrentHost
+            }
         }
         Write-Detection $detection
     }
@@ -2479,7 +2637,9 @@ function Check-PowerShell-Profiles {
                 Risk = 'Medium'
                 Source = 'PowerShell'
                 Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
-                Meta = "Profile: "+$path1
+                Meta = [PSCustomObject]@{
+                    Location = $path1
+                }
             }
             Write-Detection $detection
         }
@@ -2489,7 +2649,9 @@ function Check-PowerShell-Profiles {
                 Risk = 'Medium'
                 Source = 'PowerShell'
                 Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
-                Meta = "Profile: "+$path2
+                Meta = [PSCustomObject]@{
+                    Location = $path2
+                }
             }
             Write-Detection $detection
         }
@@ -2499,7 +2661,9 @@ function Check-PowerShell-Profiles {
                 Risk = 'Medium'
                 Source = 'PowerShell'
                 Technique = "T1546.013: Event Triggered Execution: PowerShell Profile"
-                Meta = "Profile: "+$path3
+                Meta = [PSCustomObject]@{
+                    Location = $path3
+                }
             }
             Write-Detection $detection
         }
@@ -2541,12 +2705,15 @@ function Check-Outlook-Startup {
                 continue
             }
 
+            # TODO - Add Creation/Modification
             $detection = [PSCustomObject]@{
                 Name = 'Potential Persistence via Outlook Application Startup'
                 Risk = 'Medium'
                 Source = 'Office'
                 Technique = "T1137.006: Office Application Startup: Add-ins"
-                Meta = "File: "+$path
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                }
             }
             Write-Detection $detection
         }
@@ -2577,7 +2744,11 @@ function Check-Registry-Checks {
                                 Risk = 'High'
                                 Source = 'Registry'
                                 Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
-                                Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                Meta = [PSCustomObject]@{
+                                    Location = $data.Name
+                                    EntryName = $_.Name
+                                    EntryValue = $_.Value
+                                }
                             }
                             #Write-Detection $detection
                             # This is now handled by Check-COM-Hijacks along with HKLM and HKCR checks (which should be identical)
@@ -11547,7 +11718,11 @@ function Check-COM-Hijacks {
                                     Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                    Meta = [PSCustomObject]@{
+                                        Location = $data.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                    }
                                 }
                                 $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
                                 if ($result){
@@ -11556,15 +11731,26 @@ function Check-COM-Hijacks {
                             }
 
                             $verified_match = $false
+                            $expected_value = "N/A"
                             if ($default_hkcr_com_lookups.ContainsKey($data.Name)){
-                                if ($_.Value -match $default_hkcr_com_lookups[$data.Name]){
-                                    $verified_match = $true
+                                $expected_value = $default_hkcr_com_lookups[$data.Name]
+                                try{
+                                    if ($_.Value -match $default_hkcr_com_lookups[$data.Name]){
+                                        $verified_match = $true
+                                    }
+                                } catch {
+                                    Write-Reportable-Issue "Regex Error while parsing string: $($default_hkcr_com_lookups[$data.Name])"
                                 }
                             }
 
                             if ($server_2022_coms.ContainsKey($data.Name) -and $verified_match -ne $true){
-                                if ($_.Value -match $server_2022_coms[$data.Name]){
-                                    $verified_match = $true
+                                $expected_value = $server_2022_coms[$data.Name]
+                                try{
+                                    if ($_.Value -match $server_2022_coms[$data.Name]){
+                                        $verified_match = $true
+                                    }
+                                } catch {
+                                    Write-Reportable-Issue "Regex Error while parsing string: $($server_2022_coms[$data.Name])"
                                 }
                             }
 
@@ -11574,7 +11760,12 @@ function Check-COM-Hijacks {
                                     Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                    Meta = [PSCustomObject]@{
+                                        Location = $data.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                        ExpectedValue = $expected_value
+                                    }
                                 }
                                 Write-Detection $detection
                             }
@@ -11623,7 +11814,11 @@ function Check-COM-Hijacks {
                                     Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                    Meta = [PSCustomObject]@{
+                                        Location = $data.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                    }
                                 }
                                 $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
                                 if ($result){
@@ -11632,7 +11827,9 @@ function Check-COM-Hijacks {
                             }
 
                             $verified_match = $false
+                            $expected_value = "N/A"
                             if ($default_hklm_com_lookups.ContainsKey($data.Name)){
+                                $expected_value = $default_hklm_com_lookups[$data.Name]
                                 try{
                                     if ($_.Value -match $default_hklm_com_lookups[$data.Name]){
                                         $verified_match = $true
@@ -11643,6 +11840,7 @@ function Check-COM-Hijacks {
                             }
 
                             if ($default_hklm_com_server_lookups.ContainsKey($data.Name) -and $verified_match -ne $true){
+                                $expected_value = $default_hklm_com_server_lookups[$data.Name]
                                 try{
                                     if ($_.Value -match $default_hklm_com_server_lookups[$data.Name]){
                                         $verified_match = $true
@@ -11658,7 +11856,12 @@ function Check-COM-Hijacks {
                                     Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                                    Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                    Meta = [PSCustomObject]@{
+                                        Location = $data.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                        ExpectedValue = $expected_value
+                                    }
                                 }
                                 Write-Detection $detection
                             }
@@ -11704,7 +11907,11 @@ function Check-COM-Hijacks {
                                         Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                                        Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                        Meta = [PSCustomObject]@{
+                                            Location = $data.Name
+                                            EntryName = $_.Name
+                                            EntryValue = $_.Value
+                                        }
                                     }
                                     $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
                                     if ($result){
@@ -11713,7 +11920,9 @@ function Check-COM-Hijacks {
                                 }
 
                                 $verified_match = $false
+                                $expected_value = "N/A"
                                 if ($default_hkcu_com_lookups.ContainsKey($data.Name)){
+                                    $expected_value = $default_hkcu_com_lookups[$data.Name]
                                     try{
                                         if ($_.Value -match $default_hkcu_com_lookups[$data.Name]){
                                             $verified_match = $true
@@ -11725,6 +11934,7 @@ function Check-COM-Hijacks {
                                 }
 
                                 if ($default_hkcu_com_server_lookups.ContainsKey($data.Name) -and $verified_match -ne $true){
+                                    $expected_value = $default_hkcu_com_server_lookups[$data.Name]
                                     try{
                                         if ($_.Value -match $default_hkcu_com_server_lookups[$data.Name]){
                                             $verified_match = $true
@@ -11741,7 +11951,12 @@ function Check-COM-Hijacks {
                                         Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                                        Meta = "Registry Path: "+$data.Name+", DLL Path: "+$_.Value
+                                        Meta = [PSCustomObject]@{
+                                            Location = $data.Name
+                                            EntryName = $_.Name
+                                            EntryValue = $_.Value
+                                            ExpectedValue = $expected_value
+                                        }
                                     }
                                     Write-Detection $detection
                                 }
@@ -12777,7 +12992,12 @@ function Service-Reg-Checks {
                             Risk = 'Medium'
                             Source = 'Services'
                             Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                            Meta = "Key: " + $service.Name + ", Value: " + $_.Value+", Regex Expected Location: "+$image_path_lookup[$service.Name]
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $service.Name
+                                EntryValue = $_.Value
+                                ExpectedValue = $image_path_lookup[$service.Name]
+                            }
                         }
                         $result = Check-IfAllowed $allowtable_services_reg $service.Name $_.Value $_.Value $detection
                         if ($result){
@@ -12791,7 +13011,12 @@ function Service-Reg-Checks {
                                     Risk = 'Medium'
                                     Source = 'Services'
                                     Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                                    Meta = "Key: " + $service.Name + ", Value: " + $_.Value+", Regex Expected Location: "+$image_path_lookup[$service.Name]
+                                    Meta = [PSCustomObject]@{
+                                        Location = $path
+                                        EntryName = $service.Name
+                                        EntryValue = $_.Value
+                                        ExpectedValue = $image_path_lookup[$service.Name]
+                                    }
                                 }
                                 Write-Detection $detection
                         }
@@ -12813,7 +13038,12 @@ function Service-Reg-Checks {
                                 Risk = 'Medium'
                                 Source = 'Services'
                                 Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                                Meta = "Key: " + $child_key.Name + ", Value: " + $_.Value+" Regex Expected Location: "+$service_dll_lookup[$child_key.Name]
+                                Meta = [PSCustomObject]@{
+                                    Location = $path
+                                    EntryName = $child_key.Name
+                                    EntryValue = $_.Value
+                                    ExpectedValue = $service_dll_lookup[$child_key.Name]
+                                }
                             }
                             $result = Check-IfAllowed $allowtable_services_reg $child_key.Name $_.Value $_.Value $detection
                             if ($result){
@@ -12829,7 +13059,12 @@ function Service-Reg-Checks {
                                     Risk = 'Medium'
                                     Source = 'Services'
                                     Technique = "T1543.003: Create or Modify System Process: Windows Service"
-                                    Meta = "Key: " + $child_key.Name + ", Value: " + $_.Value+", Regex Expected Location: "+$service_dll_lookup[$child_key.Name]
+                                    Meta = [PSCustomObject]@{
+                                        Location = $path
+                                        EntryName = $child_key.Name
+                                        EntryValue = $_.Value
+                                        ExpectedValue = $service_dll_lookup[$child_key.Name]
+                                    }
                                 }
                                 Write-Detection $detection
                             }
@@ -12854,7 +13089,10 @@ function Check-Debugger-Hijacks {
                 Risk = 'Medium'
                 Source = 'Registry'
                 Technique = "T1546: Event Triggered Execution"
-                Meta = "Key Location: $key, Entry Value: "+$val
+                Meta = [PSCustomObject]@{
+                    Location = $key
+                    EntryValue = $val
+                }
             }
             $result = Check-IfAllowed $allowtable_debuggers $key $val $detection
             if ($result){
@@ -12885,7 +13123,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -12909,7 +13151,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -12935,7 +13181,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -12959,7 +13209,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -12985,7 +13239,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -13010,7 +13268,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -13035,7 +13297,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -13060,7 +13326,11 @@ function Check-Debugger-Hijacks {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1546: Event Triggered Execution"
-                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -13086,7 +13356,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -13110,7 +13384,11 @@ function Check-Debugger-Hijacks {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -13143,7 +13421,12 @@ function Check-LNK {
                         Risk = 'High'
                         Source = 'LNK'
                         Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
-                        Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
+                        Meta = [PSCustomObject]@{
+                            Location = $item.FullName
+                            Created = $item.CreationTime
+                            Modified = $item.LastWriteTime
+                            LNKTarget = $lnk_target
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -13153,7 +13436,12 @@ function Check-LNK {
                         Risk = 'High'
                         Source = 'LNK'
                         Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
-                        Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
+                        Meta = [PSCustomObject]@{
+                            Location = $item.FullName
+                            Created = $item.CreationTime
+                            Modified = $item.LastWriteTime
+                            LNKTarget = $lnk_target
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -13163,7 +13451,12 @@ function Check-LNK {
                         Risk = 'Medium'
                         Source = 'LNK'
                         Technique = "T1547.009: Boot or Logon Autostart Execution: Shortcut Modification"
-                        Meta = "LNK File: "+$item.FullName+", LNK Target: "+$lnk_target+", Last Write Time: "+$item.LastWriteTime
+                        Meta = [PSCustomObject]@{
+                            Location = $item.FullName
+                            Created = $item.CreationTime
+                            Modified = $item.LastWriteTime
+                            LNKTarget = $lnk_target
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -13225,7 +13518,14 @@ function Check-Process-Modules {
                             Risk = 'Very High'
                             Source = 'Processes'
                             Technique = "T1574: Hijack Execution Flow"
-                            Meta = "DLL: "+$module.FileName+", Process Name: "+$process.ProcessName+", PID: "+$process.ProcessId+", Execuable Path: "+$process.ExecutablePath+", DLL Creation Time: "+$item.CreationTime+", DLL Last Write Time: "+$item.LastWriteTime
+                            Meta = [PSCustomObject]@{
+                                Location = $module.FileName
+                                Created = $item.CreationTime
+                                Modified = $item.LastWriteTime
+                                ProcessName = $process.ProcessName
+                                PID = $process.ProcessId
+                                Executable = $process.ExecutablePath
+                            }
                         }
                         Write-Detection $detection
                     } else {
@@ -13235,7 +13535,14 @@ function Check-Process-Modules {
                             Risk = 'High'
                             Source = 'Processes'
                             Technique = "T1574: Hijack Execution Flow"
-                            Meta = "DLL: "+$module.FileName+", Process Name: "+$process.ProcessName+", PID: "+$process.ProcessId+", Execuable Path: "+$process.ExecutablePath+", DLL Creation Time: "+$item.CreationTime+", DLL Last Write Time: "+$item.LastWriteTime
+                            Meta = [PSCustomObject]@{
+                                Location = $module.FileName
+                                Created = $item.CreationTime
+                                Modified = $item.LastWriteTime
+                                ProcessName = $process.ProcessName
+                                PID = $process.ProcessId
+                                Executable = $process.ExecutablePath
+                            }
                         }
                         # TODO - This is too noisy to use as-is - these DLLs get loaded into quite a few processes.
                         # Write-Detection $detection
@@ -13279,7 +13586,11 @@ function Check-Windows-Unsigned-Files {
                     Risk = 'Very High'
                     Source = 'Windows'
                     Technique = "T1574: Hijack Execution Flow"
-                    Meta = "File: " + $file.FullName + ", Creation Time: " + $item.CreationTime + ", Last Write Time: " + $item.LastWriteTime
+                    Meta = [PSCustomObject]@{
+                        Location = $file.FullName
+                        Created = $file.CreationTime
+                        Modified = $file.LastWriteTime
+                    }
                 }
                 #Write-Host $detection.Meta
                 Write-Detection $detection
@@ -13331,7 +13642,11 @@ function Check-Service-Hijacks {
                             Risk = 'High'
                             Source = 'Services'
                             Technique = "T1574.009: Create or Modify System Process: Windows Service"
-                            Meta = "Service Name: "+ $service.Name+", Service Path: "+ $service.PathName+", Suspicious File: "+$test_path
+                            Meta = [PSCustomObject]@{
+                                Location = $test_path
+                                ServiceName = $service.Name
+                                ServicePath = $service.PathName
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -13392,7 +13707,11 @@ function Check-PATH-Hijacks {
                     Risk = 'Very High'
                     Source = 'PATH'
                     Technique = "T1574.007: Hijack Execution Flow: Path Interception by PATH Environment Variable"
-                    Meta = "File: " + $bin.FullName + ", Creation Time: " + $bin.CreationTime + ", Last Write Time: " + $bin.LastWriteTime
+                    Meta = [PSCustomObject]@{
+                        Location = $bin.FullName
+                        Created = $bin.CreationTime
+                        Modified = $bin.LastWriteTime
+                    }
                 }
                 #Write-Host $detection.Meta
                 Write-Detection $detection
@@ -13459,7 +13778,11 @@ function Check-Association-Hijack {
                                         Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                        Meta = "FileType: " + $open_path +", Expected Association: "+ $allowtable_fileassocations[$open_path] + ", Current Association: " + $exe
+                                        Meta = [PSCustomObject]@{
+                                            Location = $open_path
+                                            ExpectedValue = $allowtable_fileassocations[$open_path]
+                                            EntryValue = $exe
+                                        }
                                     }
                                     $result = Check-IfAllowed $allowtable_fileassocations $open_path $exe $detection
                                     if ($result){
@@ -13474,7 +13797,11 @@ function Check-Association-Hijack {
                                             Risk = 'High'
                                             Source = 'Registry'
                                             Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                            Meta = "FileType: " + $open_path +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                            Meta = [PSCustomObject]@{
+                                                Location = $open_path
+                                                ExpectedValue = $value_regex_lookup[$basefile]
+                                                EntryValue = $exe
+                                            }
                                         }
                                         Write-Detection $detection
                                         return
@@ -13489,7 +13816,10 @@ function Check-Association-Hijack {
                                         Risk = 'High'
                                         Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                        Meta = "FileType: " + $open_path + ", Current Association: " + $exe
+                                        Meta = [PSCustomObject]@{
+                                            Location = $open_path
+                                            EntryValue = $exe
+                                        }
                                     }
                                     Write-Detection $detection
                                     return
@@ -13500,7 +13830,10 @@ function Check-Association-Hijack {
                                         Risk = 'High'
                                         Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                        Meta = "FileType: " + $open_path + ", Current Association: " + $exe
+                                        Meta = [PSCustomObject]@{
+                                            Location = $open_path
+                                            EntryValue = $exe
+                                        }
                                     }
                                     Write-Detection $detection
                                 }
@@ -13534,7 +13867,11 @@ function Check-Association-Hijack {
                                     Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                    Meta = "FileType: " + $open_path +", Expected Association: "+ $allowtable_fileassocations[$open_path] + ", Current Association: " + $exe
+                                    Meta = [PSCustomObject]@{
+                                        Location = $open_path
+                                        ExpectedValue = $allowtable_fileassocations[$open_path]
+                                        EntryValue = $exe
+                                    }
                                 }
                                 $result = Check-IfAllowed $allowtable_fileassocations $open_path $exe $detection
                                 if ($result){
@@ -13549,7 +13886,11 @@ function Check-Association-Hijack {
                                         Risk = 'High'
                                         Source = 'Registry'
                                         Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                        Meta = "FileType: " + $open_path +", Expected Association: "+ $value_regex_lookup[$basefile] + ", Current Association: " + $exe
+                                        Meta = [PSCustomObject]@{
+                                            Location = $open_path
+                                            ExpectedValue = $value_regex_lookup[$basefile]
+                                            EntryValue = $exe
+                                        }
                                     }
                                     Write-Detection $detection
                                     return
@@ -13564,7 +13905,10 @@ function Check-Association-Hijack {
                                     Risk = 'High'
                                     Source = 'Registry'
                                     Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                    Meta = "FileType: " + $open_path + ", Current Association: " + $exe
+                                    Meta = [PSCustomObject]@{
+                                        Location = $open_path
+                                        EntryValue = $exe
+                                    }
                                 }
                                 Write-Detection $detection
                                 return
@@ -13575,7 +13919,10 @@ function Check-Association-Hijack {
                                     Risk = 'High'
                                     Source = 'Registry'
                                     Technique = "T1546.001: Event Triggered Execution: Change Default File Association"
-                                    Meta = "FileType: " + $open_path + ", Current Association: " + $exe
+                                    Meta = [PSCustomObject]@{
+                                        Location = $open_path
+                                        EntryValue = $exe
+                                    }
                                 }
                                 Write-Detection $detection
                             }
@@ -13690,7 +14037,15 @@ function Check-Suspicious-Certificates {
                 Risk = 'Medium'
                 Source = 'Certificates'
                 Technique = "T1553: Subvert Trust Controls: Install Root Certificate"
-                Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                Meta = [PSCustomObject]@{
+                    Location = $cert.PSPath
+                    SubjectName = $cert.SubjectName.Name
+                    FriendlyName = $cert.FriendlyName
+                    Issuer = $cert.Issuer
+                    Subject = $cert.Subject
+                    NotValidAfter = $cert.NotAfter
+                    NotValidBefore = $cert.NotBefore
+                }
             }
             $result = Check-IfAllowed $allowtable_certificates $cert.Issuer $cert.Subject $detection
             if ($result){
@@ -13705,7 +14060,15 @@ function Check-Suspicious-Certificates {
                 Risk = 'Low'
                 Source = 'Certificates'
                 Technique = "T1553: Subvert Trust Controls: Install Root Certificate"
-                Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                Meta = [PSCustomObject]@{
+                    Location = $cert.PSPath
+                    SubjectName = $cert.SubjectName.Name
+                    FriendlyName = $cert.FriendlyName
+                    Issuer = $cert.Issuer
+                    Subject = $cert.Subject
+                    NotValidAfter = $cert.NotAfter
+                    NotValidBefore = $cert.NotBefore
+                }
             }
             Write-Detection $detection
             #Write-Host $detection.Meta
@@ -13716,7 +14079,15 @@ function Check-Suspicious-Certificates {
                 Risk = 'Low'
                 Source = 'Certificates'
                 Technique = "T1553: Subvert Trust Controls: Install Root Certificate"
-                Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                Meta = [PSCustomObject]@{
+                    Location = $cert.PSPath
+                    SubjectName = $cert.SubjectName.Name
+                    FriendlyName = $cert.FriendlyName
+                    Issuer = $cert.Issuer
+                    Subject = $cert.Subject
+                    NotValidAfter = $cert.NotAfter
+                    NotValidBefore = $cert.NotBefore
+                }
             }
             Write-Detection $detection
             #Write-Host $detection.Meta
@@ -13733,7 +14104,15 @@ function Check-Suspicious-Certificates {
                     Risk = 'Medium'
                     Source = 'Certificates'
                     Technique = "T1553.004: Subvert Trust Controls: Install Root Certificate"
-                    Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                    Meta = [PSCustomObject]@{
+                        Location = $cert.PSPath
+                        SubjectName = $cert.SubjectName.Name
+                        FriendlyName = $cert.FriendlyName
+                        Issuer = $cert.Issuer
+                        Subject = $cert.Subject
+                        NotValidAfter = $cert.NotAfter
+                        NotValidBefore = $cert.NotBefore
+                    }
                 }
                 Write-Detection $detection
                 #Write-Host $detection.Meta
@@ -13743,7 +14122,15 @@ function Check-Suspicious-Certificates {
                     Risk = 'Low'
                     Source = 'Certificates'
                     Technique = "T1553.004: Subvert Trust Controls: Install Root Certificate"
-                    Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                    Meta = [PSCustomObject]@{
+                        Location = $cert.PSPath
+                        SubjectName = $cert.SubjectName.Name
+                        FriendlyName = $cert.FriendlyName
+                        Issuer = $cert.Issuer
+                        Subject = $cert.Subject
+                        NotValidAfter = $cert.NotAfter
+                        NotValidBefore = $cert.NotBefore
+                    }
                 }
                 Write-Detection $detection
                 #Write-Host $detection.Meta
@@ -13753,7 +14140,15 @@ function Check-Suspicious-Certificates {
                     Risk = 'Low'
                     Source = 'Certificates'
                     Technique = "T1553.004: Subvert Trust Controls: Install Root Certificate"
-                    Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                    Meta = [PSCustomObject]@{
+                        Location = $cert.PSPath
+                        SubjectName = $cert.SubjectName.Name
+                        FriendlyName = $cert.FriendlyName
+                        Issuer = $cert.Issuer
+                        Subject = $cert.Subject
+                        NotValidAfter = $cert.NotAfter
+                        NotValidBefore = $cert.NotBefore
+                    }
                 }
                 Write-Detection $detection
                 #Write-Host $detection.Meta
@@ -13763,7 +14158,15 @@ function Check-Suspicious-Certificates {
                     Risk = 'Very Low'
                     Source = 'Certificates'
                     Technique = "T1553: Subvert Trust Controls"
-                    Meta = "Subject Name: "+$cert.SubjectName.Name+", Friendly Name: "+$cert.FriendlyName+", Issuer: "+$cert.Issuer+", Subject: "+$cert.Subject+", NotValidAfter: "+$cert.NotAfter+", NotValidBefore: "+$cert.NotBefore
+                    Meta = [PSCustomObject]@{
+                        Location = $cert.PSPath
+                        SubjectName = $cert.SubjectName.Name
+                        FriendlyName = $cert.FriendlyName
+                        Issuer = $cert.Issuer
+                        Subject = $cert.Subject
+                        NotValidAfter = $cert.NotAfter
+                        NotValidBefore = $cert.NotBefore
+                    }
                 }
                 Write-Detection $detection
                 #Write-Host $detection.Meta
@@ -13833,7 +14236,9 @@ function Check-Office-Trusted-Locations {
                             Risk = 'Medium'
                             Source = 'Office'
                             Technique = "T1137.006: Office Application Startup: Add-ins"
-                            Meta = "Location: $p"
+                            Meta = [PSCustomObject]@{
+                                Location = $p
+                            }
                         }
                         Write-Detection $detection
                         # TODO - Still working on this - can't read registry without expanding the variables right now
@@ -13949,7 +14354,11 @@ function Check-GPO-Scripts {
                                 Risk = 'High'
                                 Source = 'Windows GPO Scripts'
                                 Technique = "T1037: Boot or Logon Initialization Scripts"
-                                Meta = "File: "+$script_location+", Arguments: "+$params+", Suspicious Line: "+$line_
+                                Meta = [PSCustomObject]@{
+                                    Location = $script_location
+                                    EntryValue = $params
+                                    SuspiciousEntry = $line_
+                                }
                             }
                             Write-Detection $detection
                             $script_content_detection = $true
@@ -13963,7 +14372,10 @@ function Check-GPO-Scripts {
                         Risk = 'Medium'
                         Source = 'Windows GPO Scripts'
                         Technique = "T1037: Boot or Logon Initialization Scripts"
-                        Meta = "File: "+$script_location+", Arguments: "+$params
+                        Meta = [PSCustomObject]@{
+                            Location = $script_location
+                            EntryValue = $params
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -14006,7 +14418,10 @@ function Check-TerminalProfiles {
                                 Risk = 'Medium'
                                 Source = 'Terminal'
                                 Technique = "T1037: Boot or Logon Initialization Scripts"
-                                Meta = "File: $dir\LocalState\settings.json, Command: "+$exe
+                                Meta = [PSCustomObject]@{
+                                    Location = "$dir\LocalState\settings.json"
+                                    EntryValue = $exe
+                                }
                             }
                             Write-Detection $detection
                         }
@@ -14031,7 +14446,12 @@ function Check-PeerDistExtensionDll {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                        ExpectedValue = $expected_value
+                    }
                     Reference = "https://www.hexacorn.com/blog/2022/01/23/beyond-good-ol-run-key-part-138/"
                 }
                 Write-Detection $detection
@@ -14054,7 +14474,12 @@ function Check-InternetSettingsLUIDll {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", Expected Value: $expected_value, Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                        ExpectedValue = $expected_value
+                    }
                     Reference = "https://www.hexacorn.com/blog/2022/01/22/beyond-good-ol-run-key-part-137/"
                 }
                 Write-Detection $detection
@@ -14079,7 +14504,10 @@ function Check-ErrorHandlerCMD {
                         Risk = 'High'
                         Source = 'Windows'
                         Technique = "T1574: Hijack Execution Flow"
-                        Meta = "File: $path, Suspicious Line: +$line_"
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryValue = $line_
+                        }
                     }
                     Write-Detection $detection
                     $script_content_detection = $true
@@ -14093,7 +14521,9 @@ function Check-ErrorHandlerCMD {
                 Risk = 'High'
                 Source = 'Windows'
                 Technique = "T1574: Hijack Execution Flow"
-                Meta = "File Location: $path"
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                }
             }
             Write-Detection $detection
         }
@@ -14140,7 +14570,11 @@ function Check-BIDDll {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1574: Hijack Execution Flow"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                            }
                             Reference = "https://www.hexacorn.com/blog/2019/07/13/beyond-good-ol-run-key-part-111/"
                         }
                         Write-Detection $detection
@@ -14175,7 +14609,11 @@ function Check-WindowsUpdateTestDlls {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1574: Hijack Execution Flow"
-                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -14219,7 +14657,10 @@ function Check-KnownManagedDebuggers {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
-                    Meta = "Key Location: $path, DLL: "+$_.Name
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                    }
                     Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
                 Write-Detection $detection
@@ -14264,7 +14705,10 @@ function Check-MiniDumpAuxiliaryDLLs {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
-                    Meta = "Key Location: $path, DLL: "+$_.Name
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                    }
                     Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
                 Write-Detection $detection
@@ -14297,7 +14741,11 @@ function Check-Wow64LayerAbuse {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1574: Hijack Execution Flow"
-                        Meta = "Key Location: $path, Target Process Name: "+$_.Name+" Loaded DLL: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -14334,7 +14782,11 @@ function Check-EventViewerMSC {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1574: Hijack Execution Flow"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+" Loaded Value: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -14382,7 +14834,11 @@ function Check-MicrosoftTelemetryCommands {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1112: Modify Registry"
-                            Meta = "Registry Path: "+$item.Name+", Command: "+$data.Command
+                            Meta = [PSCustomObject]@{
+                                Location = $item.Name
+                                EntryName = "Command"
+                                EntryValue = $data.Command
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -14436,7 +14892,11 @@ function Check-ActiveSetup {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1547.014: Boot or Logon Autostart Execution: Active Setup"
-                            Meta = "Registry Path: "+$item.Name+", StubPath: "+$data.StubPath
+                            Meta = [PSCustomObject]@{
+                                Location = $item.Name
+                                EntryName = "StubPath"
+                                EntryValue = $data.StubPath
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -14468,7 +14928,11 @@ function Check-UninstallStrings {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Application: "+$item.Name+", Uninstall String: "+$data.UninstallString
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $item.Name
+                                EntryValue = $data.UninstallString
+                            }
                         }
                         $result = Check-IfAllowed $allowtable_uninstallstrings $item.Name $data.UninstallString $detection
                         if ($result){
@@ -14481,7 +14945,11 @@ function Check-UninstallStrings {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Application: "+$item.Name+", Uninstall String: "+$data.UninstallString
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $item.Name
+                                EntryValue = $data.UninstallString
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -14498,7 +14966,11 @@ function Check-UninstallStrings {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Application: "+$item.Name+", Uninstall String: "+$data.QuietUninstallString
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $item.Name
+                                EntryValue = $data.QuietUninstallString
+                            }
                         }
                         $result = Check-IfAllowed $allowtable_quietuninstallstrings $item.Name $data.QuietUninstallString $detection
                         if ($result){
@@ -14511,7 +14983,11 @@ function Check-UninstallStrings {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Application: "+$item.Name+", Uninstall String: "+$data.QuietUninstallString
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $item.Name
+                                EntryValue = $data.QuietUninstallString
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -14561,7 +15037,11 @@ function Check-PolicyManager {
                                 Risk = 'High'
                                 Source = 'Registry'
                                 Technique = "T1546: Event Triggered Execution"
-                                Meta = "Path: "+$subkey.Name+", Entry Name: PreCheckDLLPath, DLL: "+$data.PreCheckDLLPath
+                                Meta = [PSCustomObject]@{
+                                    Location = $subkey.Name
+                                    EntryName = "PreCheckDLLPath"
+                                    EntryValue = $data.PreCheckDLLPath
+                                }
                             }
                             Write-Detection $detection
                         }
@@ -14584,7 +15064,11 @@ function Check-PolicyManager {
                                 Risk = 'High'
                                 Source = 'Registry'
                                 Technique = "T1546: Event Triggered Execution"
-                                Meta = "Path: "+$subkey.Name+", Entry Name: transportDllPath, DLL: "+$data.transportDllPath
+                                Meta = [PSCustomObject]@{
+                                    Location = $subkey.Name
+                                    EntryName = "transportDllPath"
+                                    EntryValue = $data.transportDllPath
+                                }
                             }
                             Write-Detection $detection
                         }
@@ -14612,7 +15096,11 @@ function Check-SEMgrWallet {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1574: Hijack Execution Flow"
-                    Meta = "Key Location: $path, Entry: "+$_.Name+" Loaded DLL: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -14667,7 +15155,10 @@ function Check-WERRuntimeExceptionHandlers {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1574: Hijack Execution Flow"
-                        Meta = "Key Location: $path, DLL: "+$_.Name
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -14699,7 +15190,12 @@ function Check-SilentProcessExitMonitoring {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
-                        Meta = "Monitored Process: "+$item.Name+", Launched Process: "+$data.MonitorProcess+", Reporting Mode: "+$data.ReportingMode
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            MonitoredProcess = $item.Name
+                            LaunchedProcess = $data.MonitorProcess
+                            ReportingMode = $data.ReportingMode
+                        }
                     }
                     $result = Check-IfAllowed $allowtable_silentprocessexit $item.Name $data.MonitorProcess $detection
                     if ($result){
@@ -14712,7 +15208,12 @@ function Check-SilentProcessExitMonitoring {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
-                    Meta = "Monitored Process: "+$item.Name+", Launched Process: "+$data.MonitorProcess+", Reporting Mode: "+$data.ReportingMode
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        MonitoredProcess = $item.Name
+                        LaunchedProcess = $data.MonitorProcess
+                        ReportingMode = $data.ReportingMode
+                    }
                 }
                 Write-Detection $detection
             }
@@ -14751,7 +15252,11 @@ function Check-WinlogonHelperDLLs {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1547.004: Boot or Logon Autostart Execution: Winlogon Helper DLL"
-                        Meta = "Key Location: HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -14771,7 +15276,9 @@ function Check-UtilmanHijack {
                 Risk = 'High'
                 Source = 'Registry'
                 Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
-                Meta = "Review Data for Key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\utilman.exe"
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                }
             }
             Write-Detection $detection
     }
@@ -14788,7 +15295,9 @@ function Check-SethcHijack {
                 Risk = 'High'
                 Source = 'Registry'
                 Technique = "T1546.008: Event Triggered Execution: Accessibility Features"
-                Meta = "Review Data for Key: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe"
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                }
             }
             Write-Detection $detection
     }
@@ -14811,7 +15320,11 @@ function Check-RDPShadowConsent {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1098: Account Manipulation"
-                        Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                         Reference = "https://blog.bitsadmin.com/spying-on-users-using-rdp-shadowing"
                     }
                     $result = Check-IfAllowed $allowtable_rdpshadow $_.Name $_.Value $detection
@@ -14826,7 +15339,11 @@ function Check-RDPShadowConsent {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1098: Account Manipulation"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                     Reference = "https://blog.bitsadmin.com/spying-on-users-using-rdp-shadowing"
                 }
                 Write-Detection $detection
@@ -14852,7 +15369,11 @@ function Check-RemoteUACSetting {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
-                        Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                         Reference = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction"
                     }
                     $result = Check-IfAllowed $allowtable_remoteuac $_.Name $_.Value $detection
@@ -14867,7 +15388,11 @@ function Check-RemoteUACSetting {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                     Reference = "https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction"
                 }
                 Write-Detection $detection
@@ -14904,7 +15429,10 @@ function Check-PrintMonitorDLLs {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
-                        Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
+                        Meta = [PSCustomObject]@{
+                            Location = $item.Name
+                            EntryValue = $data.Driver
+                        }
                     }
                     $result = Check-IfAllowed $allowtable_printmonitors $item.Name $data.Driver $detection
                     if ($result){
@@ -14917,7 +15445,10 @@ function Check-PrintMonitorDLLs {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1112: Modify Registry"
-                        Meta = "Registry Path: "+$item.Name+", System32 DLL: "+$data.Driver
+                        Meta = [PSCustomObject]@{
+                            Location = $item.Name
+                            EntryValue = $data.Driver
+                        }
                         Reference = "https://pentestlab.blog/2019/10/28/persistence-port-monitors/"
                     }
                     Write-Detection $detection
@@ -14971,7 +15502,12 @@ function Check-LSA {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                                AbnormalPackage = $package
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -14994,7 +15530,12 @@ function Check-LSA {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1547.002: Boot or Logon Autostart Execution: Authentication Packages"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                                AbnormalPackage = $package
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15120,7 +15661,11 @@ function Check-DNSServerLevelPluginDLL {
                     Risk = 'Medium'
                     Source = 'Registry'
                     Technique = "T1055.001: Process Injection: Dynamic-link Library Injection"
-                    Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15163,7 +15708,11 @@ function Check-ExplorerHelperUtilities {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1574: Hijack Execution Flow"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15212,7 +15761,11 @@ function Check-TerminalServicesInitialProgram {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1574: Hijack Execution Flow"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", DLL: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15252,7 +15805,12 @@ function Check-RDPStartupPrograms {
                                 Risk = 'Medium'
                                 Source = 'Registry'
                                 Technique = "T1574: Hijack Execution Flow"
-                                Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                                Meta = [PSCustomObject]@{
+                                    Location = $path
+                                    EntryName = $_.Name
+                                    EntryValue = $_.Value
+                                    AbnormalPackage = $package
+                                }
                             }
                             Write-Detection $detection
                         }
@@ -15294,7 +15852,10 @@ function Check-TimeProviderDLLs {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1547.003: Boot or Logon Autostart Execution: Time Providers"
-                            Meta = "Registry Path: "+$item.Name+", DLL: "+$data.DllName
+                            Meta = [PSCustomObject]@{
+                                Location = $item.Name
+                                EntryValue = $data.DllName
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15324,7 +15885,10 @@ function Check-PrintProcessorDLLs {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
-                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
+                        Meta = [PSCustomObject]@{
+                            Location = $item.Name
+                            EntryValue = $data.Driver
+                        }
                     }
                     $result = Check-IfAllowed $allowtable_printprocessors $item.Name $data.Driver $detection
                     if ($result){
@@ -15339,7 +15903,10 @@ function Check-PrintProcessorDLLs {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
-                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
+                        Meta = [PSCustomObject]@{
+                            Location = $item.Name
+                            EntryValue = $data.Driver
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15400,7 +15967,11 @@ function Check-UserInitMPRScripts {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1037.001: Boot or Logon Initialization Scripts: Logon Script (Windows)"
-                        Meta = "Key Location: HKCU\Environment, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15426,7 +15997,11 @@ function Check-ScreenSaverEXE {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1546.002: Event Triggered Execution: Screensaver"
-                        Meta = "Key Location: HKCU\Control Panel\Desktop, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15483,7 +16058,11 @@ function Check-NetSHDLLs {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1546.007: Event Triggered Execution: Netsh Helper DLL"
-                        Meta = "Key Location: HKLM\SOFTWARE\Microsoft\Netsh, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15517,7 +16096,11 @@ function Check-AppCertDLLs {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1546.009: Event Triggered Execution: AppCert DLLs"
-                        Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\AppCertDlls, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15550,7 +16133,11 @@ function Check-AppInitDLLs {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1546.010: Event Triggered Execution: AppInit DLLs"
-                        Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15577,7 +16164,11 @@ function Check-AppInitDLLs {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1546.010: Event Triggered Execution: AppInit DLLs"
-                        Meta = "Key Location: HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15611,7 +16202,11 @@ function Check-ApplicationShims {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546.011: Event Triggered Execution: Application Shimming"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15638,7 +16233,10 @@ function Check-IFEO {
                         Risk = 'Medium'
                         Source = 'Registry'
                         Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
-                        Meta = "Registry Path: "+$item.Name+", Debugger: "+$data.Debugger
+                        Meta = [PSCustomObject]@{
+                            Location = $item.Name
+                            EntryValue = $data.Debugger
+                        }
                     }
                     $result = Check-IfAllowed $allowtable_ifeodebuggers $item.Name $data.Debugger $detection
                     if ($result -eq $true){
@@ -15650,7 +16248,10 @@ function Check-IFEO {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
-                    Meta = "Registry Path: "+$item.Name+", Debugger: "+$data.Debugger
+                    Meta = [PSCustomObject]@{
+                        Location = $item.Name
+                        EntryValue = $data.Debugger
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15682,7 +16283,11 @@ function Check-FolderOpen {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                        Meta = "Key Location: HKCU\Software\Classes\Folder\shell\open\command, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15709,7 +16314,11 @@ function Check-WellKnownCOM {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                    Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{42aedc87-2188-41fd-b9a3-0c966feabec1}\\InprocServer32, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15727,7 +16336,11 @@ function Check-WellKnownCOM {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
-                    Meta = "Key Location: HKCU\\Software\\Classes\\CLSID\\{F3130CDB-AA52-4C3A-AB32-85FFC23AF9C1}\\InprocServer32, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15752,7 +16365,11 @@ function Check-Officetest {
                     Risk = 'Very High'
                     Source = 'Office'
                     Technique = "T1137.002: Office Application Startup: Office Test"
-                    Meta = "Key Location: HKEY_CURRENT_USER\Software\Microsoft\Office test\Special\Perf: " + $_.Name + ", Entry Value: " + $_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15767,7 +16384,11 @@ function Check-Officetest {
                 Risk = 'Very High'
                 Source = 'Office'
                 Technique = "T1137.002: Office Application Startup: Office Test"
-                Meta = "Key Location: HKEY_LOCAL_MACHINE\Software\Microsoft\Office test\Special\Perf, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                    EntryName = $_.Name
+                    EntryValue = $_.Value
+                }
             }
             Write-Detection $detection
         }
@@ -15801,7 +16422,11 @@ function Check-OfficeGlobalDotName {
                             Risk = 'Very High'
                             Source = 'Office'
                             Technique = "T1137.001: Office Application Office Template Macros"
-                            Meta = "Key Location: HKCU\software\microsoft\office\$version.0\word\options, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15824,7 +16449,11 @@ function Check-TerminalServicesDLL {
                     Risk = 'Very High'
                     Source = 'Registry'
                     Technique = "T1505.005: Server Software Component: Terminal Services DLL"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\TermService\Parameters, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15845,7 +16474,11 @@ function Check-AutoDialDLL {
                     Risk = 'Very High'
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15877,7 +16510,11 @@ function Check-CommandAutoRunProcessors {
                         Risk = 'Very High'
                         Source = 'Registry'
                         Technique = "T1546: Event Triggered Execution"
-                        Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Command Processor, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -15932,7 +16569,11 @@ function Check-TrustProviderDLL {
                     Risk = 'Very High'
                     Source = 'Registry'
                     Technique = "T1553: Subvert Trust Controls"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15942,7 +16583,11 @@ function Check-TrustProviderDLL {
                     Risk = 'Very High'
                     Source = 'Registry'
                     Technique = "T1553: Subvert Trust Controls"
-                    Meta = "Key Location: HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\{603BCC1F-4B59-4E08-B724-D2C6297EF351}, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                    Meta = [PSCustomObject]@{
+                        Location = $path
+                        EntryName = $_.Name
+                        EntryValue = $_.Value
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15980,7 +16625,10 @@ function Check-NaturalLanguageDevelopmentDLLs {
                     Risk = 'High'
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
-                    Meta = "Registry Path: "+$item.Name+", DLL: "+$dll
+                    Meta = [PSCustomObject]@{
+                        Location = $item.Name
+                        EntryValue = $dll
+                    }
                     Reference = "https://persistence-info.github.io/Data/naturallanguage6.html"
                 }
                 Write-Detection $detection
@@ -16007,7 +16655,11 @@ function Check-WindowsLoadKey {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1546: Event Triggered Execution"
-                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -16044,7 +16696,11 @@ function Check-AMSIProviders {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1112: Modify Registry"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -16080,7 +16736,11 @@ function Check-AppPaths {
                                     Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546: Event Triggered Execution"
-                                    Meta = "Key Location: "+$item.Name+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                                    Meta = [PSCustomObject]@{
+                                        Location = $item.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                    }
                                 }
                                 $result = Check-IfAllowed $allowtable_apppaths $item.Name $_.Value $detection
                                 if ($result){
@@ -16092,7 +16752,11 @@ function Check-AppPaths {
                                 Risk = 'Medium'
                                 Source = 'Registry'
                                 Technique = "T1546: Event Triggered Execution"
-                                Meta = "Key Location: "+$item.Name+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                                Meta = [PSCustomObject]@{
+                                    Location = $item.Name
+                                    EntryName = $_.Name
+                                    EntryValue = $_.Value
+                                }
                             }
                             Write-Detection $detection
                         }
@@ -16159,7 +16823,10 @@ function Check-GPOExtensions {
                         Risk = 'Medium'
                         Source = 'Windows GPO Extensions'
                         Technique = "T1484.001: Domain Policy Modification: Group Policy Modification"
-                        Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $item.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -16183,7 +16850,11 @@ function Check-HTMLHelpDLL {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1546: Event Triggered Execution"
-                        Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -16432,7 +17103,10 @@ function Check-RATS {
                     Risk = 'Medium'
                     Source = 'Software'
                     Technique = "T1219: Remote Access Software"
-                    Meta = "Possible RAT Artifact: $rat_name, Location: $tmppath"
+                    Meta = [PSCustomObject]@{
+                        RemoteAccessTool = $rat_name
+                        Location = $tmppath
+                    }
                 }
                 Write-Detection $detection
                 #Write-Host "Found RAT Artifact: $rat_name, Location: $checked_path"
@@ -16474,7 +17148,10 @@ function Check-ContextMenu {
                             Risk = 'Medium'
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $item.Name
+                                EntryValue = $_.Value
+                            }
                             Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
@@ -16533,7 +17210,11 @@ function Check-OfficeAI {
                     Risk = 'Medium'
                     Source = 'Windows Context Menu'
                     Technique = "T1546: Event Triggered Execution"
-                    Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                    Meta = [PSCustomObject]@{
+                        Location = $item.FullName
+                        Created = $item.CreationTime
+                        Modified = $item.LastWriteTime
+                    }
                     Reference = "https://twitter.com/Laughing_Mantis/status/1645268114966470662"
                 }
                 Write-Detection $detection
@@ -16573,7 +17254,11 @@ function Check-Notepad++-Plugins {
                         Risk = 'Medium'
                         Source = 'Notepad++'
                         Technique = "T1546: Event Triggered Execution"
-                        Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                        Meta = [PSCustomObject]@{
+                            Location = $item.FullName
+                            Created = $item.CreationTime
+                            Modified = $item.LastWriteTime
+                        }
                         Reference = "https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/"
                     }
                     Write-Detection $detection
@@ -16605,7 +17290,12 @@ function Check-MSDTCDll {
                         Risk = 'Medium'
                         Source = 'Windows MSDTC'
                         Technique = "T1574: Hijack Execution Flow"
-                        Meta = "Key: "+$path+", Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Expected Value: "+$matches[$_.Name]
+                        Meta = [PSCustomObject]@{
+                            Location = $path
+                            EntryName = $_.Name
+                            EntryValue = $_.Value
+                            ExpectedValue = $matches[$_.Name]
+                        }
                         Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
                     }
                     Write-Detection $detection
@@ -16627,7 +17317,11 @@ function Check-Narrator {
             Risk = 'Medium'
             Source = 'Windows Narrator'
             Technique = "T1546: Event Triggered Execution"
-            Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+            Meta = [PSCustomObject]@{
+                Location = $item.FullName
+                Created = $item.CreationTime
+                Modified = $item.LastWriteTime
+            }
             Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
         }
         Write-Detection $detection
@@ -16650,7 +17344,11 @@ function Check-Suspicious-File-Locations {
                 Risk = 'High'
                 Source = 'Windows'
                 Technique = "N/A"
-                Meta = "File: "+$item.FullName+", Created: "+$item.CreationTime+", Last Modified: "+$item.LastWriteTime
+                Meta = [PSCustomObject]@{
+                    Location = $item.FullName
+                    Created = $item.CreationTime
+                    Modified = $item.LastWriteTime
+                }
             }
             Write-Detection $detection
         }
@@ -16678,7 +17376,10 @@ function Check-BootVerificationProgram {
                 Risk = 'High'
                 Source = 'Registry'
                 Technique = "T1112: Modify Registry"
-                Meta = "Registry Path: "+$path+", Program: "+$data.ImagePath
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                    EntryName = $data.ImagePath
+                }
                 Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/bootverificationprogram.md"
             }
             Write-Detection $detection
@@ -16740,7 +17441,10 @@ function Check-DiskCleanupHandlers {
                             Risk = 'Low'
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Key: "+$item.Name+", Program: "+$target_prog
+                            Meta = [PSCustomObject]@{
+                                Location = $item.Name
+                                EntryName = $target_prog
+                            }
                             Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/diskcleanuphandler.md"
                         }
                         Write-Detection $detection
@@ -16794,7 +17498,10 @@ function Check-DisableLowILProcessIsolation {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Key: "+$item.Name+", Display Name: "+$displayname
+                            Meta = [PSCustomObject]@{
+                                Location = $item.Name
+                                EntryName = $displayname
+                            }
                             Reference = "https://medium.com/@matterpreter/life-is-pane-persistence-via-preview-handlers-3c0216c5ef9e-b73a9515c9a8"
                         }
                         Write-Detection $detection
@@ -16805,6 +17512,22 @@ function Check-DisableLowILProcessIsolation {
     }
 }
 
+
+function Format-MetadataToString($detectionmeta) {
+	$output = ""
+    $propertyCount = ($detectionmeta|Get-Member -Type NoteProperty).count
+    $index = 1
+    foreach ($prop in $detectionmeta.PSObject.Properties) {
+        if ($index -eq $propertyCount){
+            $output += "$($prop.Name): $($prop.Value)"
+        } else {
+            $output += "$($prop.Name): $($prop.Value), "
+        }
+        $index += 1
+    }
+	return $output
+}
+
 function Write-Detection($det) {
 	# det is a custom object which will contain various pieces of metadata for the detection
 	# Name - The name of the detection logic.
@@ -16812,6 +17535,9 @@ function Write-Detection($det) {
 	# Source - The source 'module' reporting the detection
 	# Technique - The most relevant MITRE Technique
 	# Meta - String containing reference material specific to the received detection
+
+
+
 	$detection_list.Add($det) | Out-Null
 
 	switch ($det.Risk) {
@@ -16825,7 +17551,8 @@ function Write-Detection($det) {
 
 	if (-not($Quiet)) {
 		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
-		Write-Host "[%] $($det.Meta)" -ForegroundColor White
+
+		Write-Host "[%] $(Format-MetadataToString($det.Meta))" -ForegroundColor White
         if (!$det.Reference){
             $det | Add-Member -MemberType NoteProperty -Name Reference -Value "N/A"
         }
@@ -16833,6 +17560,7 @@ function Write-Detection($det) {
 
 	# incrementally write to the csv otherwise the json output will be output in the Clean-Up method
 	if ($script:DetectionsPath.CanWrite -and $OutputFormat -eq "CSV") {
+        $det.Meta = Format-MetadataToString($det.Meta)
 		$det | Export-CSV $script:DetectionsPath.Path -Append -NoTypeInformation -Encoding UTF8 -Force
 	}
 }
@@ -17392,7 +18120,6 @@ function Unload-Hive($hive_fullpath, $hive_value){
 
 function Clean-Up {
 	if ($OutputFormat -eq "JSON") {
-        Write-Host $script:DetectionsPath.Path
 		$detection_list | ConvertTo-Json | Out-File $script:DetectionsPath.Path
         if ($snapshot){
             $snapshot_list | ConvertTo-Json | Out-File $script:SnapshotPath.Path
