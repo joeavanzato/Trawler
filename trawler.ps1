@@ -16203,7 +16203,7 @@ function Check-ApplicationShims {
                     Source = 'Registry'
                     Technique = "T1546.011: Event Triggered Execution: Application Shimming"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $path
+                        Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
                     }
@@ -16234,7 +16234,7 @@ function Check-IFEO {
                         Source = 'Registry'
                         Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
                         Meta = [PSCustomObject]@{
-                            KeyLocation = $item.Name
+                            Location = $item.Name
                             EntryValue = $data.Debugger
                         }
                     }
@@ -16249,7 +16249,7 @@ function Check-IFEO {
                     Source = 'Registry'
                     Technique = "T1546.012: Event Triggered Execution: Image File Execution Options Injection"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $item.Name
+                        Location = $item.Name
                         EntryValue = $data.Debugger
                     }
                 }
@@ -16284,7 +16284,7 @@ function Check-FolderOpen {
                         Source = 'Registry'
                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                         Meta = [PSCustomObject]@{
-                            KeyLocation = $path
+                            Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
                         }
@@ -16315,7 +16315,7 @@ function Check-WellKnownCOM {
                     Source = 'Registry'
                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $path
+                        Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
                     }
@@ -16337,7 +16337,7 @@ function Check-WellKnownCOM {
                     Source = 'Registry'
                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $path
+                        Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
                     }
@@ -16366,7 +16366,7 @@ function Check-Officetest {
                     Source = 'Office'
                     Technique = "T1137.002: Office Application Startup: Office Test"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $path
+                        Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
                     }
@@ -16385,7 +16385,7 @@ function Check-Officetest {
                 Source = 'Office'
                 Technique = "T1137.002: Office Application Startup: Office Test"
                 Meta = [PSCustomObject]@{
-                    KeyLocation = $path
+                    Location = $path
                     EntryName = $_.Name
                     EntryValue = $_.Value
                 }
@@ -16423,7 +16423,7 @@ function Check-OfficeGlobalDotName {
                             Source = 'Office'
                             Technique = "T1137.001: Office Application Office Template Macros"
                             Meta = [PSCustomObject]@{
-                                KeyLocation = $path
+                                Location = $path
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                             }
@@ -16450,7 +16450,7 @@ function Check-TerminalServicesDLL {
                     Source = 'Registry'
                     Technique = "T1505.005: Server Software Component: Terminal Services DLL"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $path
+                        Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
                     }
@@ -16475,7 +16475,7 @@ function Check-AutoDialDLL {
                     Source = 'Registry'
                     Technique = "T1546: Event Triggered Execution"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $path
+                        Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
                     }
@@ -16511,7 +16511,7 @@ function Check-CommandAutoRunProcessors {
                         Source = 'Registry'
                         Technique = "T1546: Event Triggered Execution"
                         Meta = [PSCustomObject]@{
-                            KeyLocation = $path
+                            Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
                         }
@@ -16570,7 +16570,7 @@ function Check-TrustProviderDLL {
                     Source = 'Registry'
                     Technique = "T1553: Subvert Trust Controls"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $path
+                        Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
                     }
@@ -16584,7 +16584,7 @@ function Check-TrustProviderDLL {
                     Source = 'Registry'
                     Technique = "T1553: Subvert Trust Controls"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $path
+                        Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
                     }
@@ -16626,7 +16626,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
                     Source = 'Registry'
                     Technique = "T1112: Modify Registry"
                     Meta = [PSCustomObject]@{
-                        KeyLocation = $item.Name
+                        Location = $item.Name
                         EntryValue = $dll
                     }
                     Reference = "https://persistence-info.github.io/Data/naturallanguage6.html"
@@ -16656,7 +16656,7 @@ function Check-WindowsLoadKey {
                         Source = 'Registry'
                         Technique = "T1546: Event Triggered Execution"
                         Meta = [PSCustomObject]@{
-                            KeyLocation = $path
+                            Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
                         }
@@ -16697,7 +16697,7 @@ function Check-AMSIProviders {
                             Source = 'Registry'
                             Technique = "T1112: Modify Registry"
                             Meta = [PSCustomObject]@{
-                                KeyLocation = $path
+                                Location = $path
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                             }
@@ -16737,7 +16737,7 @@ function Check-AppPaths {
                                     Source = 'Registry'
                                     Technique = "T1546: Event Triggered Execution"
                                     Meta = [PSCustomObject]@{
-                                        KeyLocation = $item.Name
+                                        Location = $item.Name
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
                                     }
@@ -16753,7 +16753,7 @@ function Check-AppPaths {
                                 Source = 'Registry'
                                 Technique = "T1546: Event Triggered Execution"
                                 Meta = [PSCustomObject]@{
-                                    KeyLocation = $item.Name
+                                    Location = $item.Name
                                     EntryName = $_.Name
                                     EntryValue = $_.Value
                                 }
