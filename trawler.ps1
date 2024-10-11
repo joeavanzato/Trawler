@@ -16884,7 +16884,7 @@ function Write-SnapshotMessage() {
 		$snapShotMessage | Export-CSV $script:SnapshotPath.Path -Append -NoTypeInformation -Encoding UTF8
 	}
 	else {
-		$snapshot_list.Add($snapShotMessage)
+		$snapshot_list.Add($snapShotMessage) | Out-Null
 	}
 }
 
