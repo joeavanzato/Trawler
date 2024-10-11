@@ -174,6 +174,10 @@ param
 	$ScanOptions = "All"
 )
 
+function Write-Message ($message){
+    Write-Host "[+] $message"
+}
+
 # if the output path doesn't exist, create it.
 if (!(Test-Path $OutputLocation)) {
 	New-Item $OutputLocation -Type Directory
@@ -209,6 +213,7 @@ function New-TrawlerOutputItem() {
 # Create detection output csv
 $script:DetectionsPath = New-TrawlerOutputItem -FileName "detections"
 Write-Message "Detection Output Path: $($script:DetectionsPath.Path)"
+
 
 # Create snapshot output if specified
 if ($Snapshot) {
@@ -16842,9 +16847,6 @@ function Detection-Metrics {
 	}
 }
 
-function Write-Message ($message){
-    Write-Host "[+] $message"
-}
 
 # Snapshot acts as a custom allow-list for a specific gold-image or enterprise environment
 # Run trawler once like '.\trawler.ps1 -snapshot' to generate 'snapshot.csv
