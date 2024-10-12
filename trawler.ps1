@@ -14467,6 +14467,7 @@ function Check-Office-Trusted-Locations {
                         Location = $item.FullName
                         Created =  $item.CreationTime
                         Modified = $item.LastWriteTime
+                        Hash = Get-File-Hash $item.FullName
                     }
                 }
                 Write-Detection $detection
