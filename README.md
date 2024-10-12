@@ -37,13 +37,16 @@ Additionally, if you identify obvious false positives, please let me know by ope
 
 ### CLI Parameters
 ```
--scanoptions : Tab-through possible detections and select a sub-set using comma-delimited terms (eg. .\trawler.ps1 -scanoptions Services,Processes)
+-scanoptions : Tab-through for possible detections and select a sub-set using comma-delimited terms (eg. .\trawler.ps1 -scanoptions Services,Processes) or skip to do all detections
 -quiet : Suppress Detection output to console
 -snapshot : Capture a "persistence snapshot" of the current system, defaulting to "$PSScriptRoot\snapshot.csv"
 -snapshotpath : Define a custom file-path for saving snapshot output to.
 -outpath : Define a custom file-path for saving detection output to (defaults to "$PSScriptRoot\detections.csv")
 -loadsnapshot : Define the path for an existing snapshot file to load as an allow-list reference
--drivetarget : Define the variable for a mounted target drive (eg. .\trawler.ps1 -targetdrive "D:") - using this alone leads to an 'assumed homedrive' variable of C: for analysis purposes
+-drivetarget : Define the variable for a mounted target drive (eg. .\trawler.ps1 -targetdrive "D:") - skipping this argument leads to an 'assumed homedrive' variable of C: for analysis purposes
+-daysago : Define how many 'days back' we want to take into consideration for time-based detections (defaults to 45)
+-hashmode : Define which hashing algorithm we want to use for supported detections - supports sha1, md5 or sha256
+-evtx : Enable creation of Event Log Source and Writing of Detections to Application event log under Source=trawler with EID=9001
 ```
 
 ## What separates this from PersistenceSniper?
