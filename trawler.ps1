@@ -17940,6 +17940,12 @@ function Write-SnapshotMessage() {
 		[string]
 		$Source
 	)
+    # TODO - Consider implementing this as JSON instead of CSV for more detailed storage and to easier support in-line modification by other tools
+    # Snapshot acts as a custom allow-list for a specific gold-image or enterprise environment
+    # Run trawler once like '.\trawler.ps1 -snapshot' to generate 'snapshot.csv
+    # Key = Lookup component for allow-list hashtable
+    # Value = Lookup component for allow-list hashtable
+    # Source = Where are the K/V sourced from
 
 	# Only write when writable and snapshot is specified
 	if (-not ($script:SnapshotPath.CanWrite)) {
