@@ -57,6 +57,11 @@ param
 	$OutputLocation = $PSScriptRoot,
 	[Parameter(
 		Mandatory = $false,
+		HelpMessage = 'Which hashing algorithm to use. Defaults to SHA1')]
+	[ValidateSet("SHA1", "SHA256", "MD5")]
+	$HashMode = "SHA1",
+	[Parameter(
+		Mandatory = $false,
 		HelpMessage = 'Type of snap shot to be created. Defaults to csv.')]
 	[ValidateSet("CSV", "JSON")]
 	$OutputFormat = "CSV",
@@ -78,9 +83,14 @@ param
 	$loadsnapshot,
 	[Parameter(
 		Mandatory = $false,
-		HelpMessage = 'The drive to target for analysis - for example, if mounting an imaged system as a second drive on an analysis device, specify via -drivetarget "D:" (NOT YET IMPLEMENTED)')]
+		HelpMessage = 'The drive to target for analysis - for example, if mounting an imaged system as a second drive on an analysis device, specify via -drivetarget "D:" (PARTIALLY IMPLEMENTED)')]
 	[string]
 	$drivetarget,
+	[Parameter(
+		Mandatory = $false,
+		HelpMessage = 'How many days back to search when doing time-based detections')]
+	[int]
+	$daysago = 45,
 	[Parameter(
 		Mandatory = $false,
 		HelpMessage = "Allows for targeting certain scanners and ignoring others. Use 'All' to run all scanners.")]
@@ -174,6 +184,8 @@ param
 	$ScanOptions = "All"
 )
 
+$threshold_date = (Get-Date).adddays(-$daysago)
+
 function Write-Message ($message){
     Write-Host "[+] $message"
 }
@@ -215,7 +227,6 @@ function New-TrawlerOutputItem() {
 $script:DetectionsPath = New-TrawlerOutputItem -FileName "detections"
 Write-Message "Detection Output Path: $($script:DetectionsPath.Path)"
 
-
 # Create snapshot output if specified
 if ($Snapshot) {
 	$script:SnapshotPath = New-TrawlerOutputItem -FileName "snapshot"
@@ -228,8 +239,6 @@ $drivechange = $PSBoundParameters.ContainsKey('drivetarget')
 $detection_list = New-Object -TypeName "System.Collections.ArrayList"
 $snapshot_list = New-Object -TypeName "System.Collections.ArrayList"
 
-
-# TODO - JSON Detection Output to easily encapsulate more details
 # TODO - Non-Standard Service/Task running as/created by Local Administrator
 # TODO - Browser Extension Analysis
 # TODO - Temporary RID Hijacking
@@ -243,6 +252,7 @@ $suspicious_process_paths = @(
 	".*\\users\\administrator\\.*",
 	".*\\users\\default\\.*",
 	".*\\users\\public\\.*",
+    ".*\\users\\guest\\.*",
 	".*\\windows\\debug\\.*",
 	".*\\windows\\fonts\\.*",
 	".*\\windows\\media\\.*",
@@ -2037,6 +2047,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             $result = Check-IfAllowed $allowtable_services $service.Name $service.PathName $detection
@@ -2056,6 +2067,7 @@ function Check-Services {
                         Location = $service.PathName
                         EntryName = $service.Name
                         SuspiciousEntry = $term
+                        Hash = Get-File-Hash $service.PathName
                     }
                 }
                 Write-Detection $detection
@@ -2071,6 +2083,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2094,6 +2107,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2108,6 +2122,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2122,6 +2137,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2137,6 +2153,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2176,6 +2193,7 @@ function Check-Processes {
                         PID = $process.ProcessId
                         SuspiciousEntry = $term
                         Created = $process.CreationDate
+                        Hash = Get-File-Hash $process.ExecutablePath
                     }
                 }
                 Write-Detection $detection
@@ -2193,6 +2211,7 @@ function Check-Processes {
                     CommandLine = $process.CommandLine
                     PID = $process.ProcessId
                     Created = $process.CreationDate
+                    Hash = Get-File-Hash $process.ExecutablePath
                 }
             }
             Write-Detection $detection
@@ -2211,6 +2230,7 @@ function Check-Processes {
                         CommandLine = $process.CommandLine
                         PID = $process.ProcessId
                         Created = $process.CreationDate
+                        Hash = Get-File-Hash $process.ExecutablePath
                     }
                 }
                 Write-Detection $detection
@@ -2349,6 +2369,7 @@ function Check-WMIConsumers {
                 Meta = [PSCustomObject]@{
                     EntryName = $consumer.Name
                     EntryValue = $val_
+                    Hash = Get-File-Hash $val_
                 }
             }
             $result = Check-IfAllowed $allowtable_wmi_consumers $consumer.Name $val_ $detection
@@ -2368,6 +2389,7 @@ function Check-WMIConsumers {
                     Location = $consumer.ScriptFileName
                     EntryName = $consumer.Name
                     EntryValue = $consumer.ScriptText
+                    Hash = Get-File-Hash $consumer.ScriptFileName
                 }
             }
             Write-Detection $detection
@@ -2384,6 +2406,7 @@ function Check-WMIConsumers {
                     Location = $consumer.ExecutablePath
                     EntryName = $consumer.Name
                     EntryValue = $consumer.CommandLineTemplate
+                    Hash = Get-File-Hash $consumer.ExecutablePath
                 }
             }
             Write-Detection $detection
@@ -2450,6 +2473,7 @@ function Check-Startups {
                 EntryName = $item.Name
                 EntryValue = $item.Command
                 User = $item.User
+                Hash = Get-File-Hash $item.Location
             }
         }
 
@@ -2478,6 +2502,7 @@ function Check-Startups {
                             Location = $path_
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $path_
                         }
                     }
                     Write-Detection $detection
@@ -2570,6 +2595,7 @@ function Check-Modified-Windows-Accessibility-Feature {
                         Location = $file
                         Created = $fdata.CreationTime
                         Modified = $fdata.LastWriteTime
+                        Hash = Get-File-Hash $file
                     }
                 }
                 Write-Detection $detection
@@ -2846,7 +2872,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{00C429C0-0BA9-11d2-A484-00C04F8EFB69}\InprocServer32" = "$homedrive\\Windows\\System32\\Dxtmsft\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{00C4E345-813F-4401-9A9F-29F7A576FA11}\InProcServer32" = "$homedrive\\Windows\\System32\\StartTileData\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{00CA399E-4CC0-43D2-902B-CEA3D36DC9E4}\InProcServer32" = "$homedrive\\Windows\\System32\\remoteaudioendpoint\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{00E80F18-EC5B-4FCF-A417-7348991A8D32}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvsvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{00E80F18-EC5B-4FCF-A417-7348991A8D32}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvsvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{00eebf57-477d-4084-9921-7ab3c2c9459d}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{00f20eb5-8fd6-4d9d-b75e-36801766c8f1}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Windows Photo Viewer\\PhotoAcq\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{00f210a1-62f0-438b-9f7e-9618d72a1831}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Windows Photo Viewer\\PhotoAcq\.dll"
@@ -2859,7 +2885,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{011B3619-FE63-4814-8A84-15A194CE9CE3}\InprocServer32" = "$homedrive\\Windows\\System32\\msvidctl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{011BE22D-E453-11D1-945A-00C04FB984F9}\InprocServer32" = "$homedrive\\Windows\\system32\\wsecedit\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0131BE10-2001-4C5F-A9B0-CC88FAB64CE8}\InProcServer32" = "$homedrive\\Windows\\system32\\windowscodecs\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{01367108-5EE2-4E1C-A8DE-24438065ABC9}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{01367108-5EE2-4E1C-A8DE-24438065ABC9}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{01458CF0-A1A2-11D1-8F85-00600895E7D5}\InprocServer32" = "$homedrive\\Windows\\system32\\msdtctm\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0149EEDF-D08F-4142-8D73-D23903D21E90}\InprocServer32" = "$homedrive\\Windows\\System32\\msvidctl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{01575CFE-9A55-4003-A5E1-F38D1EBDCBE1}\InprocServer32" = "$homedrive\\Windows\\system32\\MsCtfMonitor\.dll"
@@ -2907,7 +2933,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{02BCC737-B171-4746-94C9-0D8A0B2C0089}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Microsoft Office\\root(\\VFS\\ProgramFilesX64\\Microsoft Office)?\\Office.*\\IEAWSDC\.DLL"
 	"HKEY_CLASSES_ROOT\CLSID\{02C09DB6-F3E3-4C27-970D-17107BF4518E}\InprocServer32" = "$homedrive\\Windows\\System32\\InkObjCore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{02C35120-4924-46EB-BC2B-5FB0DB060948}\InProcServer32" = "$homedrive\\Windows\\System32\\IME\\SHARED\\imedicapiccps\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{02C68609-99E3-4A8F-9575-4973D401C06F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdevtools\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{02C68609-99E3-4A8F-9575-4973D401C06F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdevtools\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{02df6db6-9405-4812-b3f6-500e8615b7af}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{02E6EC4C-96E4-42E8-B533-336916A0087D}\InProcServer32" = "$homedrive\\Windows\\system32\\lsmproxy\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{02E7E69E-E80A-48E3-8B1D-6448C25B1710}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
@@ -2981,7 +3007,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{05589F80-C356-11CE-BF01-00AA0055595A}\InprocServer32" = "$homedrive\\Windows\\System32\\kswdmcap\.ax"
 	"HKEY_CLASSES_ROOT\CLSID\{05589FA1-C356-11CE-BF01-00AA0055595A}\InprocServer32" = "$homedrive\\Windows\\System32\\wmpdxm\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{05589FAF-C356-11CE-BF01-00AA0055595A}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{055A7699-EAFF-47DF-8E55-41F4C0612BF3}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{055A7699-EAFF-47DF-8E55-41F4C0612BF3}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{055CB2D7-2969-45CD-914B-76890722F112}\InprocServer32" = "$homedrive\\Windows\\System32\\msvidctl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{055E80CA-DD63-4C25-93AB-448BBDB7AA17}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobedui\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{056440FD-8568-48e7-A632-72157243B55B}\InProcServer32" = "$homedrive\\Windows\\system32\\explorerframe\.dll"
@@ -3039,11 +3065,11 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{0709BCEE-E071-4CF1-BD15-BAEC9AA12D75}\InprocServer32" = "$homedrive\\Windows\\System32\\InputMethod\\SHARED\\ChxUserDictDS\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{07252659-bb6b-4b79-b78b-623f6699a579}\InProcServer32" = "$homedrive\\Windows\\System32\\audioeng\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0725C3CB-FEFB-11D0-99F9-00C04FC2F8EC}\InprocServer32" = "$homedrive\\Windows\\system32\\wbem\\wmiprov\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{07333BBD-64AF-4206-899D-2809660C61C7}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{07333BBD-64AF-4206-899D-2809660C61C7}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{07369A67-07A6-4608-ABEA-379491CB7C46}\InprocServer32" = "$homedrive\\Windows\\System32\\UpdatePolicy\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{07398dcf-2e0b-4ece-99dd-56b262db948b}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage\.search|shell32|twinui.*|SearchFolder|Search)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{074b110f-7f58-4743-aea5-12f15b5074ed}\InProcServer32" = "$homedrive\\Windows\\system32\\xactengine3_5\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{074BFFFD-4E50-42c1-A7EB-40D9D70F2471}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{074BFFFD-4E50-42c1-A7EB-40D9D70F2471}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{076C2A6C-F78F-4C46-A723-3583E70876EA}\InProcServer32" = "$homedrive\\Windows\\system32\\windowscodecsext\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{078759d3-423b-48ad-ab6a-5638c2884dbe}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{0794B86D-0158-4EC1-8D52-E4025DCE746A}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
@@ -3263,7 +3289,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{0EE4845B-96CD-403b-8609-317330581408}\InprocServer32" = "$homedrive\\Windows\\System32\\DeviceDisplayStatusManager\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0EEA25CC-4362-4a12-850B-86EE61B0D3EB}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{0EEBEAF3-B225-493C-AD14-1DBE8775C8BA}\InProcServer32" = "$homedrive\\Windows\\System32\\LanguagePackManagementCSP\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{0EEC1AF6-7664-4D17-88A5-B71EF18A93BC}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{0EEC1AF6-7664-4D17-88A5-B71EF18A93BC}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0EEF5FBE-18F3-478A-BD28-4899C2E90323}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0f3079cc-f843-4c8e-9a5e-4af1e37b4c95}\InProcServer32" = "$homedrive\\Windows\\System32\\exsmime\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0f3ed1f2-afdd-4b0c-b6d9-229c1bc58a08}\InProcServer32" = "$homedrive\\Windows\\system32\\netcorehc\.dll"
@@ -3281,7 +3307,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{0FA53099-5317-46AF-9376-9A04A4B550F9}\InProcServer32" = "$homedrive\\Windows\\System32\\audioeng\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0fafd998-c8e8-42a1-86d7-7c10c664a415}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.ui\.picturepassword|authui)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FB15084-AF41-11CE-BD2B-204C4F4F5020}\InProcServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\System\\Ole DB\\msxactps\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{0FB41BD0-3107-40A5-8D49-456E585947B2}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{0FB41BD0-3107-40A5-8D49-456E585947B2}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FC988D4-C935-4b97-A973-46282EA175C8}\InProcServer32" = "$homedrive\\Windows\\system32\\StructuredQuery\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FDE5092-AA2A-11D1-A7D4-0000F87571E3}\InProcServer32" = "$homedrive\\Windows\\System32\\GPEdit\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{0FD16473-86A0-4991-B88A-D48733BF9873}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\.*\\psmachine.*\.dll"
@@ -3433,7 +3459,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{15eae92e-f17a-4431-9f28-805e482dafd4}\InProcServer32" = "$homedrive\\Windows\\System32\\appwiz\.cpl"
 	"HKEY_CLASSES_ROOT\CLSID\{15fc1bac-8d83-4e87-8cc2-a70c9f66f943}\InProcServer32" = "$homedrive\\Windows\\System32\\usercpl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{15FD01A3-6E5D-4ECD-9EBD-1813CB3887A1}\InProcServer32" = "$homedrive\\Windows\\system32\\btpanui\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{1618348E-35B3-4631-8C04-2AB15AF5007D}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{1618348E-35B3-4631-8C04-2AB15AF5007D}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{163FDC20-2ABC-11d0-88F0-00A024AB2DBB}\InProcServer32" = "$homedrive\\Windows\\system32\\dsquery\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1643E180-90F5-11CE-97D5-00AA0055595A}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{164484A9-35D9-4FB7-9FAB-48273B96AA1D}\InprocServer32" = "$homedrive\\Windows\\System32\\Dxtmsft\.dll"
@@ -3578,7 +3604,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{1BA67E3F-8CC4-44E0-848E-4E50B0126BD0}\InprocServer32" = "$homedrive\\Windows\\System32\\ChxAPDS\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1BA783C1-2A30-4ad3-B928-A9A46C604C28}\InProcServer32" = "$homedrive\\Windows\\system32\\appwiz\.cpl"
 	"HKEY_CLASSES_ROOT\CLSID\{1BAC8681-2965-4FFC-92D1-170CA4099E01}\InProcServer32" = "$homedrive\\Windows\\System32\\usermgrproxy\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{1BC39379-8D90-4F18-8817-795C57163770}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{1BC39379-8D90-4F18-8817-795C57163770}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1BC691FE-2EC5-4F1B-B985-8DA7423CE6E9}\InprocServer32" = "$homedrive\\Windows\\System32\\srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1BC972D6-555C-4FF7-BE2C-C584021A0A6A}\InprocServer32" = "$homedrive\\Windows\\System32\\appmgr\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1BCD547A-62F6-4F2D-A0E3-B4930A3F3C33}\InprocServer32" = "$homedrive\\Windows\\system32\\wbem\\EventTracingManagement\.dll"
@@ -3629,7 +3655,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{1d8a9b47-3a28-4ce2-8a4b-bd34e45bceeb}\InprocServer32" = "$homedrive\\Windows\\system32\\upnp\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1DA08500-9EDC-11CF-BC10-00AA00AC74F6}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1DC08C0F-A60F-4C62-9A1B-26E181CE8DB1}\InprocServer32" = "$homedrive\\Windows\\System32\\FilterDS\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{1DC715B2-9126-4671-8086-299A44543E0F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\NVXDBat\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{1DC715B2-9126-4671-8086-299A44543E0F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\NVXDBat\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1DCB3A00-33ED-11D3-8470-00C04F79DBC0}\InProcServer32" = "$homedrive\\Windows\\System32\\wmdmps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1DF1BDDA-A8FA-4E57-8015-8B621C4DBBE7}\InprocServer32" = "$homedrive\\Windows\\System32\\LocationFramework\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{1DF7C823-B2D4-4B54-975A-F2AC5D7CF8B8}\InprocServer32" = "$homedrive\\Windows\\system32\\mstscax\.dll"
@@ -3848,7 +3874,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{267DB0B3-55E3-4902-949B-DF8F5CEC0191}\InprocServer32" = "$homedrive\\Windows\\System32\\msvidctl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{26933B26-DA32-49FC-B31F-02BACE3A497D}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\Microsoft Shared\\VS7Debug\\pdm\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{26A1F020-DDD8-472D-8B7C-2F98B80024F3}\InprocServer32" = "$homedrive\\Windows\\System32\\mfmpeg2srcsnk\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{26A37DC6-935D-439B-80DD-C1006AE13D71}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{26A37DC6-935D-439B-80DD-C1006AE13D71}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{26bdc675-a557-411c-975f-80c4a63428f7}\InProcServer32" = "$homedrive\\Windows\\System32\\\\Windows\.StateRepositoryBroker\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{26D32566-760A-40A2-AA82-A40366528916}\InprocServer32" = "$homedrive\\Windows\\System32\\wuapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{26DFFE05-90B8-4744-8A17-50B9B64E0009}\InprocServer32" = "$homedrive\\Windows\\System32\\srh\.dll"
@@ -3929,7 +3955,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{2933BF94-7B36-11D2-B20E-00C04F983E60}\InProcServer32" = "$homedrive\\Windows\\System32\\msxml3\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{293ccd4b-0d59-43c0-997e-3449c780ac65}\InprocServer32" = "$homedrive\\Windows\\system32\\(ttlsext|ttlscfg)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{294935CE-F637-4E7C-A41B-AB255460B862}\InProcServer32" = "$homedrive\\Windows\\System32\\AudioSes\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{294EC7E3-94B7-4A6C-8636-09B33674D58F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{294EC7E3-94B7-4A6C-8636-09B33674D58F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2959380c-1567-40ec-80b0-05907ad6f9de}\InProcServer32" = "$homedrive\\Windows\\system32\\netcorehc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{29625281-51CE-3F8A-AC4D-E360CACB92E2}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{2965e715-eb66-4719-b53f-1672673bbefa}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
@@ -4028,7 +4054,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{2DE967D6-9BE7-458A-9B1C-6D3A6FF425F8}\InProcServer32" = "$homedrive\\Windows\\System32\\LocationFramework\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2DEA658F-54C1-4227-AF9B-260AB5FC3543}\InprocServer32" = "$homedrive\\Windows\\System32\\PlaySndSrv\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2DECBCB7-BAC0-316D-9131-43035C5CB480}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{2DF0ACC2-6D97-491b-9581-70A6001FD25A}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvsvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{2DF0ACC2-6D97-491b-9581-70A6001FD25A}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvsvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2df7b51e-797b-4d06-be71-d14a52cf8421}\InprocServer32" = "$homedrive\\Windows\\System32\\mfsvr\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2dfb3a35-6071-11d1-8c13-00c04fd8d503}\InprocServer32" = "$homedrive\\Windows\\system32\\adsmsext\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2E095DD0-AF56-47e4-A099-EAC038DECC24}\InprocServer32" = "$homedrive\\Windows\\System32\\PsisDecd\.dll"
@@ -4068,13 +4094,13 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{2FAE8AFE-04A3-423a-A814-85DB454712B0}\InprocServer32" = "$homedrive\\Windows\\System32\\MSAMRNBEncoder\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2FB21955-33A2-46A0-8F60-B475DC33FD5A}\InProcServer32" = "$homedrive\\Windows\\system32\\prntvpt\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2FC216B0-D2E2-4967-9B6D-B8A5C9CA2778}\InprocServer32" = "$homedrive\\Windows\\System32\\VmSynthNic\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{2FD96798-0D65-4D57-A095-B57679740E37}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvgames\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{2FD96798-0D65-4D57-A095-B57679740E37}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvgames\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{2FF8EAD4-2977-4908-95D8-4BC4CAA1F541}\InProcServer32" = "$homedrive\\Windows\\system32\\ScanPlugin\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{300a81e6-a674-4d84-9eed-0337389e7e66}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{301056D0-6DFF-11D2-9EEB-006008039E37}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{301B94BA-5D25-4A12-BFFE-3B6E7A616585}\InprocServer32" = "$homedrive\\Windows\\system32\\mstscax\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{301F77B0-A470-11D0-8821-00A0C903B83C}\InprocServer32" = "$homedrive\\Windows\\system32\\certenc\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{3020E6D8-7D1A-4D3C-8B62-C4D4B8F28434}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{3020E6D8-7D1A-4D3C-8B62-C4D4B8F28434}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{30276b4f-f25c-457c-a4b7-08574f8ea528}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage\.search|shell32|twinui.*|SearchFolder|Search)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3028902F-6374-48b2-8DC6-9725E775B926}\InProcServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3037B4CD-A40B-401B-B676-2017EE8FAFF4}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Windows NT\\Accessories\\WordpadFilter\.dll"
@@ -4129,7 +4155,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{31350404-77AC-4471-B33A-9020A2EDA1D1}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Engines\\SR\\spsreng_onecore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3140F5B6-093F-4F94-9141-5DF9EE10BC27}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech\\Engines\\SR\\srloc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{31430c59-bed1-11D1-8De8-00C04FC2E0C7}\InprocServer32" = "$homedrive\\Windows\\system32\\clbcatq\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{3156EC84-29BD-4EAA-AE0A-817ED606FA99}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvgames\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{3156EC84-29BD-4EAA-AE0A-817ED606FA99}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvgames\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{317D06E8-5F24-433D-BDF7-79CE68D8ABC2}\InProcServer32" = "$homedrive\\Windows\\system32\\windowscodecs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{317E92FC-1679-46FD-A0B5-F08914DD8623}\InprocServer32" = "$homedrive\\Windows\\System32\\wuapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3185a766-b338-11e4-a71e-12e3f512a338}\InprocServer32" = "$homedrive\\Windows\\System32\\FlightSettings\.dll"
@@ -4185,7 +4211,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{33C4643C-7811-46FA-A89A-768597BD7223}\InProcServer32" = "$homedrive\\Windows\\System32\\netshell\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{33C53A50-F456-4884-B049-85FD643ECFED}\InProcServer32" = "$homedrive\\Windows\\system32\\msctf\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{33c86cd6-705f-4ba1-9adb-67070b837775}\InProcServer32" = "$homedrive\\Windows\\System32\\l2nacp\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{33C89616-F807-4957-BF34-A1C91D7A1A2E}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\NVXDBat\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{33C89616-F807-4957-BF34-A1C91D7A1A2E}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\NVXDBat\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{33D9A760-90C8-11D0-BD43-00A0C911CE86}\InprocServer32" = "$homedrive\\Windows\\System32\\devenum\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{33D9A761-90C8-11d0-BD43-00A0C911CE86}\InprocServer32" = "$homedrive\\Windows\\System32\\devenum\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{33D9A762-90C8-11d0-BD43-00A0C911CE86}\InprocServer32" = "$homedrive\\Windows\\System32\\devenum\.dll"
@@ -4407,8 +4433,8 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{3D0FD779-0C2D-4708-A9BA-62F7458A5A53}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Microsoft Office\\root(\\VFS\\ProgramFilesX64\\Microsoft Office)?\\VFS\\System\\FM20\.DLL"
 	"HKEY_CLASSES_ROOT\CLSID\{3D112E22-62B2-11D1-9FEF-00600832DB4A}\InprocServer32" = "$homedrive\\Windows\\system32\\cic\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3d154a2d-d911-437e-a30c-5f56a9b7081d}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{3D1975AF-48C6-4f8e-A182-AC5012248AB5}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvshext\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{3D1975AF-48C6-4f8e-A182-BE0E08FA86A9}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvshext\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{3D1975AF-48C6-4f8e-A182-AC5012248AB5}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvshext\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{3D1975AF-48C6-4f8e-A182-BE0E08FA86A9}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvshext\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3D367908-928F-3C13-8B93-5E1718820F6D}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{3D4C34BE-7208-4F3B-B74F-37AD231350EF}\InProcServer32" = "$homedrive\\Windows\\System32\\(twinui|twinui\.appcore)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3D547E96-E934-4756-8DAE-72E0FB535AE4}\InProcServer32" = "$homedrive\\Windows\\System32\\CloudExperienceHost\.dll"
@@ -4433,7 +4459,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{3E298C47-0DA7-4418-AAC7-7A6D1F800A14}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobedui\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3E458037-0CA6-41aa-A594-2AA6C02D709B}\InprocServer32" = "$homedrive\\Windows\\System32\\sbe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3E4D4F1C-2AEE-11D1-9D3D-00C04FC30DF6}\InprocServer32" = "$homedrive\\Windows\\system32\\oleprn\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{3E500C0C-5D15-4610-8095-7CEBD4C43F24}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{3E500C0C-5D15-4610-8095-7CEBD4C43F24}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3E54D3BF-8EFA-400f-B875-B86A309E1CBF}\InprocServer32" = "$homedrive\\Windows\\System32\\srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{3E5509F0-1FB9-304D-8174-75D6C9AFE5DA}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{3E58004E-4CE5-4681-BA56-785A67F9F0DC}\InProcServer32" = "$homedrive\\Windows\\System32\\playtomanager\.dll"
@@ -4686,7 +4712,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{477EC299-1421-4bdd-971F-7CCB933F21AD}\InProcServer32" = "$homedrive\\Windows\\System32\\(mfcore|mf)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{478B7068-DF14-446F-B5C1-A5B877E7665D}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Networking\.ServiceDiscovery\.Dnssd\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{4795051A-6429-4D63-BCA0-D706532954AC}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Microsoft Office\\root(\\VFS\\ProgramFilesX64\\Microsoft Office)?\\VFS\\System\\FM20\.DLL"
-	"HKEY_CLASSES_ROOT\CLSID\{47AADF36-BA70-4E24-BBDE-20EC9FC139FD}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvlicensings\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{47AADF36-BA70-4E24-BBDE-20EC9FC139FD}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvlicensings\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{47B706B0-B103-4AFD-8ECF-16C2DDF81C15}\InProcServer32" = "$homedrive\\Windows\\System32\\wbem\\netnccim\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{47B73B70-1964-444A-B390-FAB1565DCAA3}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{47D35BB4-71CC-4810-9669-D03D9FF7CEAF}\InProcServer32" = "$homedrive\\Windows\\System32\\DeviceDriverRetrievalClient\.dll"
@@ -4749,7 +4775,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{49EBD8BE-1A92-4A86-A651-70AC565E0FEB}\InprocServer32" = "$homedrive\\Windows\\System32\\TelephonyInteractiveUser\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{49f171dd-b51a-40d3-9a6c-52d674cc729d}\InprocServer32" = "$homedrive\\Windows\\System32\\uiautomationcore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{49F371E1-8C5C-4d9c-9A3B-54A6827F513C}\InProcServer32" = "$homedrive\\Windows\\system32\\ntshrui\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{49F585C0-CE12-4306-9100-B6A28857B10B}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{49F585C0-CE12-4306-9100-B6A28857B10B}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{4A03DCB9-6E17-4A39-8845-4EE7DC5331A5}\InprocServer32" = "$homedrive\\Windows\\System32\\Dxtmsft\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{4a04656d-52aa-49de-8a09-cb178760e748}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{4A1E5ACD-A108-4100-9E26-D2FAFA1BA486}\InprocServer32" = "$homedrive\\Windows\\System32\\icsigd\.dll"
@@ -4898,7 +4924,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{4FA480D8-32A4-4849-B774-DE8BD5242A4C}\InprocServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{4fab6371-6d65-47ba-b8f1-ca6273c6c69e}\InprocServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{4FB1CE6D-5334-414A-BBBC-F892A47587E3}\InprocServer32" = "$homedrive\\Windows\\System32\\LocationFramework\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{4FC7F090-041C-4730-BD24-AF4BA8A2A5E0}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\NVXDBat\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{4FC7F090-041C-4730-BD24-AF4BA8A2A5E0}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\NVXDBat\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{4FD2A832-86C8-11D0-8FCA-00C04FD9189D}\InProcServer32" = "$homedrive\\Windows\\System32\\ddrawex\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{4FDBC3E5-7121-4487-AB95-B58EC04648DB}\InprocServer32" = "$homedrive\\Windows\\system32\\ucmhc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{4FDEF69C-DBC9-454e-9910-B34F3C64B510}\InProcServer32" = "$homedrive\\Windows\\system32\\StructuredQuery\.dll"
@@ -4912,7 +4938,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{50040C1D-BDBF-4924-B873-F14D6C5BFD66}\InprocServer32" = "$homedrive\\Windows\\System32\\mswmdm\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{50055B2F-D4FF-42E1-9D8F-5D48F327F3AC}\InprocServer32" = "$homedrive\\Windows\\System32\\wercplsupport\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{500DD1A1-B32A-4a37-9283-1185FB613899}\InProcServer32" = "$homedrive\\Windows\\system32\\timedate\.cpl"
-	"HKEY_CLASSES_ROOT\CLSID\{50125552-EC89-4049-B1B7-5FDBE38C8509}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvsvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{50125552-EC89-4049-B1B7-5FDBE38C8509}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvsvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{5014B7C8-934E-4262-9816-887FA745A6C4}\InprocServer32" = "$homedrive\\Windows\\system32\\TpmTasks\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{502ed6c5-59b7-4f5d-9d64-03d2bcbad0db}\InprocServer32" = "$homedrive\\Windows\\System32\\TransportDSA\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{50369004-DB9A-3A75-BE7A-1D0EF017B9D3}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
@@ -4939,7 +4965,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{50ff05d3-62ae-402b-9b06-3cf57f74c9dc}\InprocServer32" = "$homedrive\\Windows\\System32\\PlayToReceiver\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{510C4E33-05D5-438B-9852-E8406EFF033D}\InProcServer32" = "$homedrive\\Windows\\System32\\PrintIsolationProxy\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{51208789-BD2C-475E-8265-438DFBF78F9C}\InprocServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{5135A9C0-F05A-4FBD-8EC6-6B920CD387F6}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{5135A9C0-F05A-4FBD-8EC6-6B920CD387F6}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{51372af3-cae7-11cf-be81-00aa00a2fa25}\InprocServer32" = "$homedrive\\Windows\\System32\\comsvcs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{513a0312-3345-4d16-94e5-630b0262c2eb}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{513D916F-2A8E-4F51-AEAB-0CBC76FB1AF8}\InprocServer32" = "$homedrive\\Windows\\system32\\acppage\.dll"
@@ -4953,7 +4979,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{5167B42F-C111-47A1-ACC4-8EABE61B0B54}\InProcServer32" = "$homedrive\\Windows\\System32\\easconsent\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{517D95A4-AD61-4C20-B2C8-739E0E79EA32}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobeplugins\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{517F6AA6-D6FA-46D0-8094-17FF17E4CCF4}\InProcServer32" = "$homedrive\\Windows\\System32\\listsvc\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{51840041-B26F-4843-B358-22ABB067396C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{51840041-B26F-4843-B358-22ABB067396C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{51a1467f-96a2-4b1c-9632-4b4d950fe216}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{51ad6d44-32f8-4aa7-9ee6-24a37fa09354}\InProcServer32" = "$homedrive\\Windows\\system32\\Windows\.UI\.Immersive\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{51B4ABF3-748F-4E3B-A276-C828330E926A}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
@@ -5028,7 +5054,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{54b68bc7-3a45-416b-a8c9-19bf19ec1df5}\InProcServer32" = "$homedrive\\Windows\\system32\\xactengine2_5\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{54B7D246-951E-4BEA-B551-93D178284D13}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Mirage\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{54CE37E0-9834-41ae-9896-4DAB69DC022B}\InprocServer32" = "$homedrive\\Windows\\system32\\mstscax\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{54CEE07E-E1C8-45DB-B550-417E75C4CA58}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{54CEE07E-E1C8-45DB-B550-417E75C4CA58}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{54d38bf7-b1ef-4479-9674-1bd6ea465258}\InprocServer32" = "$homedrive\\Windows\\system32\\mstscax\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{54D8502C-527D-43F7-A506-A9DA075E229C}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{54E14197-88B0-442F-B9A3-86837061E2FB}\InProcServer32" = "$homedrive\\Windows\\system32\\CoreShellExtFramework\.dll"
@@ -5062,7 +5088,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{559C6BAD-1EA8-4963-A087-8A6810F9218B}\InprocServer32" = "$homedrive\\Windows\\System32\\wmvdspa\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{55B3A0BD-4D28-42fe-8CFB-FA3EDFF969B8}\InProcServer32" = "$homedrive\\Windows\\system32\\(rdbui|sysmain)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{55b70dec-4b3b-4e26-ae9c-9e8d131843a1}\InProcServer32" = "$homedrive\\Windows\\System32\\msfeedsbs\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{55C27CA1-022A-4381-AE5E-3412BF3D31C9}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvlicensings\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{55C27CA1-022A-4381-AE5E-3412BF3D31C9}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvlicensings\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{55c8a077-8073-42f2-b739-970b354ad2a8}\InProcServer32" = "$homedrive\\Windows\\System32\\PhonePlatformAbstraction\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{55d7b852-f6d1-42f2-aa75-8728a1b2d264}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{55DE6817-63F3-4DD0-BAFD-7F55C30567B2}\InProcServer32" = "$homedrive\\Windows\\System32\\ContentDeliveryManager\.Utilities\.dll"
@@ -5271,7 +5297,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{5DC41694-C6A6-11d1-9D35-006008B0E5CA}\InprocServer32" = "$homedrive\\Windows\\System32\\catsrvut\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{5DE7918B-BFD7-4C1E-B4E0-B16D0A3EA76B}\InProcServer32" = "$homedrive\\Windows\\System32\\AuthHostProxy\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{5ded83ef-1e99-48cf-bf83-676d2a6db408}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\UserOOBE\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{5DF4E7C5-78E3-4CCA-93CD-DF1639E165FB}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvxdapix\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{5DF4E7C5-78E3-4CCA-93CD-DF1639E165FB}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvxdapix\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{5E032150-8C1E-4c9e-BC60-36E9BFFCFF56}\InProcServer32" = "$homedrive\\Windows\\System32\\provsvc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{5E33D52F-2EE2-48EE-80FC-543DFF43E326}\InprocServer32" = "$homedrive\\Windows\\system32\\igdDiag\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{5E5F29CE-E0A8-49D3-AF32-7A7BDC173478}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
@@ -5310,7 +5336,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{6011C1F5-A2E0-491A-83CD-D4C5CBA72B73\InProcServer32" = "$homedrive\\Windows\\System32\\CspLte\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6011C1F5-A2E0-491A-83CD-D4C5CBA72B73}\InProcServer32" = "$homedrive\\Windows\\System32\\CspLte\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{60173D16-A550-47f0-A14B-C6F9E4DA0831}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{6017A978-93AD-4F2F-9E2D-07CF8C8DEBC4}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{6017A978-93AD-4F2F-9E2D-07CF8C8DEBC4}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{60254CA5-953B-11CF-8C96-00AA00B8708C}\InProcServer32" = "$homedrive\\Windows\\System32\\wshext\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6038EF75-ABFC-4e59-AB6F-12D397F6568D}\InProcServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{603D3800-BD81-11d0-A3A5-00C04FD706EC}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
@@ -5328,7 +5354,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{60912A1F-A6E6-4C7F-8E2D-8BE7C6505E2D}\InProcServer32" = "$homedrive\\Windows\\System32\\MicrosoftAccountExtension\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{609E6A89-58A1-4509-AE8D-C577E8D7F320}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.CloudStore\.Schema\.DesktopShell\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{60b78e88-ead8-445c-9cfd-0b87f74ea6cd}\InProcServer32" = "$homedrive\\Windows\\system32\\(credprovs|authui)\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{60F44560-5A20-4857-BFEF-D29773CB8040}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvEncMFTH264x\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{60F44560-5A20-4857-BFEF-D29773CB8040}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvEncMFTH264x\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{60F6E464-4DEF-11d2-B2D9-00C04F8EEC8C}\InProcServer32" = "$homedrive\\Windows\\System32\\DATACLEN\.DLL"
 	"HKEY_CLASSES_ROOT\CLSID\{60F6E465-4DEF-11d2-B2D9-00C04F8EEC8C}\InProcServer32" = "$homedrive\\Windows\\System32\\DATACLEN\.DLL"
 	"HKEY_CLASSES_ROOT\CLSID\{60F6E466-4DEF-11d2-B2D9-00C04F8EEC8C}\InProcServer32" = "$homedrive\\Windows\\System32\\DATACLEN\.DLL"
@@ -5359,7 +5385,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{6208889B-F7A7-44B4-A34E-3C40E83281DB}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobedui\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{620E38AE-D62C-486B-8339-3DF3C04D88C3}\InprocServer32" = "$homedrive\\Windows\\System32\\mfmp4srcsnk\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{62112AA1-EBE4-11cf-A5FB-0020AFE7292D}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{621E1D58-583A-45B6-B869-E3C53DE71B49}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvGameS\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{621E1D58-583A-45B6-B869-E3C53DE71B49}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvGameS\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{622A8646-1096-4765-8E07-91A3E661CEF9}\InProcServer32" = "$homedrive\\Windows\\system32\\xwizards\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{62323107-AD7E-49D1-9223-7ADD7C922D1B}\InprocServer32" = "$homedrive\\Windows\\system32\\rasgcw\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{623E2882-FC0E-11d1-9A77-0000F8756A10}\InprocServer32" = "$homedrive\\Windows\\System32\\Dxtmsft\.dll"
@@ -5383,7 +5409,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{62dc1a93-ae24-464c-a43e-452f824c4250}\InProcServer32" = "$homedrive\\Windows\\System32\\WMALFXGFXDSP\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{62E607F5-D6C2-4F5C-92EF-0D68452F5715}\InProcServer32" = "$homedrive\\Windows\\system32\\PackageStateRoaming\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{62E92675-CB77-3FC9-8597-1A81A5F18013}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{63005CD0-8541-439c-A66A-617F4B1F2BCB}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{63005CD0-8541-439c-A66A-617F4B1F2BCB}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{630A3EF1-23C6-31FE-9D25-294E3B3E7486}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{630BB917-AA3B-4CF5-9D24-AAD1F7D4297A}\InProcServer32" = "$homedrive\\Windows\\System32\\MessagingDataModel2\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6311429E-2F1A-4777-880F-C7289FD10169}\InProcServer32" = "$homedrive\\Windows\\system32\\ntshrui\.dll"
@@ -5452,7 +5478,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{652527C4-4A72-4bd3-BFAB-4B06AB172D7C}\InProcServer32" = "$homedrive\\Windows\\system32\\explorerframe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{652b8825-7895-4dc7-83ef-1ccc8fae39c0}\InProcServer32" = "$homedrive\\Windows\\System32\\Analog\.Shell\.Broker\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{65303443-AD66-11D1-9D65-00C04FC30DF6}\InprocServer32" = "$homedrive\\Windows\\system32\\oleprn\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{6539579C-2657-45E5-985F-835E197959C2}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{6539579C-2657-45E5-985F-835E197959C2}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6543D242-A80B-44A3-B828-95C1EC452423}\InprocServer32" = "$homedrive\\Windows\\system32\\wbem\\wbemcore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{655D9BF9-3876-43D0-B6E8-C83C1224154C}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{65704743-2513-4987-9fc9-826bbedde743}\InProcServer32" = "$homedrive\\Windows\\System32\\UserDeviceRegistration\.dll"
@@ -5548,10 +5574,10 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{6A01FDA0-30DF-11d0-B724-00AA006C1A01}\InProcServer32" = "$homedrive\\Windows\\System32\\imgutil\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6A02951C-B129-4D26-AB92-B9CA19BDCA26}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{6A08CF80-0E18-11CF-A24D-0020AFD79767}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{6A10CEAB-0813-48BA-9769-BD98F03F3EB8}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{6A10CEAB-0813-48BA-9769-BD98F03F3EB8}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6A205B57-2567-4a2c-B881-F787FAB579A3}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{6A206B40-465E-487A-AD5C-CCE637EA9EDA}\InProcServer32" = "$homedrive\\Windows\\System32\\twinapi\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{6A22E68F-887C-4221-9DF1-EE0B3AC76497}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{6A22E68F-887C-4221-9DF1-EE0B3AC76497}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6a2af23e-b6d9-4a72-938d-9bffc96be71e}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Networking\.HostName\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6A2E0670-28E4-11D0-A18C-00A0C9118956}\InprocServer32" = "$homedrive\\Windows\\System32\\kswdmcap\.ax"
 	"HKEY_CLASSES_ROOT\CLSID\{6a30ad66-de02-407c-8ea3-b1c03e1faa87}\InProcServer32" = "$homedrive\\Windows\\System32\\pickerplatform\.dll"
@@ -5694,7 +5720,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{6E3D2534-AAB3-4FB6-A574-3C9A603AA308}\InprocServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6E3D2E94-E6D8-4afd-AFDE-ABD26CA88BF5}\InProcServer32" = "$homedrive\\Windows\\System32\\faultrep\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6E449686-C509-11CF-AAFA-00AA00B6015C}\InProcServer32" = "$homedrive\\Windows\\System32\\inseng\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{6E4B938E-4BA1-4E8D-BCBA-8C51CE95F94F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{6E4B938E-4BA1-4E8D-BCBA-8C51CE95F94F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6E4FCB12-510A-4d40-9304-1DA10AE9147C}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\Microsoft Shared\\Ink\\InkObj\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6E582707-CCAF-4333-A9B9-3B4F75C362E0}\InProcServer32" = "$homedrive\\Windows\\system32\\SyncInfrastructure\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6E5D1F2A-AF9A-419A-9CAF-C5A5C32C3CF8}\InProcServer32" = "$homedrive\\Windows\\system32\\SettingSyncCore\.dll"
@@ -5712,7 +5738,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{6f13dd2e-ebee-4dd5-a72e-850b2087f5dd}\InProcServer32" = "$homedrive\\Windows\\system32\\PhotoMetadataHandler\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6F26A6CD-967B-47FD-874A-7AED2C9D25A2}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6F3DD387-5AF2-492B-BDE2-30FF2F451241}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Microsoft Office\\root(\\VFS\\ProgramFilesX64\\Microsoft Office)?\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\Office.*\\ACEDAO\.DLL"
-	"HKEY_CLASSES_ROOT\CLSID\{6F3F133D-61E3-4153-8AAE-056031E2B597}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{6F3F133D-61E3-4153-8AAE-056031E2B597}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6f45dc1e-5384-457a-bc13-2cd81b0d28ed}\InProcServer32" = "$homedrive\\Windows\\system32\\((credprovs|authui)legacy|authui)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6F58F65F-EC0E-4ACA-99FE-FC5A1A25E4BE}\InProcServer32" = "$homedrive\\Windows\\System32\\LanguageComponentsInstaller\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{6f5bad87-9d5e-459f-bd03-3957407051ca}\InProcServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
@@ -5741,7 +5767,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{703574D6-AA1B-4FBF-A938-9A59C89343FA}\InprocServer32" = "$homedrive\\Windows\\system32\\pcsvDevice\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7037C8FC-97F7-4AE5-BF2D-5D2660C97878}\InProcServer32" = "$homedrive\\Windows\\System32\\VoiceActivationManager\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{703E7517-FA6F-43E2-9418-EFBE2A1357F0}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.ApplicationModel\.Wallet\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{704033A7-A100-403E-AD9E-D6FEC5FF457E}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdevtools\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{704033A7-A100-403E-AD9E-D6FEC5FF457E}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdevtools\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{70438d09-456a-4a6f-86fe-1c1a3afc699e}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7050ebf0-1dbf-4528-838e-f7e10089fc4b}\InprocServer32" = "$homedrive\\Windows\\System32\\VmCrashDump\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7057e952-bd1b-11d1-8919-00c04fc2c836}\InProcServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
@@ -5784,7 +5810,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{70A92FA3-7FD8-4808-9A05-6B2FD19AA5B3}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{70cba7d2-50a5-4383-8aa5-b378c01c7364}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage\.search|shell32|twinui.*|SearchFolder|Search)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{70E102B0-5556-11CE-97C0-00AA0055595A}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{70F36578-2741-454F-B494-E8563DDD1CB4}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvDecMFTMjpegx\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{70F36578-2741-454F-B494-E8563DDD1CB4}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvDecMFTMjpegx\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{70f598e9-f4ab-495a-99e2-a7c4d3d89abf}\InprocServer32" = "$homedrive\\Windows\\System32\\WMADMOE\.DLL"
 	"HKEY_CLASSES_ROOT\CLSID\{70f98452-3c38-4271-8e76-6f444852ebc8}\InprocServer32" = "$homedrive\\Windows\\System32\\PortableDeviceWiaCompat\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{70FF37C0-F39A-4B26-AE5E-638EF296D490}\InprocServer32" = "$homedrive\\Windows\\System32\\RACPLDlg\.dll"
@@ -5855,7 +5881,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{73AD6842-ACE0-45E8-A4DD-8795881A2C2A}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech\\Common\\sapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{73B7DC00-F498-4ABD-AB79-D07AFD52F395}\InProcServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\Microsoft Shared\\MSEnv\\TextMgrP\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{73baee40-73e1-4d79-b95d-17b46be9ea08}\InProcServer32" = "$homedrive\\Windows\\System32\\exsmime\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{73BCA54E-6AEB-4597-8F27-E1284FF12722}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{73BCA54E-6AEB-4597-8F27-E1284FF12722}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{73bf00aa-f928-4a23-b598-cd8afb33d717}\InProcServer32" = "$homedrive\\Windows\\system32\\webplatstorageserver\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{73C037E7-E5D9-4954-876A-6DA81D6E5768}\InProcServer32" = "$homedrive\\Windows\\system32\\windowscodecs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{73CFD649-CD48-4fd8-A272-2070EA56526B}\InProcServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
@@ -5910,7 +5936,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{7584c670-2274-4efb-b00b-d6aaba6d3850}\InprocServer32" = "$homedrive\\Windows\\system32\\mstscax\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{75999EBA-0679-3D43-BDC4-02E4D637F1B1}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{75AB852C-0441-46D4-A205-EF0A33F98255}\InProcServer32" = "$homedrive\\Windows\\System32\\StartTileData\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{75BDD7A1-1224-41DA-90B4-457ACD874F12}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{75BDD7A1-1224-41DA-90B4-457ACD874F12}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{75C9378A-7E89-11d2-B116-00805FC73204}\InprocServer32" = "$homedrive\\Windows\\System32\\catsrvut\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{75CA41C9-9F1D-41BC-9285-65595759E52B}\InProcServer32" = "$homedrive\\Windows\\System32\\enterprisecsps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{75FC37F9-423B-483F-8A2E-AA2CADA4106F}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Security\.Credentials\.UI\.CredentialPicker\.dll"
@@ -5934,7 +5960,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{771B6EF5-30DD-443D-8CC5-E737EB051EEE}\InprocServer32" = "$homedrive\\Windows\\System32\\UiaManager\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7724F5B4-9A4A-4a93-AD09-B06F7AB31035}\InProcServer32" = "$homedrive\\Windows\\system32\\DAMM\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7734DE5F-5567-4C16-81A0-8127AFA4F1FC}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Logitech Gaming Software\\Drivers\\USBAudio\\LGRenderPropPage\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{7735B86B-2EAB-43EF-B5DE-31A15F767C14}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{7735B86B-2EAB-43EF-B5DE-31A15F767C14}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7751F46E-39B2-4b50-A7E3-23EF598ECD85}\InprocServer32" = "$homedrive\\Windows\\System32\\vidcap\.ax"
 	"HKEY_CLASSES_ROOT\CLSID\{7757BA9B-7986-4866-B53F-A31E89FCBA15}\InprocServer32" = "$homedrive\\Windows\\system32\\tscfgwmi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{77597368-7B15-11D0-A0C2-080036AF3F03}\InprocServer32" = "$homedrive\\Windows\\system32\\printui\.dll"
@@ -6003,7 +6029,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{793239d0-2bed-4e9a-a276-0c8bf918c42e}\InProcServer32" = "$homedrive\\Windows\\System32\\UserDeviceRegistration\.Ngc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{79376820-07D0-11CF-A24D-0020AFD79767}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7940ACF8-60BA-4213-A7C3-F3B400EE266D}\InProcServer32" = "$homedrive\\Windows\\System32\\tsworkspace\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{7945F814-7BFB-4506-A113-2BD66CDC713A}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{7945F814-7BFB-4506-A113-2BD66CDC713A}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7946ede1-839d-49be-9c1d-27c44529e093}\InProcServer32" = "$homedrive\\Windows\\System32\\(twinui|twinui\.appcore)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{794873D1-35DB-44c2-8BD2-F332A433C80E}\InprocServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{79512918-11cd-4f7c-a294-de1ff011a194}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Devices\.Enumeration.*\.dll"
@@ -6079,7 +6105,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{7b9e38b0-a97c-11d0-8534-00c04fd8d503}\InprocServer32" = "$homedrive\\Windows\\system32\\activeds\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7BA4C740-9E81-11CF-99D3-00AA004AE837}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{7bafb3b1-d8f4-4279-9253-27da423108de}\InprocServer32" = "$homedrive\\Windows\\System32\\wmvsdecd\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{7BB17C5A-3176-4B40-A3F9-39D4A64D7E83}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{7BB17C5A-3176-4B40-A3F9-39D4A64D7E83}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7BC115CD-1EE2-3068-894D-E3D3F7632F40}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{7BD29E00-76C1-11CF-9DD0-00A0C9034933}\InProcServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{7BD29E01-76C1-11CF-9DD0-00A0C9034933}\InProcServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
@@ -6190,7 +6216,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{809fee14-1687-41d3-b333-5c2572c743c5}\InProcServer32" = "$homedrive\\Windows\\system32\\DdcComImplementationsDesktop\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{80A09B21-11E7-462B-844A-1EB3415BB4A8}\InProcServer32" = "$homedrive\\Windows\\System32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.Compression\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{80a90d72-a834-4f3d-ad3b-c7abbe4a0f66}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\UserOOBE\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{80BA3813-908F-4D4C-A5FF-263640AD5B7A}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{80BA3813-908F-4D4C-A5FF-263640AD5B7A}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{80c68d96-366b-11dc-9eaa-00161718cf63}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{80CB8C11-0E10-45F4-A1BA-EAD3838D7034}\InprocServer32" = "$homedrive\\Windows\\System32\\vdsvd\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{80F94176-FCCC-11D2-B991-00C04F8ECD78}\InprocServer32" = "$homedrive\\Windows\\system32\\mmcndmgr\.dll"
@@ -6208,7 +6234,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{815509B5-2940-4287-83DD-13EA06E181DD}\InProcServer32" = "$homedrive\\Windows\\System32\\cscui\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{8159d2c0-0e05-46b2-a4ce-6d16b477d375}\InprocServer32" = "$homedrive\\Windows\\System32\\emojids\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{815E42F5-B141-45C2-B844-0BDFE9C558E2}\InprocServer32" = "$homedrive\\Windows\\System32\\LocationFramework\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{81667C73-F396-44a3-923B-3749C0840A58}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{81667C73-F396-44a3-923B-3749C0840A58}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{8168e74a-b39f-46d8-adcd-7bed477b80a3}\InprocServer32" = "$homedrive\\Windows\\System32\\MemoryDiagnostic\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{81796171-DF5F-4F1B-A80C-BE4715D3C6BB}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech\\Engines\\SR\\spsreng\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{817F98C4-C9D9-4B8F-B8D0-413C8E5DBBB7}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
@@ -6318,7 +6344,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{860d36ee-748e-4b73-ae45-c33187e6f166}\InprocServer32" = "$homedrive\\Windows\\System32\\IME\\IMEJP.*\\applets\\imjpclst\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{8613E14C-D0C0-4161-AC0F-1DD2563286BC}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\microsoft shared\\ink\\tiptsf\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{86151827-E47B-45ee-8421-D10E6E690979}\InprocServer32" = "$homedrive\\Windows\\System32\\msvidctl\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{86193C76-0DCA-4B33-83CA-6D7DCCA48D0B}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{86193C76-0DCA-4B33-83CA-6D7DCCA48D0B}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{862321c3-70b2-4ee2-8231-87ec05819d98}\InProcServer32" = "$homedrive\\Windows\\system32\\netcorehc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{863aa9fd-42df-457b-8e4d-0de1b8015c60}\InProcServer32" = "$homedrive\\Windows\\system32\\prnfldr\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{863FA3AC-9D97-4560-9587-7FA58727608B}\InprocServer32" = "$homedrive\\Windows\\system32\\filemgmt\.dll"
@@ -6362,7 +6388,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{87BB326B-E4A0-4de1-94F0-B9F41D0C6059}\InprocServer32" = "$homedrive\\Windows\\system32\\eapp3hst\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{87C8BA99-B13E-4BAE-87EE-E14A13172B26}\InProcServer32" = "$homedrive\\Windows\\System32\\PrintWSDAHost\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{87CB4E0D-2E2F-4235-BC0A-7C62308011F6}\InProcServer32" = "$homedrive\\Windows\\system32\\defragproxy\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{87CDE238-C2D9-4E31-99D7-DCD6A7E15F19}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{87CDE238-C2D9-4E31-99D7-DCD6A7E15F19}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{87D5FBE0-B972-450B-A488-5FE6347B45C8}\InprocServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{87FC0268-9A55-4360-95AA-004A1D9DE26C}\InProcServer32" = "$homedrive\\Windows\\System32\\dsdmo\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{88004A5C-CEAC-41b9-A7A8-D5E166D32ACF}\InprocServer32" = "$homedrive\\Windows\\System32\\srh\.dll"
@@ -6474,11 +6500,11 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{88d96a11-f192-11d4-a65f-0040963251e5}\InProcServer32" = "$homedrive\\Windows\\System32\\msxml6\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{88E729D6-BDC1-11D1-BD2A-00C04FB9603F}\InProcServer32" = "$homedrive\\Windows\\System32\\fde\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{88EEBD3A-9091-44b8-92A7-F0D595422D90}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\microsoft shared\\ink\\tipskins\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{88FC94D1-2ABB-42CF-8A07-4BC54F66EDDF}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{88FC94D1-2ABB-42CF-8A07-4BC54F66EDDF}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{890CB943-D715-401B-98B1-CF82DCF36D7C}\InprocServer32" = "$homedrive\\Windows\\system32\\wbem\\vdswmi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{8929fd8a-3967-4896-a02d-f126195af6f7}\InProcServer32" = "$homedrive\\Windows\\System32\\shacct\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{894132FE-635E-4F2F-B7AC-BB081636B1DB}\InProcServer32" = "$homedrive\\Windows\\System32\\DevicesFlowBroker\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{894BF76C-115F-44B7-9B32-ABFA7E6A804A}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{894BF76C-115F-44B7-9B32-ABFA7E6A804A}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{896664F7-12E1-490f-8782-C0835AFD98FC}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{896C2B1D-3586-4FA5-B419-41F4A6D38CF1}\InProcServer32" = "$homedrive\\Windows\\system32\\SyncInfrastructure\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{8973b4ef-7da5-4031-a333-f65609a4dcf4}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
@@ -6487,7 +6513,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{89A0CBA3-F995-48BA-A751-F27D64BEE9E7}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Networking\.BackgroundTransfer\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{89A86E7B-C229-4008-9BAA-2F5C8411D7E0}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{89AA9BF2-38EE-4444-8AE5-8CA90AAC64F6}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Devices\.Bluetooth\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{89B53798-9A96-4758-9571-93B72CAA5381}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{89B53798-9A96-4758-9571-93B72CAA5381}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{89BCC804-53A5-3EB2-A342-6282CC410260}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{89C2E132-C29B-11DB-96FA-005056C00008}\InprocServer32" = "$homedrive\\Windows\\System32\\CPFilters\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{89d1d0c2-a3cf-490c-abe3-b86cde34b047}\InprocServer32" = "$homedrive\\Windows\\System32\\ReAgentTask\.dll"
@@ -6665,7 +6691,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{9127081a-04b5-4044-b4c5-c7a9718e8795}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{912A4CBA-0401-4631-91CF-5DDD3E3D6829}\InprocServer32" = "$homedrive\\Windows\\System32\\DDDS\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{912D9D84-DC73-48FA-8BD8-5315DE4B8FA8}\InProcServer32" = "$homedrive\\Windows\\System32\\EmailApis\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{91363F1E-E7CA-4959-85D6-963719EC79FC}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{91363F1E-E7CA-4959-85D6-963719EC79FC}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{913a6daa-57ee-4551-9ada-64d329d306a5}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{914feed8-267a-4baa-b8aa-21e233792679}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{91591469-EFEF-3D63-90F9-88520F0AA1EF}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
@@ -6831,7 +6857,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{964A239F-6039-4A44-BB9B-EC0FEAFE28FC}\InProcServer32" = "$homedrive\\Windows\\system32\\ShareHost\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{964AA3BD-4B12-3E23-9D7F-99342AFAE812}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{966E33F0-6786-4B38-AA29-C1B3F6C1955D}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\PHISON\\Aac_PHISON HAL\\AacHal_x64\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{966F107C-8EA2-425D-B822-E4A71BEF01D7}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvEncMFThevcx\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{966F107C-8EA2-425D-B822-E4A71BEF01D7}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvEncMFThevcx\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{966f985a-57d2-4e69-b363-0ef69ad32cee}\InProcServer32" = "$homedrive\\Windows\\System32\\oobe\\msoobeplugins\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{96705EE3-F7AB-3E9A-9FB2-AD1D536E901A}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{96709adb-52b9-4735-8534-3a8b32631432}\InProcServer32" = "$homedrive\\Windows\\System32\\CertEnroll\.dll"
@@ -6940,7 +6966,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{9AB6A28C-748E-4B6A-BFFF-CC443B8E8FB4}\InprocServer32" = "$homedrive\\Windows\\System32\\MSAlacEncoder\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9ac9fbe1-e0a2-4ad6-b4ee-e212013ea917}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9AED384E-CE8B-11D1-8B05-00600806D9B6}\InProcServer32" = "$homedrive\\Windows\\system32\\wbem\\wbemdisp\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{9B0C8B3B-8CA5-46cb-B0DD-64542BBA21DC}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{9B0C8B3B-8CA5-46cb-B0DD-64542BBA21DC}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9B0EFD60-F7B0-11D0-BAEF-00C04FC308C9}\InprocServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9B1D2710-8AEE-4B64-B5DB-0F1086A63877}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.pcshell\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9b359d1b-ad5c-412f-a654-a431424359de}\InProcServer32" = "$homedrive\\Windows\\System32\\cscobj\.dll"
@@ -6950,7 +6976,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{9B496CE1-811B-11CF-8C77-00AA006B6814}\InprocServer32" = "$homedrive\\Windows\\System32\\kswdmcap\.ax"
 	"HKEY_CLASSES_ROOT\CLSID\{9b4e5207-9539-4258-b4a0-4e70e9e565ec}\InProcServer32" = "$homedrive\\Windows\\System32\\usercpl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9B55AA0E-1BC2-46e4-B306-DF9BDFDCC644}\InprocServer32" = "$homedrive\\Windows\\System32\\catsrvut\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{9B5EC720-9A44-4811-8B9F-24BD53F2050D}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvgames\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{9B5EC720-9A44-4811-8B9F-24BD53F2050D}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvgames\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9B67E7B7-12BA-4B81-9874-E96D8C7C07F8}\InprocServer32" = "$homedrive\\Windows\\System32\\mfsrcsnk\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9B77C0F2-8735-46c5-B90F-5F0B303EF6AB}\InprocServer32" = "$homedrive\\Windows\\System32\\wmvdspa\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9B78F0E6-3E05-4A5B-B2E8-E743A8956B65}\InprocServer32" = "$homedrive\\Windows\\system32\\rdpsharercom\.dll"
@@ -6960,7 +6986,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{9B97D384-048C-4e24-926D-DB6F0841C9E4}\InprocServer32" = "$homedrive\\Windows\\System32\\LocationFramework\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9BA05971-F6A8-11CF-A442-00A0C90A8F39}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{9bb6c87b-83af-4e4b-8151-865efd1e414c}\InprocServer32" = "$homedrive\\Windows\\System32\\vmpmem\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{9BC49CE1-EFA7-4C49-8BB2-5355FEA6C170}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{9BC49CE1-EFA7-4C49-8BB2-5355FEA6C170}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9BC773B8-9B6C-400F-8AF0-0DFDD1C43229}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9BCE6E2B-116B-420F-928B-5356D1629979}\InProcServer32" = "$homedrive\\Windows\\System32\\recovery\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9BD1F370-1212-4794-AA9B-9EBD575091D5}\InprocServer32" = "$homedrive\\Program Files (x86)\\Microsoft\\EdgeUpdate\\.*\\psmachine.*\.dll"
@@ -6972,7 +6998,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{9C07355E-C50A-45D2-B4A3-0A8235F8047F}\InProcServer32" = "$homedrive\\Windows\\System32\\explorerframe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9C125A6F-EAE2-3FC1-97A1-C0DCEAB0B5DF}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{9c15e692-86da-4ab8-8b5e-6ac79deb6f20}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.pcshell\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{9C1878FA-A0CB-4F01-8762-A6BF18021C94}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{9C1878FA-A0CB-4F01-8762-A6BF18021C94}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9C1CC6E4-D7EB-4EEb-9091-15A7C8791ED9}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\Microsoft Shared\\Ink\\InkObj\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9C33C4AB-BC91-4A79-BF47-7C90CEBC3AA3}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9C49FB9B-4E8C-43AE-BACF-76404B422264}\InprocServer32" = "$homedrive\\Windows\\system32\\DscTimer\.dll"
@@ -6984,7 +7010,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{9C67F424-22DC-3D05-AB36-17EAF95881F2}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{9C695035-48D2-4229-8B73-4C70E756E519}\InProcServer32" = "$homedrive\\Windows\\System32\\usosvc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9C73F5E5-7AE7-4E32-A8E8-8D23B85255BF}\InProcServer32" = "$homedrive\\Windows\\System32\\SyncCenter\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{9C7684B5-FC31-4e57-A852-282D907911CC}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvsvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{9C7684B5-FC31-4e57-A852-282D907911CC}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvsvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9c7a1728-b694-427a-94a2-a1b2c60f0360}\InProcServer32" = "$homedrive\\Windows\\System32\\ieframe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9C86F320-DEE3-4DD1-B972-A303F26B061E}\InprocServer32" = "$homedrive\\Windows\\System32\\TaskSchdPS\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{9c8db22b-8ddc-471c-9628-48847514b424}\InProcServer32" = "$homedrive\\Windows\\System32\\wcmapi\.dll"
@@ -7133,7 +7159,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{A12E5BCB-9758-4FBE-9B85-F50C822E6B5E}\InProcServer32" = "$homedrive\\Windows\\system32\\EnterpriseAppMgmtClient\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A139E32E-EA10-4B93-A813-A9E44ADA2938}\InProcServer32" = "$homedrive\\Windows\\System32\\(twinui|twinui\.appcore)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{a1570149-e645-4f43-8b0d-409b061db2fc}\InprocServer32" = "$homedrive\\Windows\\System32\\portabledeviceconnectapi\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{A158544D-66FA-4F19-8806-F3CA2E2A4C52}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{A158544D-66FA-4F19-8806-F3CA2E2A4C52}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A164C0BF-67AE-3C7E-BC05-BFE24A8CDB62}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{A166CF69-93B2-49FB-8143-DCEFD4BF8BA9}\InProcServer32" = "$homedrive\\Windows\\System32\\wcmapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{a16e1bff-a80d-48ad-aecd-a35c005685fe}\InProcServer32" = "$homedrive\\Windows\\System32\\(mfcore|mf)\.dll"
@@ -7199,7 +7225,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{A3ADC43E-56D9-4EC1-ADDA-49C5B9069B07}\InprocServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{a3b3c46c-05d8-429b-bf66-87068b4ce563}\InProcServer32" = "$homedrive\\Windows\\System32\\actioncenter\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A3B82825-6E21-4249-B372-C2A1F8E948AA}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Logitech Gaming Software\\Drivers\\USBAudio\\LGCapturePropPage\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{A3B877C7-83CA-4c9b-87FB-BE0D518C2441}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{A3B877C7-83CA-4c9b-87FB-BE0D518C2441}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A3BC03A0-041D-42E3-AD22-882B7865C9C5}\InprocServer32" = "$homedrive\\Windows\\system32\\mstscax\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{a3c3d402-e56c-4033-95f7-4885e80b0111}\InProcServer32" = "$homedrive\\Windows\\system32\\twext\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A3C97737-76D9-4f5f-B917-4DE47FE023C8}\InProcServer32" = "$homedrive\\Windows\\system32\\WinSATAPI\.dll"
@@ -7275,7 +7301,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{a6e02196-c1bf-4989-8a94-144eee4a9bb2}\InProcServer32" = "$homedrive\\Windows\\System32\\RDXTaskFactory\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A6EE35C6-87EC-47DF-9F22-1D5AAD840C82}\InProcServer32" = "$homedrive\\Windows\\system32\\windowscodecs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A6FF50C0-56C0-71CA-5732-BED303A59628}\InProcServer32" = "$homedrive\\Windows\\System32\\OneCoreCommonProxyStub\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{A70C977A-BF00-412C-90B7-034C51DA2439}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvui\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{A70C977A-BF00-412C-90B7-034C51DA2439}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvui\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A7136BDF-B141-3913-9D1C-9BC5AFF21470}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{A7248EC6-A8A5-3D07-890E-6107F8C247E5}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{A73BEEB2-B0B7-11D2-8853-0000F80883E3}\InprocServer32" = "$homedrive\\Windows\\System32\\qdvd\.dll"
@@ -7300,7 +7326,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{A83EF168-CA8D-11D2-B33D-00104BCC4B4A}\InprocServer32" = "$homedrive\\Windows\\system32\\wbem\\wbemcore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A860CE50-3910-11d0-86FC-00A0C913F750}\InProcServer32" = "$homedrive\\Windows\\System32\\imgutil\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A8616FB9-1D84-4F32-B46B-5D7B80214B8A}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{A8679087-E64A-413A-9CBF-F38BE510C46C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvgames\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{A8679087-E64A-413A-9CBF-F38BE510C46C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvgames\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{a8679153-843f-467f-ad7e-f429328f7568}\InprocServer32" = "$homedrive\\Windows\\System32\\vmflexio\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{a86ca2f1-af74-4a74-980b-e185d4ca01b0}\InProcServer32" = "$homedrive\\Windows\\system32\\hgcpl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A8792A31-F385-493C-A893-40F64EB45F6E}\InProcServer32" = "$homedrive\\Windows\\System32\\PortableDeviceApi\.dll"
@@ -7332,7 +7358,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{A91DEAA6-9773-42B7-86A4-5AD24CFF440A}\InprocServer32" = "$homedrive\\Windows\\System32\\witnesswmiv2provider\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A9224722-48E4-4A66-8068-F90FA13A6D74}\InProcServer32" = "$homedrive\\Windows\\system32\\SettingSync\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A9249952-F4C6-4BCD-9B44-6A5BA9B5209E}\InProcServer32" = "$homedrive\\Windows\\System32\\appresolver\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{A929C4CE-FD36-4270-B4F5-34ECAC5BD63C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nv3dappshext\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{A929C4CE-FD36-4270-B4F5-34ECAC5BD63C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nv3dappshext\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A9397D66-3ED3-11D1-8D99-00C04FC2E0C7}\InprocServer32" = "$homedrive\\Windows\\system32\\clbcatq\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A961F842-FC8E-4D53-8074-4AB67E8854B4}\InProcServer32" = "$homedrive\\Windows\\System32\\LocationFramework\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{A9710FB5-1840-4224-BD42-86831E28E43A}\InProcServer32" = "$homedrive\\Windows\\System32\\UICOM\.dll"
@@ -7372,7 +7398,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{AAA27100-EFAD-11E3-AC10-0800200C9A66}\InprocServer32" = "$homedrive\\Windows\\System32\\ChxInputRouter\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AAA288BA-9A4C-45B0-95D7-94D524869DB5}\InProcServer32" = "$homedrive\\Windows\\system32\\wpdshserviceobj\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AAAE762B-A6A2-4c45-B5D8-9A83AFB6BB70}\InprocServer32" = "$homedrive\\Windows\\system32\\DRIVERS\\UMDF\\wpdmtpdr\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{AAB8F985-EADA-428B-8636-270F58E1F1EF}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{AAB8F985-EADA-428B-8636-270F58E1F1EF}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AAB9C730-3C6C-4faa-A87E-77198D9E2A57}\InProcServer32" = "$homedrive\\Windows\\System32\\provsvc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AABE54D4-6E88-4c46-A6B3-1DF790DD6E0D}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{AABFB2FA-3E1E-4A8f-8977-5556FB94EA23}\InProcServer32" = "$homedrive\\Windows\\system32\\windowscodecs\.dll"
@@ -7440,7 +7466,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{AD181A86-8540-4EAA-A3D5-68FD744F9A89}\InProcServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AD325995-B74D-41E4-A240-C472A50D41C2}\InProcServer32" = "$homedrive\\Windows\\System32\\SyncSettings\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AD326409-BF80-3E0C-BA6F-EE2C33B675A5}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{AD374A9E-D7FC-453A-A146-16535FE9ECC1}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvxdplcy\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{AD374A9E-D7FC-453A-A146-16535FE9ECC1}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvxdplcy\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AD4C1B00-4BF7-422F-9175-756693D9130D}\InProcServer32" = "$homedrive\\Windows\\System32\\mfps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AD581B00-7B64-4E59-A38D-D2C5BF51DDB3}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Windows Media Player\\WMPMediaSharing\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{AD5FBC96-ACFE-46bd-A2E2-623FD110C74C}\InprocServer32" = "$homedrive\\Windows\\System32\\srh\.dll"
@@ -7645,7 +7671,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{B4FB3F98-C1EA-428d-A78A-D1F5659CBA93}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{b52ab030-8ef5-4621-b480-4d20975d1d26}\InprocServer32" = "$homedrive\\Windows\\System32\\wuapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{B532B342-0E34-448B-9EDF-1D55C04041F8}\InprocServer32" = "$homedrive\\Program Files (x86)\\Microsoft\\EdgeUpdate\\.*\\psmachine.*\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{B53EBC0C-2251-4AE2-9818-FD6AAF843EC2}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{B53EBC0C-2251-4AE2-9818-FD6AAF843EC2}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{b545fb2e-878f-4400-8a6b-ed42a63a8b14}\InProcServer32" = "$homedrive\\Windows\\System32\\provhandlers\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{B54BE40D-6E32-461A-8187-C1D35FD46580}\InProcServer32" = "$homedrive\\Windows\\system32\\mmgaproxystub\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{B54E38F8-17FF-3D0A-9FF3-5E662DE2055F}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
@@ -7794,7 +7820,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{BBA922ED-0AB7-40A7-9E69-495984866A23}\InprocServer32" = "$homedrive\\Windows\\System32\\MSAudDecMFT\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{BBACC218-34EA-4666-9D7A-C78F2274A524}\InprocServer32" = "$homedrive\\.*\\(Microsoft OneDrive|Microsoft\\OneDrive)\\.*\\FileSyncShell64\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{bbb5d0e2-6f4b-4c31-8744-22d0029c4b40}\InProcServer32" = "$homedrive\\Windows\\system32\\fdprint\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{BBB7D605-8639-49D0-849E-32C4A5DBB9C3}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvgames\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{BBB7D605-8639-49D0-849E-32C4A5DBB9C3}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvgames\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{BBB9389D-CB46-4855-ADA6-4570E7342B3C}\InProcServer32" = "$homedrive\\Windows\\system32\\ntshrui\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{BBC035D1-E5A1-44F5-A166-E70DAED1CB02}\InProcServer32" = "$homedrive\\Windows\\System32\\(RADCUI|tsworkspace)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{BBC29D47-09E4-453E-9A08-B0AE77CAD120}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.ApplicationModel\.Background\.SystemEventsBroker\.dll"
@@ -8085,7 +8111,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{C4819C8D-9AB8-4B2F-B8AE-C77DABF553D5}\InprocServer32" = "$homedrive\\Windows\\system32\\wbem\\wmitimep\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{C489A4B4-D8D1-4A74-924A-D01A6DF7DF51}\InProcServer32" = "$homedrive\\Windows\\system32\\StorSvc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{C498F2D9-A77C-3D4B-A1A5-12CC7B99115D}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{C4A29158-1A7E-425f-B25E-80FA382AAA14}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvsvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{C4A29158-1A7E-425f-B25E-80FA382AAA14}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvsvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{c4b741f5-5582-4c98-8f8b-2e082933c396}\InprocServer32" = "$homedrive\\Windows\\System32\\vmserial\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{c4bbedb4-e9b9-4e41-8fe1-0786480a2173}\InprocServer32" = "$homedrive\\Windows\\System32\\RasDiag\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{C4BF2784-AE00-41BA-9828-9C953BD3C54A}\InprocServer32" = "$homedrive\\Windows\\System32\\msvidctl\.dll"
@@ -8217,7 +8243,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{c8c97725-c948-4720-bf0f-e3c2273bfb7d}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{C8DFF91D-B243-4797-BAE6-C461B65EDED3}\InProcServer32" = "$homedrive\\Windows\\system32\\SecurityHealthAgent\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{c8e6f269-b90a-4053-a3be-499afcec98c4}\InProcServer32" = "$homedrive\\Windows\\System32\\hcproviders\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{C8F113AE-A2C9-47CB-8DAE-9376C64665AD}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvgames\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{C8F113AE-A2C9-47CB-8DAE-9376C64665AD}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvgames\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{C90250F3-4D7D-4991-9B69-A5C5BC1C2AE6}\InProcServer32" = "$homedrive\\Windows\\System32\\ActXPrxy\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{C907F3EA-0EB4-40BD-AAC0-D3D8C32B1840}\InprocServer32" = "$homedrive\\Windows\\System32\\Srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{c9298eef-69dd-4cdd-b153-bdbc38486781}\InProcServer32" = "($homedrive\\Windows\\System32\\shell32\.dll|$homedrive\\Windows\\System32\\shdocvw\.dll)"
@@ -8289,10 +8315,10 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{cba9e78b-49a3-49ea-93d4-6bcba8c4de07}\InprocServer32" = "$homedrive\\Windows\\System32\\mp43decd\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{CBD30858-AF45-11D2-B6D6-00C04FBBDE6E}\InprocServer32" = "$homedrive\\Windows\\System32\\msvidctl\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{CBD51D89-C22E-4388-A553-FFE638C76E36}\InprocServer32" = "$homedrive\\Windows\\system32\\mstscax\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{CBD600D7-2256-4ADB-8E3A-185F56EA9353}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvGameS\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{CBD600D7-2256-4ADB-8E3A-185F56EA9353}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvGameS\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{CBE0FED3-4B91-4E90-8354-8A8C84EC6872}\InProcServer32" = "$homedrive\\Windows\\System32\\thumbcache\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{CBEAA915-4D2C-3F77-98E8-A258B0FD3CEF}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{CC0648AE-7E85-483C-B1DB-9335C9D6F8C7}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{CC0648AE-7E85-483C-B1DB-9335C9D6F8C7}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{CC1101F2-79DC-11D2-8CE6-00A0C9441E20}\InprocServer32" = "$homedrive\\Windows\\System32\\qedit\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{CC19079B-8272-4D73-BB70-CDB533527B61}\InprocServer32" = "$homedrive\\Windows\\System32\\FirewallAPI\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{CC20C6DF-A054-3F09-A5F5-A3B5A25F4CE6}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
@@ -8528,7 +8554,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{D3588AB0-0781-11CE-B03A-0020AF0BA770}\InprocServer32" = "$homedrive\\Windows\\System32\\quartz\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D36D2090-4DF3-4bd4-A22F-0D91975F7964}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech\\Common\\sapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D37DAC4A-CEDC-453D-8659-6AD9451C9AA8}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\ENE\\Aac_ENE_AIC_Marvell_HAL\\AacHal_x64\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{D385E909-3F89-4ECD-B38F-AC11F9FE6F1C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{D385E909-3F89-4ECD-B38F-AC11F9FE6F1C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D385FDAD-D394-4812-9CEC-C6575C0B2B38}\InprocServer32" = "$homedrive\\Windows\\System32\\NaturalLanguage6\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D3A1BCE4-8217-423D-8934-3823F395B5C2}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Logitech Gaming Software\\Drivers\\USBAudio\\LGRenderPropPage\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{d3c0b79d-0fd2-4b5d-9bf6-5e41d6f15c08}\InprocServer32" = "$homedrive\\Windows\\system32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
@@ -8548,7 +8574,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{D46443F6-133B-4938-9C52-23B9EDD62CC3}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.pcshell\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D465D87D-6339-4FF4-93D9-7353E388D889}\InprocServer32" = "$homedrive\\Windows\\System32\\vmchipset\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D4692569-5A04-351D-8BA7-5F43AB458DF6}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{D474EBC0-2851-4389-893D-030D2B6BCED1}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{D474EBC0-2851-4389-893D-030D2B6BCED1}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D4872B74-3AFC-47CD-B8A2-9E4F998539BC}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.CloudStore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D48DAF56-ADD3-4FDF-BC8C-C1F239115BBA}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D4950C79-806D-4ECE-9DB1-11B34D33F514}\InProcServer32" = "$homedrive\\Windows\\System32\\wbem\\Microsoft\.Uev\.AgentWmi\.dll"
@@ -8653,7 +8679,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{d88dc591-4172-4a00-a6b1-7b657d2a6643}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{d8a04f01-4570-45cc-bffa-37c79cf7208c}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D8A4F3EB-E7EC-3620-831A-B052A67C9944}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{D8A8B20F-98D2-4EFF-8CE1-EF094F1A8043}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{D8A8B20F-98D2-4EFF-8CE1-EF094F1A8043}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D8AC8159-ABAA-4016-BF74-DE98C5917269}\InprocServer32" = "$homedrive\\Windows\\System32\\InputMethod\\SHARED\\IHDS\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{D8BD090D-3F39-45FD-B29A-7FC62C2E59C3}\InprocServer32" = "$homedrive\\Windows\\System32\\vidcap\.ax"
 	"HKEY_CLASSES_ROOT\CLSID\{D8BF32A2-05A5-44c3-B3AA-5E80AC7D2576}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\Microsoft Shared\\Ink\\InkObj\.dll"
@@ -8708,7 +8734,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{DB13821E-9835-3958-8539-1E021399AB6C}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
 	"HKEY_CLASSES_ROOT\CLSID\{DB3E3CFA-4CEE-4427-A2EB-33F85534B7F3}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.pcshell\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DB49BBEB-C744-49F8-81AC-AF97669D4CB0}\InprocServer32" = "$homedrive\\Windows\\System32\\puiobj\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{DB4CBE92-74B3-4027-8B37-7B67927A7034}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdevtools\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{DB4CBE92-74B3-4027-8B37-7B67927A7034}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdevtools\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DB5286F5-C166-4032-95E2-70D62C8D26DA}\InProcServer32" = "$homedrive\\Windows\\System32\\vaultcli\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DB5D1FF4-09D7-11D1-BB10-00C04FC9A3A3}\InprocServer32" = "$homedrive\\Windows\\system32\\filemgmt\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DB5D1FF5-09D7-11D1-BB10-00C04FC9A3A3}\InprocServer32" = "$homedrive\\Windows\\system32\\filemgmt\.dll"
@@ -8723,7 +8749,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{DBD9EDF9-630D-4B43-BA5D-CC34465EEF72}\InprocServer32" = "$homedrive\\Windows\\System32\\srh\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DBF393FC-230C-46CC-8A85-E9C599A81EFB}\InProcServer32" = "$homedrive\\Windows\\system32\\SecurityHealthAgent\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DBFCA500-8C31-11D0-AA2C-00A0C92749A3}\InProcServer32" = "$homedrive\\Windows\\System32\\dmdskmgr\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{DC09760E-9FDA-454A-B9D2-7E663E58C39D}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\NVXDBat\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{DC09760E-9FDA-454A-B9D2-7E663E58C39D}\InProcServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\NVXDBat\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DC0C0FE7-0485-4266-B93F-68FBF80ED834}\InprocServer32" = "$homedrive\\Windows\\System32\\MSDvbNP\.ax"
 	"HKEY_CLASSES_ROOT\CLSID\{DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7}\InProcServer32" = "$homedrive\\Windows\\System32\\comdlg32\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DC5DA001-7CD4-11D2-8ED9-D8C857F98FE3}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
@@ -8770,10 +8796,10 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{DDE5783A-88B9-11d2-84AD-00C04FA31A86}\InProcServer32" = "$homedrive\\Windows\\system32\\dsquery\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DDE944C8-1C10-46AA-BF25-B8BAE99F2F64}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Microsoft Office\\root(\\VFS\\ProgramFilesX64\\Microsoft Office)?\\Office.*\\Tec\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DDECE4B2-979F-4CDB-9F58-B036FE5A510C}\InProcServer32" = "$homedrive\\Windows\\System32\\FirewallControlPanel\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{DDEF97F5-723E-47D2-87B1-14C39EFBAE11}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{DDEF97F5-723E-47D2-87B1-14C39EFBAE11}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DDFE337F-4987-4EC8-BDE3-133FA63D5D85}\InProcServer32" = "$homedrive\\Program Files( \(x86\))?\\Microsoft Office\\root(\\VFS\\ProgramFilesX64\\Microsoft Office)?\\VFS\\ProgramFilesCommonX64\\Microsoft Shared\\Filters\\OFFFILTX\.DLL"
 	"HKEY_CLASSES_ROOT\CLSID\{DE010DA1-289B-4232-8CD0-5112DCA6A7B3}\InprocServer32" = "$homedrive\\Windows\\System32\\vdsbas\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{DE0549BD-F34D-4748-AD94-0F2F22749F4F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvgames\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{DE0549BD-F34D-4748-AD94-0F2F22749F4F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvgames\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DE0C8422-0096-4240-9A06-FF4D7611EF04}\InprocServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{de2d022d-2480-43be-97f0-d1fa2cf98f4f}\InprocServer32" = "$homedrive\\Windows\\System32\\PortableDeviceTypes\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DE3F3560-3032-41B4-B6CF-F703B1B95640}\InProcServer32" = "$homedrive\\Windows\\System32\\wsepno\.dll"
@@ -8816,7 +8842,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{df6775de-380d-4c14-8b62-fb69912e6d30}\InProcServer32" = "$homedrive\\Windows\\system32\\usbui\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{df6b5e0d-ff61-4cdd-b181-1c6f88315f87}\InprocServer32" = "$homedrive\\Windows\\System32\\IME\\IMEJP\\imjplmp\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DF9144AE-8785-4B2B-93AD-A775CE6B6C42}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{DFA226E7-D28D-407D-95ED-5A79D9745BB5}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvlicensings\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{DFA226E7-D28D-407D-95ED-5A79D9745BB5}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvlicensings\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DFA22B8E-E68D-11d0-97E4-00C04FC2AD98}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\System\\Ole DB\\sqloledb\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{DFC05778-5E71-494B-BE6D-B532038FA397}\InprocServer32" = "$homedrive\\Windows\\System32\\LocationFramework\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{dfc8bdc0-e378-11d0-9b30-0080c7e9fe95}\InprocServer32" = "$homedrive\\Program Files( \(x86\))?\\Common Files\\System\\Ole DB\\msdaosp\.dll"
@@ -9048,7 +9074,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{E838B72C-83C9-4a08-8DD1-144CB14616F1}\InProcServer32" = "$homedrive\\Windows\\system32\\SettingSyncCore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E846F0A0-D367-11D1-8286-00A0C9231C29}\InprocServer32" = "$homedrive\\Windows\\System32\\catsrvut\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E847030C-BBBA-4657-AF6D-484AA42BF1FE}\InProcServer32" = "$homedrive\\Windows\\System32\\(BitsProxy|bitsprx\d{1}|qmgrprxy)\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{E851CB66-C839-4E96-8363-8535EB16FE2C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvgames\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{E851CB66-C839-4E96-8363-8535EB16FE2C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvgames\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E8B54CDF-0B5C-48A9-BE4A-347CF70D8BBE}\InProcServer32" = "$homedrive\\Program Files (x86)\\Microsoft\\EdgeUpdate\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}\InProcServer32" = "$homedrive\\Windows\\system32\\zipfldr\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E8C40B98-FCF5-4047-86DA-11A11590CB98}\InProcServer32" = "$homedrive\\Windows\\system32\\SettingSync\.dll"
@@ -9073,7 +9099,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{E974D26D-3D9B-4D47-88CC-3872F2DC3585}\InProcServer32" = "$homedrive\\Windows\\System32\\XpsServices\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E979DAD9-25E8-45D7-AB42-43FB7B9F38CC}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E97D552D-9AE9-46AA-9151-D2DA4BBB5E96}\InProcServer32" = "$homedrive\\Windows\\System32\\execmodelclient\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{E97DEC16-A50D-49bb-AE24-CF682282E08D}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nv3dappshext\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{E97DEC16-A50D-49bb-AE24-CF682282E08D}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nv3dappshext\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E98B8DC5-72E3-48E4-A4BC-9393F3EA0DA5}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Management\.Workplace\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{E9957D25-7EB7-42C8-AD32-06AF7776A788}\InprocServer32" = "$homedrive\\Program Files (x86)\\Google\\Update\\.*\\psmachine.*\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{e9970fa4-b6aa-11d9-b032-000d56c25c27}\InprocServer32" = "$homedrive\\Windows\\system32\\sdohlp\.dll"
@@ -9210,7 +9236,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{ED999FF5-223A-4052-8ECE-0B10C8DBAA39}\InprocServer32" = "$homedrive\\Windows\\system32\\wbem\\wbemcore\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{ed9d80b9-d157-457b-9192-0e7280313bf0}\InProcServer32" = "$homedrive\\Windows\\system32\\zipfldr\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{eda4e1db-2e1f-450d-9e65-7ec502cc0a4f}\InProcServer32" = "$homedrive\\Windows\\System32\\exsmime\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{EDAC9CAA-4874-48C0-80DB-2D81B63EFE13}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{EDAC9CAA-4874-48C0-80DB-2D81B63EFE13}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{edb5f444-cb8d-445a-a523-ec5ab6ea33c7}\InProcServer32" = "$homedrive\\Windows\\system32\\ntshrui\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EDB9987A-FFF5-4bd2-8B05-2865F3EC621D}\InProcServer32" = "$homedrive\\Windows\\system32\\(windows\.ui\.immersive|authui)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{edc3a8b5-2e25-466a-a1ad-21e2f19414ac}\InProcServer32" = "$homedrive\\Windows\\System32\\mfsrcsnk\.dll"
@@ -9242,7 +9268,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{EEC6993A-B3FD-11D2-A916-00C04FB98638}\InProcServer32" = "$homedrive\\Windows\\System32\\pid\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EED01FD5-42B6-4846-A81F-9C40D219197F}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.pcshell\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EEF05C76-5C98-3685-A69C-6E1A26A7F846}\InprocServer32" = "($homedrive\\Windows\\System32\\mscoree\.dll|mscoree\.dll)"
-	"HKEY_CLASSES_ROOT\CLSID\{EEF5290C-7F3D-4640-93F2-F189DC616510}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{EEF5290C-7F3D-4640-93F2-F189DC616510}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvdisps\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EF011F79-4000-406D-87AF-BFFB3FC39D57}\InProcServer32" = "$homedrive\\Windows\\System32\\dsdmo\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EF114C90-CD1D-484E-96E5-09CFAF912A21}\InProcServer32" = "$homedrive\\Windows\\System32\\dsdmo\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EF19FBF6-0212-4463-8B3E-14E1318DC616}\InProcServer32" = "$homedrive\\Windows\\System32\\MessagingDataModel2\.dll"
@@ -9266,7 +9292,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{EF7DEED8-27D0-42DC-B135-664EEFC69F52}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Web\.Http\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{ef7e0655-7888-4960-b0e5-730846e03492}\InProcServer32" = "$homedrive\\Windows\\System32\\(BitsProxy|bitsprx\d{1}|qmgrprxy)\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EF7F04A5-461B-4E32-840D-5841AB00713C}\InProcServer32" = "$homedrive\\Windows\\System32\\modernexecserver\.dll"
-	"HKEY_CLASSES_ROOT\CLSID\{EF884939-F1EA-4EFB-B676-D2F802177C5F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{EF884939-F1EA-4EFB-B676-D2F802177C5F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvvitvs\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EF8AD2D1-AE36-11D1-B2D2-006097DF8C11}\InProcServer32" = "$homedrive\\Windows\\system32\\explorerframe\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EF985E71-D5C7-42D4-BA4D-2D073E2E96F4}\InProcServer32" = "$homedrive\\Windows\\System32\\dsdmo\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{EFA97F08-EE06-42EC-AAAF-F8CB106247A2}\InProcServer32" = "$homedrive\\Windows\\System32\\FileAppxStreamingDataSource\.dll"
@@ -9609,7 +9635,7 @@ function Check-COM-Hijacks {
 	"HKEY_CLASSES_ROOT\CLSID\{FC5EEAF6-2001-11DF-ADB9-F4CE462D9137}\InprocServer32" = "$homedrive\\Windows\\System32\\wifinetworkmanager\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{FC6123C7-7F25-4D1F-97A7-6C83019AB088}\InProcServer32" = "$homedrive\\Windows\\System32\\officecsp\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{FC772AB0-0C7F-11D3-8FF2-00A0C9224CF4}\InprocServer32" = "$homedrive\\Windows\\System32\\psisrndr\.ax"
-	"HKEY_CLASSES_ROOT\CLSID\{FC7AA68D-EAFB-4ce9-A012-9C33E7B02B49}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+	"HKEY_CLASSES_ROOT\CLSID\{FC7AA68D-EAFB-4ce9-A012-9C33E7B02B49}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{FC80316A-0752-400d-AA2E-86DE4F6C26EF}\InProcServer32" = "$homedrive\\Windows\\System32\\provsvc\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{FC8F7769-98CE-4ED3-B8F6-888B9D028657}\InprocServer32" = "$homedrive\\Windows\\System32\\IME\\IMEJP\\imjpapi\.dll"
 	"HKEY_CLASSES_ROOT\CLSID\{FCA7405F-710E-4438-ADEE-FB35BBF9BACD}\InprocServer32" = "$homedrive\\Windows\\system32\\CredProv2faHelper\.dll"
@@ -10431,7 +10457,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{E838B72C-83C9-4a08-8DD1-144CB14616F1}\InProcServer32" = "$homedrive\\Windows\\system32\\SettingSyncCore\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{E846F0A0-D367-11D1-8286-00A0C9231C29}\InprocServer32" = "$homedrive\\Windows\\System32\\catsrvut\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{E847030C-BBBA-4657-AF6D-484AA42BF1FE}\InProcServer32" = "$homedrive\\Windows\\System32\\(BitsProxy|bitsprx\d{1}|qmgrprxy)\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{E851CB66-C839-4E96-8363-8535EB16FE2C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_f840d03a202f8a32\\nvgames\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{E851CB66-C839-4E96-8363-8535EB16FE2C}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispig|nvlei)\.inf_amd64_.*\\nvgames\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}\InProcServer32" = "$homedrive\\Windows\\system32\\zipfldr\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{E8C40B98-FCF5-4047-86DA-11A11590CB98}\InProcServer32" = "$homedrive\\Windows\\system32\\SettingSync\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{e8e4dbb7-bfa1-4a0c-a168-b0568d4654e2}\InprocServer32" = "$homedrive\\Windows\\system32\\shell32\.dll"
@@ -10454,7 +10480,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{E974D26D-3D9B-4D47-88CC-3872F2DC3585}\InProcServer32" = "$homedrive\\Windows\\System32\\XpsServices\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{E979DAD9-25E8-45D7-AB42-43FB7B9F38CC}\InprocServer32" = "$homedrive\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{E97D552D-9AE9-46AA-9151-D2DA4BBB5E96}\InProcServer32" = "$homedrive\\Windows\\System32\\execmodelclient\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{E97DEC16-A50D-49bb-AE24-CF682282E08D}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_f840d03a202f8a32\\nv3dappshext\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{E97DEC16-A50D-49bb-AE24-CF682282E08D}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispig|nvlei)\.inf_amd64_.*\\nv3dappshext\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{E98B8DC5-72E3-48E4-A4BC-9393F3EA0DA5}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Management\.Workplace\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{e9970fa4-b6aa-11d9-b032-000d56c25c27}\InprocServer32" = "$homedrive\\Windows\\system32\\sdohlp\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{E9A4A80A-44FE-4DE4-8971-7150B10A5199}\InprocServer32" = "$homedrive\\Windows\\system32\\msheif\.dll"
@@ -10588,7 +10614,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{ED999FF5-223A-4052-8ECE-0B10C8DBAA39}\InprocServer32" = "$homedrive\\Windows\\system32\\wbem\\wbemcore\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{ed9d80b9-d157-457b-9192-0e7280313bf0}\InProcServer32" = "$homedrive\\Windows\\system32\\zipfldr\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{eda4e1db-2e1f-450d-9e65-7ec502cc0a4f}\InProcServer32" = "$homedrive\\Windows\\System32\\exsmime\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{EDAC9CAA-4874-48C0-80DB-2D81B63EFE13}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_f840d03a202f8a32\\nvvitvs\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{EDAC9CAA-4874-48C0-80DB-2D81B63EFE13}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispig|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{edb5f444-cb8d-445a-a523-ec5ab6ea33c7}\InProcServer32" = "$homedrive\\Windows\\system32\\ntshrui\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{edc3a8b5-2e25-466a-a1ad-21e2f19414ac}\InProcServer32" = "$homedrive\\Windows\\System32\\mfsrcsnk\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EDC978D6-4D53-4b2f-A265-5805674BE568}\InProcServer32" = "$homedrive\\Windows\\System32\\(windows\.storage|shell32|twinui.*|SearchFolder|ieframe)\.dll"
@@ -10619,7 +10645,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{EEC6993A-B3FD-11D2-A916-00C04FB98638}\InProcServer32" = "$homedrive\\Windows\\System32\\pid\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EED01FD5-42B6-4846-A81F-9C40D219197F}\InProcServer32" = "$homedrive\\Windows\\system32\\(twinui|twinui\.appcore)\.pcshell\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EEF05C76-5C98-3685-A69C-6E1A26A7F846}\InprocServer32" = "$homedrive\\Windows\\System32\\mscoree\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{EEF5290C-7F3D-4640-93F2-F189DC616510}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_f840d03a202f8a32\\nvdisps\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{EEF5290C-7F3D-4640-93F2-F189DC616510}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispig|nvlei)\.inf_amd64_.*\\nvdisps\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EF011F79-4000-406D-87AF-BFFB3FC39D57}\InProcServer32" = "$homedrive\\Windows\\System32\\dsdmo\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EF114C90-CD1D-484E-96E5-09CFAF912A21}\InProcServer32" = "$homedrive\\Windows\\System32\\dsdmo\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EF19FBF6-0212-4463-8B3E-14E1318DC616}\InProcServer32" = "$homedrive\\Windows\\System32\\MessagingDataModel2\.dll"
@@ -10643,7 +10669,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{EF7DEED8-27D0-42DC-B135-664EEFC69F52}\InProcServer32" = "$homedrive\\Windows\\System32\\Windows\.Web\.Http\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{ef7e0655-7888-4960-b0e5-730846e03492}\InProcServer32" = "$homedrive\\Windows\\System32\\(BitsProxy|bitsprx\d{1}|qmgrprxy)\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EF7F04A5-461B-4E32-840D-5841AB00713C}\InProcServer32" = "$homedrive\\Windows\\System32\\modernexecserver\.dll"
-        "HKEY_CLASSES_ROOT\CLSID\{EF884939-F1EA-4EFB-B676-D2F802177C5F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_f840d03a202f8a32\\nvvitvs\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{EF884939-F1EA-4EFB-B676-D2F802177C5F}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispig|nvlei)\.inf_amd64_.*\\nvvitvs\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EF8AD2D1-AE36-11D1-B2D2-006097DF8C11}\InProcServer32" = "$homedrive\\Windows\\system32\\explorerframe\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EF985E71-D5C7-42D4-BA4D-2D073E2E96F4}\InProcServer32" = "$homedrive\\Windows\\System32\\dsdmo\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{EFA97F08-EE06-42EC-AAAF-F8CB106247A2}\InProcServer32" = "$homedrive\\Windows\\System32\\FileAppxStreamingDataSource\.dll"
@@ -10984,7 +11010,7 @@ function Check-COM-Hijacks {
         "HKEY_CLASSES_ROOT\CLSID\{FC5EEAF6-2001-11DF-ADB9-F4CE462D9137}\InprocServer32" = "$homedrive\\Windows\\System32\\wifinetworkmanager\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{FC6123C7-7F25-4D1F-97A7-6C83019AB088}\InProcServer32" = "$homedrive\\Windows\\System32\\officecsp\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{FC772AB0-0C7F-11D3-8FF2-00A0C9224CF4}\InprocServer32" = "$homedrive\\Windows\\System32\\psisrndr\.ax"
-        "HKEY_CLASSES_ROOT\CLSID\{FC7AA68D-EAFB-4ce9-A012-9C33E7B02B49}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei)\.inf_amd64_.*\\nvwss\.dll"
+        "HKEY_CLASSES_ROOT\CLSID\{FC7AA68D-EAFB-4ce9-A012-9C33E7B02B49}\InprocServer32" = "$homedrive\\Windows\\System32\\DriverStore\\FileRepository\\(nv_dispi|nvlei|nv_.*)\.inf_amd64_.*\\nvwss\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{FC80316A-0752-400d-AA2E-86DE4F6C26EF}\InProcServer32" = "$homedrive\\Windows\\System32\\provsvc\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{FC8F7769-98CE-4ED3-B8F6-888B9D028657}\InprocServer32" = "$homedrive\\Windows\\System32\\IME\\IMEJP\\imjpapi\.dll"
         "HKEY_CLASSES_ROOT\CLSID\{FCA7405F-710E-4438-ADEE-FB35BBF9BACD}\InprocServer32" = "$homedrive\\Windows\\system32\\CredProv2faHelper\.dll"
@@ -11713,6 +11739,7 @@ function Check-COM-Hijacks {
 							Write-SnapshotMessage -Key $data.Name -Value $_.Value -Source 'COM'
 
                             if ($loadsnapshot){
+                                $item = Get-Item -Path $_.Value -ErrorAction SilentlyContinue
                                 $detection = [PSCustomObject]@{
                                     Name = 'Allowlist Mismatch: COM Hijack'
                                     Risk = 'Medium'
@@ -11722,6 +11749,9 @@ function Check-COM-Hijacks {
                                         Location = $data.Name
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
+                                        Hash = Get-File-Hash $_.Value
+                                        Created = $item.CreationTime
+                                        Modified = $item.LastWriteTime
                                     }
                                 }
                                 $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
@@ -11731,8 +11761,10 @@ function Check-COM-Hijacks {
                             }
 
                             $verified_match = $false
+                            $clsid_found = $false
                             $expected_value = "N/A"
                             if ($default_hkcr_com_lookups.ContainsKey($data.Name)){
+                                $clsid_found = $true
                                 $expected_value = $default_hkcr_com_lookups[$data.Name]
                                 try{
                                     if ($_.Value -match $default_hkcr_com_lookups[$data.Name]){
@@ -11744,6 +11776,7 @@ function Check-COM-Hijacks {
                             }
 
                             if ($server_2022_coms.ContainsKey($data.Name) -and $verified_match -ne $true){
+                                $clsid_found = $true
                                 $expected_value = $server_2022_coms[$data.Name]
                                 try{
                                     if ($_.Value -match $server_2022_coms[$data.Name]){
@@ -11754,10 +11787,13 @@ function Check-COM-Hijacks {
                                 }
                             }
 
-                            if ($verified_match -ne $true -or $_.Value -match "$env:homedrive\\Users\\(public|administrator|guest).*"){
+                            # Each hive will have 3 rounds of detection
+                            # First Detection - if we have the CLSID and there is a mismatch
+                            $item = Get-Item -Path $_.Value -ErrorAction SilentlyContinue
+                            if ($verified_match -ne $true -and $clsid_found){
                                 $detection = [PSCustomObject]@{
-                                    Name = 'Potential COM Hijack'
-                                    Risk = 'Medium'
+                                    Name = 'Potential COM Hijack - Mismatch on stored CLSID'
+                                    Risk = 'Low'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = [PSCustomObject]@{
@@ -11765,9 +11801,56 @@ function Check-COM-Hijacks {
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
                                         ExpectedValue = $expected_value
+                                        Hash = Get-File-Hash $_.Value
+                                        Created = $item.CreationTime
+                                        Modified = $item.LastWriteTime
                                     }
                                 }
                                 Write-Detection $detection
+                            }
+
+                            # Second Detection - if we do NOT have the cLSID and the file was created/modified within the last X days (configurable)
+                            $created = ($item.CreationTime)
+                            $modified = ($item.LastWriteTime)
+                            if ((($created -ge $threshold_date) -or ($modified -ge $threshold_date)) -and $verified_match -ne $true){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack - Recently Modified or Created Entry'
+                                    Risk = 'Low'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = [PSCustomObject]@{
+                                        Location = $data.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                        ExpectedValue = $expected_value
+                                        Hash = Get-File-Hash $_.Value
+                                        Created = $item.CreationTime
+                                        Modified = $item.LastWriteTime
+                                    }
+                                }
+                                Write-Detection $detection
+                            }
+
+                            # Third Detection - Suspicious Directory for entry value
+                            foreach ($path in $suspicious_process_paths){
+                                if ($_.Value -match $path){
+                                    $detection = [PSCustomObject]@{
+                                        Name = 'Potential COM Hijack - Suspicious Entry Path'
+                                        Risk = 'Low'
+                                        Source = 'Registry'
+                                        Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                        Meta = [PSCustomObject]@{
+                                            Location = $data.Name
+                                            EntryName = $_.Name
+                                            EntryValue = $_.Value
+                                            ExpectedValue = $expected_value
+                                            Hash = Get-File-Hash $_.Value
+                                            Created = $item.CreationTime
+                                            Modified = $item.LastWriteTime
+                                        }
+                                    }
+                                    Write-Detection $detection
+                                }
                             }
                         }
                     }
@@ -11809,6 +11892,7 @@ function Check-COM-Hijacks {
 							Write-SnapshotMessage -Key $data.Name -Value $_.Value -Source 'COM'
 
                             if ($loadsnapshot){
+                                $item = Get-Item -Path $_.Value -ErrorAction SilentlyContinue
                                 $detection = [PSCustomObject]@{
                                     Name = 'Allowlist Mismatch: COM Hijack'
                                     Risk = 'Medium'
@@ -11818,6 +11902,9 @@ function Check-COM-Hijacks {
                                         Location = $data.Name
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
+                                        Hash = Get-File-Hash $_.Value
+                                        Created = $item.CreationTime
+                                        Modified = $item.LastWriteTime
                                     }
                                 }
                                 $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
@@ -11850,10 +11937,14 @@ function Check-COM-Hijacks {
                                 }
                             }
 
-                            if ($verified_match -ne $true -or $_.Value -match "$env:homedrive\\Users\\(public|administrator|guest).*"){
+
+                            # Each hive will have 3 rounds of detection
+                            # First Detection - if we have the CLSID and there is a mismatch
+                            $item = Get-Item -Path $_.Value -ErrorAction SilentlyContinue
+                            if ($verified_match -ne $true -and $clsid_found){
                                 $detection = [PSCustomObject]@{
-                                    Name = 'Potential COM Hijack'
-                                    Risk = 'Medium'
+                                    Name = 'Potential COM Hijack - Mismatch on stored CLSID'
+                                    Risk = 'Low'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = [PSCustomObject]@{
@@ -11861,9 +11952,56 @@ function Check-COM-Hijacks {
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
                                         ExpectedValue = $expected_value
+                                        Hash = Get-File-Hash $_.Value
+                                        Created = $item.CreationTime
+                                        Modified = $item.LastWriteTime
                                     }
                                 }
                                 Write-Detection $detection
+                            }
+
+                            # Second Detection - if we do NOT have the cLSID and the file was created/modified within the last X days (configurable)
+                            $created = ($item.CreationTime)
+                            $modified = ($item.LastWriteTime)
+                            if ((($created -ge $threshold_date) -or ($modified -ge $threshold_date)) -and $verified_match -ne $true){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack - Recently Modified or Created Entry'
+                                    Risk = 'Low'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = [PSCustomObject]@{
+                                        Location = $data.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                        ExpectedValue = $expected_value
+                                        Hash = Get-File-Hash $_.Value
+                                        Created = $item.CreationTime
+                                        Modified = $item.LastWriteTime
+                                    }
+                                }
+                                Write-Detection $detection
+                            }
+
+                            # Third Detection - Suspicious Directory for entry value
+                            foreach ($path in $suspicious_process_paths){
+                                if ($_.Value -match $path){
+                                    $detection = [PSCustomObject]@{
+                                        Name = 'Potential COM Hijack - Suspicious Entry Path'
+                                        Risk = 'Low'
+                                        Source = 'Registry'
+                                        Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                        Meta = [PSCustomObject]@{
+                                            Location = $data.Name
+                                            EntryName = $_.Name
+                                            EntryValue = $_.Value
+                                            ExpectedValue = $expected_value
+                                            Hash = Get-File-Hash $_.Value
+                                            Created = $item.CreationTime
+                                            Modified = $item.LastWriteTime
+                                        }
+                                    }
+                                    Write-Detection $detection
+                                }
                             }
                         }
                     }
@@ -11902,6 +12040,7 @@ function Check-COM-Hijacks {
 								Write-SnapshotMessage -Key $data.Name -Value $_.Value -Source 'COM'
 
                                 if ($loadsnapshot){
+                                    $item = Get-Item -Path $_.Value -ErrorAction SilentlyContinue
                                     $detection = [PSCustomObject]@{
                                         Name = 'Allowlist Mismatch: COM Hijack'
                                         Risk = 'Medium'
@@ -11911,6 +12050,9 @@ function Check-COM-Hijacks {
                                             Location = $data.Name
                                             EntryName = $_.Name
                                             EntryValue = $_.Value
+                                            Hash = Get-File-Hash $_.Value
+                                            Created = $item.CreationTime
+                                            Modified = $item.LastWriteTime
                                         }
                                     }
                                     $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
@@ -11944,11 +12086,56 @@ function Check-COM-Hijacks {
                                     }
                                 }
 
-                                if ($verified_match -ne $true -or $_.Value -match "$env:homedrive\\Users\\(public|administrator|guest).*"){
+                            # Each hive will have 3 rounds of detection
+                            # First Detection - if we have the CLSID and there is a mismatch
+                            $item = Get-Item -Path $_.Value -ErrorAction SilentlyContinue
+                            if ($verified_match -ne $true -and $clsid_found){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack - Mismatch on stored CLSID'
+                                    Risk = 'Low'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = [PSCustomObject]@{
+                                        Location = $data.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                        ExpectedValue = $expected_value
+                                        Hash = Get-File-Hash $_.Value
+                                        Created = $item.CreationTime
+                                        Modified = $item.LastWriteTime
+                                    }
+                                }
+                                Write-Detection $detection
+                            }
 
+                            # Second Detection - if we do NOT have the cLSID and the file was created/modified within the last X days (configurable)
+                            $created = ($item.CreationTime)
+                            $modified = ($item.LastWriteTime)
+                            if ((($created -ge $threshold_date) -or ($modified -ge $threshold_date)) -and $verified_match -ne $true){
+                                $detection = [PSCustomObject]@{
+                                    Name = 'Potential COM Hijack - Recently Modified or Created Entry'
+                                    Risk = 'Low'
+                                    Source = 'Registry'
+                                    Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
+                                    Meta = [PSCustomObject]@{
+                                        Location = $data.Name
+                                        EntryName = $_.Name
+                                        EntryValue = $_.Value
+                                        ExpectedValue = $expected_value
+                                        Hash = Get-File-Hash $_.Value
+                                        Created = $item.CreationTime
+                                        Modified = $item.LastWriteTime
+                                    }
+                                }
+                                Write-Detection $detection
+                            }
+
+                            # Third Detection - Suspicious Directory for entry value
+                            foreach ($path in $suspicious_process_paths){
+                                if ($_.Value -match $path){
                                     $detection = [PSCustomObject]@{
-                                        Name = 'Potential COM Hijack'
-                                        Risk = 'Medium'
+                                        Name = 'Potential COM Hijack - Suspicious Entry Path'
+                                        Risk = 'Low'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                         Meta = [PSCustomObject]@{
@@ -11956,10 +12143,14 @@ function Check-COM-Hijacks {
                                             EntryName = $_.Name
                                             EntryValue = $_.Value
                                             ExpectedValue = $expected_value
+                                            Hash = Get-File-Hash $_.Value
+                                            Created = $item.CreationTime
+                                            Modified = $item.LastWriteTime
                                         }
                                     }
                                     Write-Detection $detection
                                 }
+                            }
                             }
                         }
                     }
@@ -13525,6 +13716,7 @@ function Check-Process-Modules {
                                 ProcessName = $process.ProcessName
                                 PID = $process.ProcessId
                                 Executable = $process.ExecutablePath
+                                Hash = Get-File-Hash $module.FileName
                             }
                         }
                         Write-Detection $detection
@@ -13542,6 +13734,7 @@ function Check-Process-Modules {
                                 ProcessName = $process.ProcessName
                                 PID = $process.ProcessId
                                 Executable = $process.ExecutablePath
+                                Hash = Get-File-Hash $module.FileName
                             }
                         }
                         # TODO - This is too noisy to use as-is - these DLLs get loaded into quite a few processes.
@@ -13590,6 +13783,7 @@ function Check-Windows-Unsigned-Files {
                         Location = $file.FullName
                         Created = $file.CreationTime
                         Modified = $file.LastWriteTime
+                        Hash = Get-File-Hash $file.FullName
                     }
                 }
                 #Write-Host $detection.Meta
@@ -13646,6 +13840,7 @@ function Check-Service-Hijacks {
                                 Location = $test_path
                                 ServiceName = $service.Name
                                 ServicePath = $service.PathName
+                                Hash = Get-File-Hash $test_path
                             }
                         }
                         Write-Detection $detection
@@ -13711,6 +13906,7 @@ function Check-PATH-Hijacks {
                         Location = $bin.FullName
                         Created = $bin.CreationTime
                         Modified = $bin.LastWriteTime
+                        Hash = Get-File-Hash $bin.FullName
                     }
                 }
                 #Write-Host $detection.Meta
@@ -14267,7 +14463,11 @@ function Check-Office-Trusted-Locations {
                     Risk = 'Medium'
                     Source = 'Office'
                     Technique = "T1137.006: Office Application Startup: Add-ins"
-                    Meta = "File: "+$item.FullName+", Last Write Time: "+$item.LastWriteTime
+                    Meta = [PSCustomObject]@{
+                        Location = $item.FullName
+                        Created =  $item.CreationTime
+                        Modified = $item.LastWriteTime
+                    }
                 }
                 Write-Detection $detection
             }
@@ -14451,6 +14651,7 @@ function Check-PeerDistExtensionDll {
                         EntryName = $_.Name
                         EntryValue = $_.Value
                         ExpectedValue = $expected_value
+                        Hash = Get-File-Hash $_.Value
                     }
                     Reference = "https://www.hexacorn.com/blog/2022/01/23/beyond-good-ol-run-key-part-138/"
                 }
@@ -14479,6 +14680,7 @@ function Check-InternetSettingsLUIDll {
                         EntryName = $_.Name
                         EntryValue = $_.Value
                         ExpectedValue = $expected_value
+                        Hash = Get-File-Hash $_.Value
                     }
                     Reference = "https://www.hexacorn.com/blog/2022/01/22/beyond-good-ol-run-key-part-137/"
                 }
@@ -14574,6 +14776,7 @@ function Check-BIDDll {
                                 Location = $path
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
+                                Hash = Get-File-Hash $_.Value
                             }
                             Reference = "https://www.hexacorn.com/blog/2019/07/13/beyond-good-ol-run-key-part-111/"
                         }
@@ -14613,6 +14816,7 @@ function Check-WindowsUpdateTestDlls {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -14660,6 +14864,7 @@ function Check-KnownManagedDebuggers {
                     Meta = [PSCustomObject]@{
                         Location = $path
                         EntryName = $_.Name
+                        Hash = Get-File-Hash $_.Name
                     }
                     Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
@@ -14708,6 +14913,7 @@ function Check-MiniDumpAuxiliaryDLLs {
                     Meta = [PSCustomObject]@{
                         Location = $path
                         EntryName = $_.Name
+                        Hash = Get-File-Hash $_.Name
                     }
                     Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
@@ -14745,6 +14951,7 @@ function Check-Wow64LayerAbuse {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -15041,6 +15248,7 @@ function Check-PolicyManager {
                                     Location = $subkey.Name
                                     EntryName = "PreCheckDLLPath"
                                     EntryValue = $data.PreCheckDLLPath
+                                    Hash = Get-File-Hash $data.PreCheckDLLPath
                                 }
                             }
                             Write-Detection $detection
@@ -15068,6 +15276,7 @@ function Check-PolicyManager {
                                     Location = $subkey.Name
                                     EntryName = "transportDllPath"
                                     EntryValue = $data.transportDllPath
+                                    Hash = Get-File-Hash $data.transportDllPath
                                 }
                             }
                             Write-Detection $detection
@@ -15100,6 +15309,7 @@ function Check-SEMgrWallet {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -15256,6 +15466,7 @@ function Check-WinlogonHelperDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -15432,6 +15643,7 @@ function Check-PrintMonitorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                     }
                     $result = Check-IfAllowed $allowtable_printmonitors $item.Name $data.Driver $detection
@@ -15448,6 +15660,7 @@ function Check-PrintMonitorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                         Reference = "https://pentestlab.blog/2019/10/28/persistence-port-monitors/"
                     }
@@ -15507,6 +15720,7 @@ function Check-LSA {
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                                 AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
                             }
                         }
                         Write-Detection $detection
@@ -15535,6 +15749,7 @@ function Check-LSA {
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                                 AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
                             }
                         }
                         Write-Detection $detection
@@ -15564,7 +15779,13 @@ function Check-LSA {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                                AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15593,7 +15814,13 @@ function Check-LSA {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                                AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15629,7 +15856,13 @@ function Check-LSA {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1556.002: Modify Authentication Process: Password Filter DLL"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                                AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15665,6 +15898,7 @@ function Check-DNSServerLevelPluginDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -15712,6 +15946,7 @@ function Check-ExplorerHelperUtilities {
                                 Location = $path
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
+                                Hash = Get-File-Hash $_.Value
                             }
                         }
                         Write-Detection $detection
@@ -15855,6 +16090,7 @@ function Check-TimeProviderDLLs {
                             Meta = [PSCustomObject]@{
                                 Location = $item.Name
                                 EntryValue = $data.DllName
+                                Hash = Get-File-Hash $data.DllName
                             }
                         }
                         Write-Detection $detection
@@ -15888,6 +16124,7 @@ function Check-PrintProcessorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                     }
                     $result = Check-IfAllowed $allowtable_printprocessors $item.Name $data.Driver $detection
@@ -15906,6 +16143,7 @@ function Check-PrintProcessorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                     }
                     Write-Detection $detection
@@ -15934,7 +16172,11 @@ function Check-PrintProcessorDLLs {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
-                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
+                        Meta = [PSCustomObject]@{
+                            Location = $item.Name
+                            EntryName = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -16001,6 +16243,7 @@ function Check-ScreenSaverEXE {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16062,6 +16305,7 @@ function Check-NetSHDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16100,6 +16344,7 @@ function Check-AppCertDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16137,6 +16382,7 @@ function Check-AppInitDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16168,6 +16414,7 @@ function Check-AppInitDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16453,6 +16700,7 @@ function Check-TerminalServicesDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -16478,6 +16726,7 @@ function Check-AutoDialDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -16546,7 +16795,11 @@ function Check-CommandAutoRunProcessors {
                             Risk = 'Very High'
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Key Location: HKEY_CURRENT_USER\SOFTWARE\Microsoft\Command Processor, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -16573,6 +16826,7 @@ function Check-TrustProviderDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -16587,6 +16841,7 @@ function Check-TrustProviderDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -16628,6 +16883,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
                     Meta = [PSCustomObject]@{
                         Location = $item.Name
                         EntryValue = $dll
+                        Hash = Get-File-Hash $dll
                     }
                     Reference = "https://persistence-info.github.io/Data/naturallanguage6.html"
                 }
@@ -16659,6 +16915,7 @@ function Check-WindowsLoadKey {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Reference = "https://dmcxblue.gitbook.io/red-team-notes-2-0/red-team-techniques/privilege-escalation/untitled/registry-run-keys-startup-folder"
                         }
                     }
                     Write-Detection $detection
@@ -16740,6 +16997,7 @@ function Check-AppPaths {
                                         Location = $item.Name
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
+                                        Hash = Get-File-Hash $_.Value
                                     }
                                 }
                                 $result = Check-IfAllowed $allowtable_apppaths $item.Name $_.Value $detection
@@ -16756,6 +17014,7 @@ function Check-AppPaths {
                                     Location = $item.Name
                                     EntryName = $_.Name
                                     EntryValue = $_.Value
+                                    Hash = Get-File-Hash $_.Value
                                 }
                             }
                             Write-Detection $detection
@@ -16826,6 +17085,7 @@ function Check-GPOExtensions {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16837,6 +17097,7 @@ function Check-GPOExtensions {
 
 function Check-HTMLHelpDLL {
     # Supports Drive Retargeting
+    # TODO - Hash - need to double check format of file path in registry
     Write-Message "Checking HTML Help (.chm) DLL"
     $basepath = "HKEY_CURRENT_USER\Software\Microsoft\HtmlHelp Author"
     foreach ($p in $regtarget_hkcu_list){
@@ -16854,6 +17115,7 @@ function Check-HTMLHelpDLL {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -17151,6 +17413,7 @@ function Check-ContextMenu {
                             Meta = [PSCustomObject]@{
                                 Location = $item.Name
                                 EntryValue = $_.Value
+                                Hash = Get-File-Hash $_.Value
                             }
                             Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
@@ -17176,7 +17439,11 @@ function Check-ContextMenu {
                             Risk = 'Medium'
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $item.Name
+                                EntryValue = $_.Value
+                                Hash = Get-File-Hash $_.Value
+                            }
                             Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
@@ -17214,6 +17481,7 @@ function Check-OfficeAI {
                         Location = $item.FullName
                         Created = $item.CreationTime
                         Modified = $item.LastWriteTime
+                        Hash = Get-File-Hash $item.FullName
                     }
                     Reference = "https://twitter.com/Laughing_Mantis/status/1645268114966470662"
                 }
@@ -17258,6 +17526,7 @@ function Check-Notepad++-Plugins {
                             Location = $item.FullName
                             Created = $item.CreationTime
                             Modified = $item.LastWriteTime
+                            Hash = Get-File-Hash $item.FullName
                         }
                         Reference = "https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/"
                     }
@@ -17269,6 +17538,7 @@ function Check-Notepad++-Plugins {
 }
 
 function Check-MSDTCDll {
+    # TODO - Hash file - slightly difficult since it's a combination of reg paths
     # https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/
     Write-Message "Checking MSDTC DLL Hijack"
     $matches = @{
@@ -17321,6 +17591,7 @@ function Check-Narrator {
                 Location = $item.FullName
                 Created = $item.CreationTime
                 Modified = $item.LastWriteTime
+                Hash = Get-File-Hash $item.FullName
             }
             Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
         }
@@ -17348,6 +17619,7 @@ function Check-Suspicious-File-Locations {
                     Location = $item.FullName
                     Created = $item.CreationTime
                     Modified = $item.LastWriteTime
+                    Hash = Get-File-Hash $item.FullName
                 }
             }
             Write-Detection $detection
@@ -17379,6 +17651,7 @@ function Check-BootVerificationProgram {
                 Meta = [PSCustomObject]@{
                     Location = $path
                     EntryName = $data.ImagePath
+                    Hash = Get-File-Hash $data.ImagePath
                 }
                 Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/bootverificationprogram.md"
             }
@@ -17444,6 +17717,7 @@ function Check-DiskCleanupHandlers {
                             Meta = [PSCustomObject]@{
                                 Location = $item.Name
                                 EntryName = $target_prog
+                                Hash = Get-File-Hash $target_prog
                             }
                             Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/diskcleanuphandler.md"
                         }
@@ -17512,6 +17786,74 @@ function Check-DisableLowILProcessIsolation {
     }
 }
 
+function Get-File-Hash($file){
+    <#
+    .SYNOPSIS
+        Receives a path to a file as a string, validates the path exists and uses the globally-defined HashMode to return either an MD5, SHA1 or SHA256 hash.
+    #>
+    # Path
+    # %SystemRoot%\system32 ([System.Environment]::SystemDirectory)
+    # %SystemRoot%
+    $file = $file.Trim()
+    $file = $file.Trim("`"")
+    $file = $file.Trim("\")
+    $file = $file.Trim("?")
+    $file = $file.Trim("\")
+
+    if ($file.StartsWith("system32")) {
+        $file = $file -replace "system32",[System.Environment]::SystemDirectory
+    }
+
+    if ($file.Contains("<") -or $file.Contains(">") -or $file.Contains("`"") -or $file.Contains("/") -or $file.Contains("|") -or $file.Contains("?") -or $file.Contains("*")) {
+        return "Invalid File Path"
+    }
+
+
+    $filepath = ""
+    $filefound = $false
+    if (Test-Path $file -PathType Leaf) {
+        $filepath = $file
+        $filefound = $true
+    } elseif ($file.Contains(":")) {
+        return "File Not Found"
+    } elseif (Test-Path $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file) -PathType Leaf) {
+        # check if in system32
+        $filepath = $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file)
+        $filefound = $true
+    } elseif (Test-Path $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file) -PathType Leaf) {
+        # check if in windows
+        $filepath = $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file)
+        $filefound = $true
+    } else {
+        # Check all dirs in path to see if it exists
+        $paths = $env:Path -split ";"
+        foreach ($p in $paths){
+            $p = $p.Trim()
+            if ($p -eq ""){
+                continue
+            }
+            $test = $(Join-Path -Path $p -ChildPath $file)
+            if (Test-Path $test -PathType Leaf){
+                $filepath = $test
+                $filefound = $true
+                break
+            }
+        }
+    }
+
+    if (-not $filefound){
+        return "File Not Found"
+    }
+
+    try {
+        # Couldn't find initial
+        $hash = Get-FileHash -Algorithm $HashMode -Path $file
+        return $hash.Hash
+    } catch {
+        return "Access Error"
+    }
+    return "Hashing Error"
+}
 
 function Format-MetadataToString($detectionmeta) {
 	$output = ""
