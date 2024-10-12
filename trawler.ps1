@@ -2042,6 +2042,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             $result = Check-IfAllowed $allowtable_services $service.Name $service.PathName $detection
@@ -2061,6 +2062,7 @@ function Check-Services {
                         Location = $service.PathName
                         EntryName = $service.Name
                         SuspiciousEntry = $term
+                        Hash = Get-File-Hash $service.PathName
                     }
                 }
                 Write-Detection $detection
@@ -2076,6 +2078,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2099,6 +2102,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2113,6 +2117,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2127,6 +2132,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2142,6 +2148,7 @@ function Check-Services {
                 Meta = [PSCustomObject]@{
                     Location = $service.PathName
                     EntryName = $service.Name
+                    Hash = Get-File-Hash $service.PathName
                 }
             }
             Write-Detection $detection
@@ -2181,6 +2188,7 @@ function Check-Processes {
                         PID = $process.ProcessId
                         SuspiciousEntry = $term
                         Created = $process.CreationDate
+                        Hash = Get-File-Hash $process.ExecutablePath
                     }
                 }
                 Write-Detection $detection
@@ -2198,6 +2206,7 @@ function Check-Processes {
                     CommandLine = $process.CommandLine
                     PID = $process.ProcessId
                     Created = $process.CreationDate
+                    Hash = Get-File-Hash $process.ExecutablePath
                 }
             }
             Write-Detection $detection
@@ -2216,6 +2225,7 @@ function Check-Processes {
                         CommandLine = $process.CommandLine
                         PID = $process.ProcessId
                         Created = $process.CreationDate
+                        Hash = Get-File-Hash $process.ExecutablePath
                     }
                 }
                 Write-Detection $detection
@@ -2354,6 +2364,7 @@ function Check-WMIConsumers {
                 Meta = [PSCustomObject]@{
                     EntryName = $consumer.Name
                     EntryValue = $val_
+                    Hash = Get-File-Hash $val_
                 }
             }
             $result = Check-IfAllowed $allowtable_wmi_consumers $consumer.Name $val_ $detection
@@ -2373,6 +2384,7 @@ function Check-WMIConsumers {
                     Location = $consumer.ScriptFileName
                     EntryName = $consumer.Name
                     EntryValue = $consumer.ScriptText
+                    Hash = Get-File-Hash $consumer.ScriptFileName
                 }
             }
             Write-Detection $detection
@@ -2389,6 +2401,7 @@ function Check-WMIConsumers {
                     Location = $consumer.ExecutablePath
                     EntryName = $consumer.Name
                     EntryValue = $consumer.CommandLineTemplate
+                    Hash = Get-File-Hash $consumer.ExecutablePath
                 }
             }
             Write-Detection $detection
@@ -2455,6 +2468,7 @@ function Check-Startups {
                 EntryName = $item.Name
                 EntryValue = $item.Command
                 User = $item.User
+                Hash = Get-File-Hash $item.Location
             }
         }
 
@@ -2483,6 +2497,7 @@ function Check-Startups {
                             Location = $path_
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $path_
                         }
                     }
                     Write-Detection $detection
@@ -2575,6 +2590,7 @@ function Check-Modified-Windows-Accessibility-Feature {
                         Location = $file
                         Created = $fdata.CreationTime
                         Modified = $fdata.LastWriteTime
+                        Hash = Get-File-Hash $file
                     }
                 }
                 Write-Detection $detection
@@ -11727,6 +11743,7 @@ function Check-COM-Hijacks {
                                         Location = $data.Name
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
+                                        Hash = Get-File-Hash $_.Value
                                     }
                                 }
                                 $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
@@ -11770,6 +11787,7 @@ function Check-COM-Hijacks {
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
                                         ExpectedValue = $expected_value
+                                        Hash = Get-File-Hash $_.Value
                                     }
                                 }
                                 Write-Detection $detection
@@ -11823,6 +11841,7 @@ function Check-COM-Hijacks {
                                         Location = $data.Name
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
+                                        Hash = Get-File-Hash $_.Value
                                     }
                                 }
                                 $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
@@ -11866,6 +11885,7 @@ function Check-COM-Hijacks {
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
                                         ExpectedValue = $expected_value
+                                        Hash = Get-File-Hash $_.Value
                                     }
                                 }
                                 Write-Detection $detection
@@ -11916,6 +11936,7 @@ function Check-COM-Hijacks {
                                             Location = $data.Name
                                             EntryName = $_.Name
                                             EntryValue = $_.Value
+                                            Hash = Get-File-Hash $_.Value
                                         }
                                     }
                                     $result = Check-IfAllowed $allowtable_com $data.Name $_.Value $detection
@@ -11961,6 +11982,7 @@ function Check-COM-Hijacks {
                                             EntryName = $_.Name
                                             EntryValue = $_.Value
                                             ExpectedValue = $expected_value
+                                            Hash = Get-File-Hash $_.Value
                                         }
                                     }
                                     Write-Detection $detection
@@ -13530,6 +13552,7 @@ function Check-Process-Modules {
                                 ProcessName = $process.ProcessName
                                 PID = $process.ProcessId
                                 Executable = $process.ExecutablePath
+                                Hash = Get-File-Hash $module.FileName
                             }
                         }
                         Write-Detection $detection
@@ -13547,6 +13570,7 @@ function Check-Process-Modules {
                                 ProcessName = $process.ProcessName
                                 PID = $process.ProcessId
                                 Executable = $process.ExecutablePath
+                                Hash = Get-File-Hash $module.FileName
                             }
                         }
                         # TODO - This is too noisy to use as-is - these DLLs get loaded into quite a few processes.
@@ -13595,6 +13619,7 @@ function Check-Windows-Unsigned-Files {
                         Location = $file.FullName
                         Created = $file.CreationTime
                         Modified = $file.LastWriteTime
+                        Hash = Get-File-Hash $file.FullName
                     }
                 }
                 #Write-Host $detection.Meta
@@ -13651,6 +13676,7 @@ function Check-Service-Hijacks {
                                 Location = $test_path
                                 ServiceName = $service.Name
                                 ServicePath = $service.PathName
+                                Hash = Get-File-Hash $test_path
                             }
                         }
                         Write-Detection $detection
@@ -13716,6 +13742,7 @@ function Check-PATH-Hijacks {
                         Location = $bin.FullName
                         Created = $bin.CreationTime
                         Modified = $bin.LastWriteTime
+                        Hash = Get-File-Hash $bin.FullName
                     }
                 }
                 #Write-Host $detection.Meta
@@ -14460,6 +14487,7 @@ function Check-PeerDistExtensionDll {
                         EntryName = $_.Name
                         EntryValue = $_.Value
                         ExpectedValue = $expected_value
+                        Hash = Get-File-Hash $_.Value
                     }
                     Reference = "https://www.hexacorn.com/blog/2022/01/23/beyond-good-ol-run-key-part-138/"
                 }
@@ -14488,6 +14516,7 @@ function Check-InternetSettingsLUIDll {
                         EntryName = $_.Name
                         EntryValue = $_.Value
                         ExpectedValue = $expected_value
+                        Hash = Get-File-Hash $_.Value
                     }
                     Reference = "https://www.hexacorn.com/blog/2022/01/22/beyond-good-ol-run-key-part-137/"
                 }
@@ -14583,6 +14612,7 @@ function Check-BIDDll {
                                 Location = $path
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
+                                Hash = Get-File-Hash $_.Value
                             }
                             Reference = "https://www.hexacorn.com/blog/2019/07/13/beyond-good-ol-run-key-part-111/"
                         }
@@ -14622,6 +14652,7 @@ function Check-WindowsUpdateTestDlls {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -14669,6 +14700,7 @@ function Check-KnownManagedDebuggers {
                     Meta = [PSCustomObject]@{
                         Location = $path
                         EntryName = $_.Name
+                        Hash = Get-File-Hash $_.Name
                     }
                     Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
@@ -14717,6 +14749,7 @@ function Check-MiniDumpAuxiliaryDLLs {
                     Meta = [PSCustomObject]@{
                         Location = $path
                         EntryName = $_.Name
+                        Hash = Get-File-Hash $_.Name
                     }
                     Reference = "https://www.hexacorn.com/blog/2019/08/26/beyond-good-ol-run-key-part-113/"
                 }
@@ -14754,6 +14787,7 @@ function Check-Wow64LayerAbuse {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -15050,6 +15084,7 @@ function Check-PolicyManager {
                                     Location = $subkey.Name
                                     EntryName = "PreCheckDLLPath"
                                     EntryValue = $data.PreCheckDLLPath
+                                    Hash = Get-File-Hash $data.PreCheckDLLPath
                                 }
                             }
                             Write-Detection $detection
@@ -15077,6 +15112,7 @@ function Check-PolicyManager {
                                     Location = $subkey.Name
                                     EntryName = "transportDllPath"
                                     EntryValue = $data.transportDllPath
+                                    Hash = Get-File-Hash $data.transportDllPath
                                 }
                             }
                             Write-Detection $detection
@@ -15109,6 +15145,7 @@ function Check-SEMgrWallet {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -15265,6 +15302,7 @@ function Check-WinlogonHelperDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -15441,6 +15479,7 @@ function Check-PrintMonitorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                     }
                     $result = Check-IfAllowed $allowtable_printmonitors $item.Name $data.Driver $detection
@@ -15457,6 +15496,7 @@ function Check-PrintMonitorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                         Reference = "https://pentestlab.blog/2019/10/28/persistence-port-monitors/"
                     }
@@ -15516,6 +15556,7 @@ function Check-LSA {
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                                 AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
                             }
                         }
                         Write-Detection $detection
@@ -15544,6 +15585,7 @@ function Check-LSA {
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                                 AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
                             }
                         }
                         Write-Detection $detection
@@ -15578,6 +15620,7 @@ function Check-LSA {
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                                 AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
                             }
                         }
                         Write-Detection $detection
@@ -15612,6 +15655,7 @@ function Check-LSA {
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                                 AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
                             }
                         }
                         Write-Detection $detection
@@ -15653,6 +15697,7 @@ function Check-LSA {
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
                                 AbnormalPackage = $package
+                                Hash = Get-File-Hash $package
                             }
                         }
                         Write-Detection $detection
@@ -15689,6 +15734,7 @@ function Check-DNSServerLevelPluginDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -15736,6 +15782,7 @@ function Check-ExplorerHelperUtilities {
                                 Location = $path
                                 EntryName = $_.Name
                                 EntryValue = $_.Value
+                                Hash = Get-File-Hash $_.Value
                             }
                         }
                         Write-Detection $detection
@@ -15879,6 +15926,7 @@ function Check-TimeProviderDLLs {
                             Meta = [PSCustomObject]@{
                                 Location = $item.Name
                                 EntryValue = $data.DllName
+                                Hash = Get-File-Hash $data.DllName
                             }
                         }
                         Write-Detection $detection
@@ -15912,6 +15960,7 @@ function Check-PrintProcessorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                     }
                     $result = Check-IfAllowed $allowtable_printprocessors $item.Name $data.Driver $detection
@@ -15930,6 +15979,7 @@ function Check-PrintProcessorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                     }
                     Write-Detection $detection
@@ -15961,6 +16011,7 @@ function Check-PrintProcessorDLLs {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryName = $data.Driver
+                            Hash = Get-File-Hash $data.Driver
                         }
                     }
                     Write-Detection $detection
@@ -16028,6 +16079,7 @@ function Check-ScreenSaverEXE {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16089,6 +16141,7 @@ function Check-NetSHDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16127,6 +16180,7 @@ function Check-AppCertDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16164,6 +16218,7 @@ function Check-AppInitDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16195,6 +16250,7 @@ function Check-AppInitDLLs {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16480,6 +16536,7 @@ function Check-TerminalServicesDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -16505,6 +16562,7 @@ function Check-AutoDialDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -16604,6 +16662,7 @@ function Check-TrustProviderDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -16618,6 +16677,7 @@ function Check-TrustProviderDLL {
                         Location = $path
                         EntryName = $_.Name
                         EntryValue = $_.Value
+                        Hash = Get-File-Hash $_.Value
                     }
                 }
                 Write-Detection $detection
@@ -16659,6 +16719,7 @@ function Check-NaturalLanguageDevelopmentDLLs {
                     Meta = [PSCustomObject]@{
                         Location = $item.Name
                         EntryValue = $dll
+                        Hash = Get-File-Hash $dll
                     }
                     Reference = "https://persistence-info.github.io/Data/naturallanguage6.html"
                 }
@@ -16690,6 +16751,7 @@ function Check-WindowsLoadKey {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Reference = "https://dmcxblue.gitbook.io/red-team-notes-2-0/red-team-techniques/privilege-escalation/untitled/registry-run-keys-startup-folder"
                         }
                     }
                     Write-Detection $detection
@@ -16771,6 +16833,7 @@ function Check-AppPaths {
                                         Location = $item.Name
                                         EntryName = $_.Name
                                         EntryValue = $_.Value
+                                        Hash = Get-File-Hash $_.Value
                                     }
                                 }
                                 $result = Check-IfAllowed $allowtable_apppaths $item.Name $_.Value $detection
@@ -16787,6 +16850,7 @@ function Check-AppPaths {
                                     Location = $item.Name
                                     EntryName = $_.Name
                                     EntryValue = $_.Value
+                                    Hash = Get-File-Hash $_.Value
                                 }
                             }
                             Write-Detection $detection
@@ -16857,6 +16921,7 @@ function Check-GPOExtensions {
                         Meta = [PSCustomObject]@{
                             Location = $item.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -16868,6 +16933,7 @@ function Check-GPOExtensions {
 
 function Check-HTMLHelpDLL {
     # Supports Drive Retargeting
+    # TODO - Hash - need to double check format of file path in registry
     Write-Message "Checking HTML Help (.chm) DLL"
     $basepath = "HKEY_CURRENT_USER\Software\Microsoft\HtmlHelp Author"
     foreach ($p in $regtarget_hkcu_list){
@@ -16885,6 +16951,7 @@ function Check-HTMLHelpDLL {
                             Location = $path
                             EntryName = $_.Name
                             EntryValue = $_.Value
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
@@ -17182,6 +17249,7 @@ function Check-ContextMenu {
                             Meta = [PSCustomObject]@{
                                 Location = $item.Name
                                 EntryValue = $_.Value
+                                Hash = Get-File-Hash $_.Value
                             }
                             Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
@@ -17249,6 +17317,7 @@ function Check-OfficeAI {
                         Location = $item.FullName
                         Created = $item.CreationTime
                         Modified = $item.LastWriteTime
+                        Hash = Get-File-Hash $item.FullName
                     }
                     Reference = "https://twitter.com/Laughing_Mantis/status/1645268114966470662"
                 }
@@ -17293,6 +17362,7 @@ function Check-Notepad++-Plugins {
                             Location = $item.FullName
                             Created = $item.CreationTime
                             Modified = $item.LastWriteTime
+                            Hash = Get-File-Hash $item.FullName
                         }
                         Reference = "https://pentestlab.blog/2022/02/14/persistence-notepad-plugins/"
                     }
@@ -17304,6 +17374,7 @@ function Check-Notepad++-Plugins {
 }
 
 function Check-MSDTCDll {
+    # TODO - Hash file - slightly difficult since it's a combination of reg paths
     # https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/
     Write-Message "Checking MSDTC DLL Hijack"
     $matches = @{
@@ -17356,6 +17427,7 @@ function Check-Narrator {
                 Location = $item.FullName
                 Created = $item.CreationTime
                 Modified = $item.LastWriteTime
+                Hash = Get-File-Hash $item.FullName
             }
             Reference = "https://pentestlab.blog/2020/03/04/persistence-dll-hijacking/"
         }
@@ -17383,6 +17455,7 @@ function Check-Suspicious-File-Locations {
                     Location = $item.FullName
                     Created = $item.CreationTime
                     Modified = $item.LastWriteTime
+                    Hash = Get-File-Hash $item.FullName
                 }
             }
             Write-Detection $detection
@@ -17414,6 +17487,7 @@ function Check-BootVerificationProgram {
                 Meta = [PSCustomObject]@{
                     Location = $path
                     EntryName = $data.ImagePath
+                    Hash = Get-File-Hash $data.ImagePath
                 }
                 Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/bootverificationprogram.md"
             }
@@ -17479,6 +17553,7 @@ function Check-DiskCleanupHandlers {
                             Meta = [PSCustomObject]@{
                                 Location = $item.Name
                                 EntryName = $target_prog
+                                Hash = Get-File-Hash $target_prog
                             }
                             Reference = "https://github.com/persistence-info/persistence-info.github.io/blob/main/Data/diskcleanuphandler.md"
                         }
@@ -17552,11 +17627,68 @@ function Get-File-Hash($file){
     .SYNOPSIS
         Receives a path to a file as a string, validates the path exists and uses the globally-defined HashMode to return either an MD5, SHA1 or SHA256 hash.
     #>
-    if (-not (Test-Path $file -PathType Leaf)) {
+    # Path
+    # %SystemRoot%\system32 ([System.Environment]::SystemDirectory)
+    # %SystemRoot%
+    $file = $file.Trim()
+    $file = $file.Trim("`"")
+    $file = $file.Trim("\")
+    $file = $file.Trim("?")
+    $file = $file.Trim("\")
+
+    if ($file.StartsWith("system32")) {
+        $file = $file -replace "system32",[System.Environment]::SystemDirectory
+    }
+
+    if ($file.Contains("<") -or $file.Contains(">") -or $file.Contains("`"") -or $file.Contains("/") -or $file.Contains("|") -or $file.Contains("?") -or $file.Contains("*")) {
+        return "Invalid File Path"
+    }
+
+
+    $filepath = ""
+    $filefound = $false
+    if (Test-Path $file -PathType Leaf) {
+        $filepath = $file
+        $filefound = $true
+    } elseif ($file.Contains(":")) {
+        return "File Not Found"
+    } elseif (Test-Path $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file) -PathType Leaf) {
+        # check if in system32
+        $filepath = $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file)
+        $filefound = $true
+    } elseif (Test-Path $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file) -PathType Leaf) {
+        # check if in windows
+        $filepath = $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file)
+        $filefound = $true
+    } else {
+        # Check all dirs in path to see if it exists
+        $paths = $env:Path -split ";"
+        foreach ($p in $paths){
+            $p = $p.Trim()
+            if ($p -eq ""){
+                continue
+            }
+            $test = $(Join-Path -Path $p -ChildPath $file)
+            if (Test-Path $test -PathType Leaf){
+                $filepath = $test
+                $filefound = $true
+                break
+            }
+        }
+    }
+
+    if (-not $filefound){
         return "File Not Found"
     }
-    $hash = Get-FileHash -Algorithm $HashMode -Path $file
-    return $hash
+
+    try {
+        # Couldn't find initial
+        $hash = Get-FileHash -Algorithm $HashMode -Path $file
+        return $hash.Hash
+    } catch {
+        return "Access Error"
+    }
+    return "Hashing Error"
 }
 
 function Format-MetadataToString($detectionmeta) {
