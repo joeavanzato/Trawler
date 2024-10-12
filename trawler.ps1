@@ -57,6 +57,11 @@ param
 	$OutputLocation = $PSScriptRoot,
 	[Parameter(
 		Mandatory = $false,
+		HelpMessage = 'Which hashing algorithm to use. Defaults to SHA1')]
+	[ValidateSet("SHA1", "SHA256", "MD5")]
+	$HashMode = "SHA1",
+	[Parameter(
+		Mandatory = $false,
 		HelpMessage = 'Type of snap shot to be created. Defaults to csv.')]
 	[ValidateSet("CSV", "JSON")]
 	$OutputFormat = "CSV",
@@ -17512,6 +17517,17 @@ function Check-DisableLowILProcessIsolation {
     }
 }
 
+function Get-File-Hash($file){
+    <#
+    .SYNOPSIS
+        Receives a path to a file as a string, validates the path exists and uses the globally-defined HashMode to return either an MD5, SHA1 or SHA256 hash.
+    #>
+    if (-not (Test-Path $file -PathType Leaf)) {
+        return "File Not Found"
+    }
+    $hash = Get-FileHash -Algorithm $HashMode -Path $file
+    return $hash
+}
 
 function Format-MetadataToString($detectionmeta) {
 	$output = ""
