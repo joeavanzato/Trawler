@@ -17181,7 +17181,11 @@ function Check-ContextMenu {
                             Risk = 'Medium'
                             Source = 'Windows Context Menu'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Key: "+$item.Name+", DLL: "+$_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $item.Name
+                                EntryValue = $_.Value
+                                Hash = Get-File-Hash $_.Value
+                            }
                             Reference = "https://github.com/beahunt3r/Windows-Hunting/blob/master/Persistence/Registry%20Autoruns/Explorer"
                         }
                         Write-Detection $detection
