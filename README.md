@@ -46,6 +46,7 @@ Additionally, if you identify obvious false positives, please let me know by ope
 -drivetarget : Define the variable for a mounted target drive (eg. .\trawler.ps1 -targetdrive "D:") - skipping this argument leads to an 'assumed homedrive' variable of C: for analysis purposes
 -daysago : Define how many 'days back' we want to take into consideration for time-based detections (defaults to 45)
 -hashmode : Define which hashing algorithm we want to use for supported detections - supports sha1, md5 or sha256
+-evtx : Enable creation of Event Log Source and Writing of Detections to Application event log under Source=trawler with EID=9001
 ```
 
 ## What separates this from PersistenceSniper?
