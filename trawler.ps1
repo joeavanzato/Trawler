@@ -18501,6 +18501,18 @@ function Create-EventSource {
 }
 
 function Write-DetectionToEVTX($detection) {
+    # TODO - Give each detection their own EID
+    # TODO - Evaluate breaking up k=v of each detection similar to how PersistenceSniper does this as below:
+    # snippet borrowed from PS https://github.com/last-byte/PersistenceSniper/pull/18/files#diff-594bab796584c8283d08be6a7120923a730f027fe8e213952a932de851f3eaf1R2036
+    <#    foreach ($finding in $Findings) {
+          $evtID = $EventIDMapping[$finding.technique]
+          $id = New-Object System.Diagnostics.EventInstance($evtID, 1); # Info Event
+          $propertiesValue = $finding.PSObject.Properties | Select-Object -ExpandProperty Value
+          $evtObject = New-Object System.Diagnostics.EventLog;
+          $evtObject.Log = $evtlog;
+          $evtObject.Source = $source;
+          $evtObject.WriteEvent($id, $propertiesValue)
+        }#>
     Write-EventLog -LogName $evtx_logname -Source $evtx_source -EventID 9001 -EntryType Information -Message $($detection | ConvertTo-Json) -ErrorAction SilentlyContinue
 }
 
