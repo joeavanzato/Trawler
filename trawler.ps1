@@ -14272,7 +14272,11 @@ function Check-Office-Trusted-Locations {
                     Risk = 'Medium'
                     Source = 'Office'
                     Technique = "T1137.006: Office Application Startup: Add-ins"
-                    Meta = "File: "+$item.FullName+", Last Write Time: "+$item.LastWriteTime
+                    Meta = [PSCustomObject]@{
+                        Location = $item.FullName
+                        Created =  $item.CreationTime
+                        Modified = $item.LastWriteTime
+                    }
                 }
                 Write-Detection $detection
             }
@@ -15569,7 +15573,12 @@ function Check-LSA {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                                AbnormalPackage = $package
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15598,7 +15607,12 @@ function Check-LSA {
                             Risk = 'Medium'
                             Source = 'Registry'
                             Technique = "T1547.005: Boot or Logon Autostart Execution: Security Support Provider"
-                            Meta = "Key Location: $path, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                                AbnormalPackage = $package
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15634,7 +15648,12 @@ function Check-LSA {
                             Risk = 'High'
                             Source = 'Registry'
                             Technique = "T1556.002: Modify Authentication Process: Password Filter DLL"
-                            Meta = "Key Location: HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa, Entry Name: "+$_.Name+", Entry Value: "+$_.Value+", Abnormal Package: "+$package
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                                AbnormalPackage = $package
+                            }
                         }
                         Write-Detection $detection
                     }
@@ -15939,7 +15958,10 @@ function Check-PrintProcessorDLLs {
                         Risk = 'High'
                         Source = 'Registry'
                         Technique = "T1547.012: Boot or Logon Autostart Execution: Print Processors"
-                        Meta = "Registry Path: "+$item.Name+", DLL: "+$data.Driver
+                        Meta = [PSCustomObject]@{
+                            Location = $item.Name
+                            EntryName = $data.Driver
+                        }
                     }
                     Write-Detection $detection
                 }
@@ -16551,7 +16573,11 @@ function Check-CommandAutoRunProcessors {
                             Risk = 'Very High'
                             Source = 'Registry'
                             Technique = "T1546: Event Triggered Execution"
-                            Meta = "Key Location: HKEY_CURRENT_USER\SOFTWARE\Microsoft\Command Processor, Entry Name: " + $_.Name + ", Entry Value: " + $_.Value
+                            Meta = [PSCustomObject]@{
+                                Location = $path
+                                EntryName = $_.Name
+                                EntryValue = $_.Value
+                            }
                         }
                         Write-Detection $detection
                     }
