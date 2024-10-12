@@ -78,6 +78,11 @@ param
 	$Quiet,
 	[Parameter(
 		Mandatory = $false,
+		HelpMessage = 'Enable EventLog output - trawler will write detections to the Application EventLog under Source=trawler with EventID=9001 - events will be written in JSON format.  Must be running as administrator to create the Event Log source initially.')]
+	[switch]
+	$evtx,
+	[Parameter(
+		Mandatory = $false,
 		HelpMessage = 'The fully-qualified file-path where the snapshot CSV to be loaded is located')]
 	[string]
 	$loadsnapshot,
@@ -185,6 +190,9 @@ param
 )
 
 $threshold_date = (Get-Date).adddays(-$daysago)
+# Event Log source used for creation/writing
+$evtx_source = "trawler"
+$evtx_logname = "Application"
 
 function Write-Message ($message){
     Write-Host "[+] $message"
@@ -16386,6 +16394,7 @@ function Check-AppInitDLLs {
                             EntryValue = $_.Value
                             Hash = Get-File-Hash $_.Value
                         }
+                        Reference = "https://attack.mitre.org/techniques/T1546/010/"
                     }
                     Write-Detection $detection
                 }
@@ -16418,6 +16427,7 @@ function Check-AppInitDLLs {
                             EntryValue = $_.Value
                             Hash = Get-File-Hash $_.Value
                         }
+                        Reference = "https://attack.mitre.org/techniques/T1546/010/"
                     }
                     Write-Detection $detection
                 }
@@ -17902,6 +17912,10 @@ function Write-Detection($det) {
         }
 	}
 
+    if ($evtx) {
+        Write-DetectionToEVTX $det
+    }
+
 	# incrementally write to the csv otherwise the json output will be output in the Clean-Up method
 	if ($script:DetectionsPath.CanWrite -and $OutputFormat -eq "CSV") {
         $det.Meta = Format-MetadataToString($det.Meta)
@@ -17920,13 +17934,6 @@ function Detection-Metrics {
 	}
 }
 
-
-# Snapshot acts as a custom allow-list for a specific gold-image or enterprise environment
-# Run trawler once like '.\trawler.ps1 -snapshot' to generate 'snapshot.csv
-# $message.key = Lookup component for allow-list hashtable
-# $message.value = Lookup component for allow-list hashtable
-# $message.source = Where are the K/V sourced from
-# TODO - Consider implementing this as JSON instead of CSV for more detailed storage and to easier support in-line modification by other tools
 function Write-SnapshotMessage() {
 	[CmdletBinding()]
 	param (
@@ -18468,6 +18475,35 @@ function Unload-Hive($hive_fullpath, $hive_value){
     #$null = Remove-PSDrive -Name $hive_value -Root $hive_root
 }
 
+function Create-EventSource {
+    <#
+    .SYNOPSIS
+        Creates an Event Source inside the Application event log to store detections as JSON
+    #>
+    Write-Message("Attempting to create Event Log Source: $evtx_source")
+    if (-not [System.Diagnostics.EventLog]::SourceExists($evtx_source)) {
+        # Source does not exist
+        try {
+            New-EventLog -LogName $evtx_logname -Source $evtx_source
+            Write-Message("Successfully created Event Log Source: $evtx_source")
+            # Created ok
+            return $true
+        } catch {
+            # Error creating
+            Write-Message("Failed to create Event Log Source: $evtx_source")
+            return $false
+        }
+    } else {
+        # Source already exists
+        Write-Message("Event Log Source already exists")
+        return $true
+    }
+}
+
+function Write-DetectionToEVTX($detection) {
+    Write-EventLog -LogName $evtx_logname -Source $evtx_source -EventID 9001 -EntryType Information -Message $($detection | ConvertTo-Json) -ErrorAction SilentlyContinue
+}
+
 function Clean-Up {
 	if ($OutputFormat -eq "JSON") {
 		$detection_list | ConvertTo-Json | Out-File $script:DetectionsPath.Path
@@ -18601,6 +18637,15 @@ function Main {
 	if ($ScanOptions -eq "All") {
 		$ScanOptions = $possibleScanOptions
 	}
+
+    if ($evtx){
+        $evtx_creation_status = Create-EventSource
+        if (-not $evtx_creation_status){
+            # Fatal Error attempting to create event log
+            Write-Message("Fatal Error setting up EventLog Source - are we running as admin?")
+            return
+        }
+    }
 
 	foreach ($option in $ScanOptions){
 		switch ($option) {
