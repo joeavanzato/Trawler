@@ -2502,7 +2502,7 @@ function Check-Startups {
                             Location = $path_
                             EntryName = $_.Name
                             EntryValue = $_.Value
-                            Hash = Get-File-Hash $path_
+                            Hash = Get-File-Hash $_.Value
                         }
                     }
                     Write-Detection $detection
