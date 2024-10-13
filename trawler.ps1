@@ -162,7 +162,7 @@ param
 		"SCMDACL",
 		"ScreenSaverEXE",
 		"SEMgrWallet",
-        "ServiceControlManagerSD"
+        "ServiceControlManagerSD",
 		"ServiceHijacks",
 		"Services",
 		"SethcHijack",
@@ -17832,7 +17832,8 @@ function Check-ServiceControlManagerSD {
     $default = 'D:(A;;CC;;;AU)(A;;CCLCRPRC;;;IU)(A;;CCLCRPRC;;;SU)(A;;CCLCRPWPRC;;;SY)(A;;KA;;;BA)(A;;CC;;;AC)(A;;CC;;;S-1-15-3-1024-528118966-3876874398-709513571-1907873084-3598227634-3698730060-278077788-3990600205)S:(AU;FA;KA;;;WD)(AU;OIIOFA;GA;;;WD)'
     $current = (sc.exe sdshow scmanager) -join ''
 
-    if ($default -neq $current) {
+    if ($default -ne $current)
+    {
         $detection = [PSCustomObject]@{
             Name = 'Service Control Manager has non-default Security Descriptor'
             Risk = 'High'
@@ -17846,11 +17847,6 @@ function Check-ServiceControlManagerSD {
         }
         Write-Detection $detection
     }
-
-    Write-Verbose -Message "$hostname - [!] It looks like the Security Descriptor of the Service Control Manager is not set to the default value and should be investigated."
-    $PersistenceObject = New-PersistenceObject -Hostname $hostname -Technique 'Service Control Manager Security Descriptor Manipulation' -Classification 'Uncatalogued Technique N.14' -Path 'N/A' -Value $currentSDDL -AccessGained 'System' -Note 'The Service Control Manager is the software responsible for starting and stopping services in the Windows OS. If its ACL is loosely set, it would be possible for a non administrative process to start administrative processes by creating a service running with high or SYSTEM privileges.' -Reference 'https://pentestlab.blog/2023/03/20/persistence-service-control-manager/'
-    $null = $persistenceObjectArray.Add($PersistenceObject)
-    Write-Verbose -Message ''
 }
 
 function Get-File-Hash($file){
@@ -18607,6 +18603,7 @@ $possibleScanOptions = @(
 	"Connections",
 	"ContextMenu",
 	"DebuggerHijacks",
+    "DirectoryServicesRestoreMode",
     "DiskCleanupHandlers",
     "DisableLowIL",
 	"DNSServerLevelPluginDLL",
@@ -18651,6 +18648,7 @@ $possibleScanOptions = @(
 	"SCMDACL",
 	"ScreenSaverEXE",
 	"SEMgrWallet",
+    "ServiceControlManagerSD",
 	"ServiceHijacks",
 	"Services",
 	"SethcHijack",
