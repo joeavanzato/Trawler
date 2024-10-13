@@ -52,13 +52,15 @@ Additionally, if you identify obvious false positives, please let me know by ope
 ## What separates this from PersistenceSniper?
 PersistenceSniper is an awesome tool - I've used it heavily in the past - but there are a few key points that differentiate these utilities
 * trawler is (currently) a local utility - it would be pretty straight-forward to wrap it in a loop and use WinRM/PowerShell Sessions to execute it on remote hosts though
-* trawler implements allow-listing for many 'noisy' detections to help remove expected detections from default configurations of Windows (10/2016/2019/2022) and these are constantly being updated
-  * PersistenceSniper (for the most part) does not contain any type of allow-listing - therefore, there is more noise generated when considering items such as Services, Scheduled Tasks, general COM DLL scanning, etc.
-* trawler's output is much more simplified - Name, Risk, Source, MITRE Technique and Metadata are the only items provided for each detection to help analysts jump-start their persistence hunting efforts
-* Regex is used in many checks to help detect 'suspicious' keywords or patterns in various critical areas including scanned file contents, registry values, etc.
+* trawler implements allow-listing for many 'noisy' detections to help remove expected detections from default configurations of Windows (10/2016/2019/2022) and these are constantly being updated (PS also does this)
+  * ~~PersistenceSniper (for the most part) does not contain any type of allow-listing - therefore, there is more noise generated when considering items such as Services, Scheduled Tasks, general COM DLL scanning, etc.~~
+* trawler's output is simplified - Name, Risk, Source, MITRE Technique and Metadata are the only items provided for each detection to help analysts jump-start their persistence hunting efforts - this is a double-edged sword.
+* Regex is used in many checks to help detect 'suspicious' keywords or patterns in various critical areas including scanned file contents, registry values, etc.  This provides a bit more flexibility but also a potentially higher false-positive rate.
 * trawler supports 'drive-retargeting' to check dead-boxes mounted to an analysis machine.
 
-Overall, these tools are extremely similar but approach the problem from slightly different angles - PersistenceSniper provides all information back to the analyst for review while Trawler tries to limit what is returned to only results that are likely to be potential adversary persistence mechanisms.  As such, there is a possibility for false-negatives with trawler if an adversary completely mimics an allow-listed item.
+Overall, these tools are extremely similar but approach the problem from slightly different angles - PersistenceSniper provides all information back to the analyst for review while Trawler tries to limit what is returned to only results that are likely to be potential adversary persistence mechanisms.  As such, there is a possibility for false-negatives with trawler if an adversary completely mimics an allow-listed item.  
+
+As an example - PersistenceSniper will return all 'non-safe' Windows Services while trawler will only return those that match a specific detection rule, etc.
 
 ## Tuning to your environment
 Trawler supports loading an allow-list from a 'snapshot' - to do this requires two steps.

@@ -117,6 +117,7 @@ param
 		"Connections",
 		"ContextMenu",
 		"DebuggerHijacks",
+		"DirectoryServicesRestoreMode",
         "DisableLowIL",
         "DiskCleanupHandlers",
 		"DNSServerLevelPluginDLL",
@@ -128,6 +129,7 @@ param
 		"GPOScripts",
 		"HTMLHelpDLL",
 		"IFEO",
+        "InstalledSoftware",
 		"InternetSettingsLUIDll",
 		"KnownManagedDebuggers",
 		"LNK",
@@ -161,6 +163,7 @@ param
 		"SCMDACL",
 		"ScreenSaverEXE",
 		"SEMgrWallet",
+        "ServiceControlManagerSD",
 		"ServiceHijacks",
 		"Services",
 		"SethcHijack",
@@ -591,6 +594,239 @@ $rat_terms = @(
     "za_connect"
     "zaservice"
     "zohotray"
+)
+# https://github.com/magicsword-io/LOLRMM/tree/main/yaml
+$suspicious_software = @(
+    ".*ithelp.*"
+    ".*access.*"
+    ".*absolute.*"
+    ".*acronic.*"
+    ".*remotix.*"
+    ".*action1.*"
+    ".*addigy.*"
+    ".*adobe connect.*"
+    ".*aeroadmin.*"
+    ".*aliwangwang.*"
+    ".*alpemix.*"
+    ".*ammyy.*"
+    ".*anydesk.*"
+    ".*anyplace.*"
+    ".*anyview.*"
+    ".*apple remote.*"
+    ".*atera.*"
+    ".*auvik.*"
+    ".*aweray.*"
+    ".*barracuda.*"
+    ".*basecamp.*"
+    ".*beamyourscreen.*"
+    ".*beanywhere.*"
+    ".*beinsync.*"
+    ".*beyondtrust.*"
+    ".*bitvise.*"
+    ".*bomgar.*"
+    ".*carotdav.*"
+    ".*centrastage.*"
+    ".*datto.*"
+    ".*centurion.*"
+    ".*chicken.*"
+    ".*chrome remote.*"
+    ".*cloudflare tunnel.*"
+    ".*cloudflared.*"
+    ".*comodo.*"
+    ".*connectwise.*"
+    ".*crossloop.*"
+    ".*crosstec.*"
+    ".*cruzcontrol.*"
+    ".*dameware.*"
+    ".*deskday.*"
+    ".*desknets.*"
+    ".*deskshare.*"
+    ".*desktopnow.*"
+    ".*tunnels.*"
+    ".*devolutions.*"
+    ".*distant desktop.*"
+    ".*domotz.*"
+    ".*dragondisk.*"
+    ".*duplicati.*"
+    ".*dw service.*"
+    ".*echoware.*"
+    ".*ehorus.*"
+    ".*kaseya.*"
+    ".*emco remote.*"
+    ".*encapto.*"
+    ".*ericom.*"
+    ".*accessnow.*"
+    ".*remote.*"
+    ".*extraputty.*"
+    ".*ezhelp.*"
+    ".*fastviewer.*"
+    ".*fixme.*"
+    ".*filezilla.*"
+    ".*fleetdeck.*"
+    ".*fortra.*"
+    ".*free ping.*"
+    ".*freenx.*"
+    ".*freerdp.*"
+    ".*gatherplace.*"
+    ".*getscreen.*"
+    ".*goto opener.*"
+    ".*gotoassist.*"
+    ".*gotohttp.*"
+    ".*gotomypc.*"
+    ".*guacamole.*"
+    ".*goverlan.*"
+    ".*helpbeam.*"
+    ".*helpu.*"
+    ".*intouch.*"
+    ".*imperoconnect.*"
+    ".*housecall.*"
+    ".*insync.*"
+    ".*intelliadmin.*"
+    ".*iperius.*"
+    ".*isl online.*"
+    ".*isl light.*"
+    ".*islonline.*"
+    ".*itarian.*"
+    ".*itsupport.*"
+    ".*ivanti.*"
+    ".*fastvnc.*"
+    ".*jump cloud.*"
+    ".*jump desktop.*"
+    ".*kabuto.*"
+    ".*khelpdesk.*"
+    ".*kickidler.*"
+    ".*kitty.*"
+    ".*koofr.*"
+    ".*labteach.*"
+    ".*labtech.*"
+    ".*landesk.*"
+    ".*laplink.*"
+    ".*level\.io.*"
+    ".*level.*"
+    ".*levelio.*"
+    ".*lite manager.*"
+    ".*litemanager.*"
+    ".*logmein.*"
+    ".*manage engine.*"
+    ".*manageengine.*"
+    ".*megasync.*"
+    ".*meshcentral.*"
+    ".*quick assist.*"
+    ".*mikogo.*"
+    ".*mionet.*"
+    ".*mobaxterm.*"
+    ".*mocha vnc.*"
+    ".*mremote.*"
+    ".*msp360.*"
+    ".*multicloud.*"
+    ".*mygreenpc.*"
+    ".*myivo.*"
+    ".*n-able.*"
+    ".*nateon.*"
+    ".*naverisk.*"
+    ".*netop.*"
+    ".*netreo.*"
+    ".*netsupport.*"
+    ".*neturo.*"
+    ".*netviewer.*"
+    ".*ngrok.*"
+    ".*ninjaone.*"
+    ".*ninjarmm.*"
+    ".*nomachine.*"
+    ".*nordlocker.*"
+    ".*noteon.*"
+    ".*ntr remote.*"
+    ".*ocs inventory.*"
+    ".*onionshare.*"
+    ".*optitune.*"
+    ".*pandora rc.*"
+    ".*panorama9.*"
+    ".*parallels.*"
+    ".*pcanywhere.*"
+    ".*pcnow.*"
+    ".*pcvisit.*"
+    ".*pdq connect.*"
+    ".*pilixo.*"
+    ".*pocket cloud.*"
+    ".*pocket controller.*"
+    ".*psexec.*"
+    ".*pulseway.*"
+    ".*putty.*"
+    ".*remote assistance.*"
+    ".*quest kace.*"
+    ".*quickassist.*"
+    ".*radmin.*"
+    ".*rdp2tcp.*"
+    ".*rdpview.*"
+    ".*rdpwrap.*"
+    ".*realvnc.*"
+    ".*remcos.*"
+    ".*remmina.*"
+    ".*remobo.*"
+    ".*remote\.it.*"
+    ".*devolutions.*"
+    ".*remote desktop.*"
+    ".*remote manipulator.*"
+    ".*remote utilities.*"
+    ".*remotecall.*"
+    ".*remotepc.*"
+    ".*remotepass.*"
+    ".*remoteview.*"
+    ".*res automation.*"
+    ".*rocketremote.*"
+    ".*royal apps.*"
+    ".*rport.*"
+    ".*rudesktop.*"
+    ".*runsmart.*"
+    ".*rustdesk.*"
+    ".*s3 browser.*"
+    ".*screenconnect.*"
+    ".*screenmeet.*"
+    ".*securecrt.*"
+    ".*seetrol.*"
+    ".*senso cloud.*"
+    ".*servereye.*"
+    ".*showmypc.*"
+    ".*simplehelp.*"
+    ".*site24.*"
+    ".*skyfex.*"
+    ".*web vnc.*"
+    ".*smartftp.*"
+    ".*smartty.*"
+    ".*sorillus.*"
+    ".*splashtop.*"
+    ".*spyanywhere.*"
+    ".*sunlogin.*"
+    ".*superops.*"
+    ".*supremo.*"
+    ".*syncro.*"
+    ".*syncthing.*"
+    ".*synergy.*"
+    ".*sysaid.*"
+    ".*syspectr.*"
+    ".*tactical rmm.*"
+    ".*tailscale.*"
+    ".*teledesktop.*"
+    ".*tigervnc.*"
+    ".*tightvnc.*"
+    ".*todesk.*"
+    ".*turbomeeting.*"
+    ".*ultra vnc.*"
+    ".*ultraviewer.*"
+    ".*ultravnc.*"
+    ".*webrdp.*"
+    ".*weezo.*"
+    ".*winscp.*"
+    ".*x2go.*"
+    ".*xeox.*"
+    ".*xpra.*"
+    ".*xrdp.*"
+    ".*xshell.*"
+    ".*yandex.*"
+    ".*zabbix.*"
+    ".*zerotier.*"
+    ".*zoc.*"
+    ".*zohoassist.*"
 )
 
 function Check-ScheduledTasks {
@@ -2485,7 +2721,6 @@ function Check-Startups {
                 Hash = Get-File-Hash $item.Location
             }
         }
-
         Write-Detection $detection
     }
 
@@ -2519,6 +2754,8 @@ function Check-Startups {
             }
         }
     }
+    # TODO - Add Startup Folder Program Review
+
 }
 
 function Check-BITS {
@@ -17741,6 +17978,31 @@ function Check-DiskCleanupHandlers {
     }
 }
 
+function Check-DirectoryServicesRestoreMode {
+    # Supports Retargeting
+    Write-Message "Checking DirectoryServicesRestoreMode"
+    $path = "$regtarget_hklm`System\CurrentControlSet\Control\Lsa"
+    $path = "Registry::"+$path
+    $data = Get-ItemProperty -LiteralPath $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $data.PSObject.Properties | ForEach-Object {
+        if ($_.Name -eq 'DsrmAdminLogonBehavior' -and $_.Value -eq 2) {
+            $detection = [PSCustomObject]@{
+                Name = 'DirectoryServicesRestoreMode LocalAdmin Backdoor Enabled'
+                Risk = 'High'
+                Source = 'Registry'
+                Technique = "T1003.003: OS Credential Dumping"
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                    EntryName = $_.Name
+                    EntryValue = $_.Value
+                }
+                Reference = "https://adsecurity.org/?p=1785"
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
 function Check-DisableLowILProcessIsolation {
     # Supports Drive Retargeting
     # Supports Snapshotting
@@ -17798,6 +18060,105 @@ function Check-DisableLowILProcessIsolation {
     }
 }
 
+function Check-ServiceControlManagerSD {
+    Write-Message "Checking Security Descriptor for Service Control Manager"
+    # https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language
+    $default = 'D:(A;;CC;;;AU)(A;;CCLCRPRC;;;IU)(A;;CCLCRPRC;;;SU)(A;;CCLCRPWPRC;;;SY)(A;;KA;;;BA)(A;;CC;;;AC)(A;;CC;;;S-1-15-3-1024-528118966-3876874398-709513571-1907873084-3598227634-3698730060-278077788-3990600205)S:(AU;FA;KA;;;WD)(AU;OIIOFA;GA;;;WD)'
+    $current = (sc.exe sdshow scmanager) -join ''
+
+    if ($default -ne $current)
+    {
+        $detection = [PSCustomObject]@{
+            Name = 'Service Control Manager has non-default Security Descriptor'
+            Risk = 'High'
+            Source = 'Windows'
+            Technique = "T1098: Account Manipulation"
+            Meta = [PSCustomObject]@{
+                EntryValue = $current
+                ExpectedValue = $default
+            }
+            Reference = "https://pentestlab.blog/2023/03/20/persistence-service-control-manager"
+        }
+        Write-Detection $detection
+    }
+}
+
+function Check-InstalledSoftware {
+    Write-Message "Checking Installed Software"
+    $installedHKLM = Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+    # TODO - Iterate HKCU Hives
+    $InstalledHKCU = Get-ChildItem "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+
+    # Sometimes there are weird dates in here - for example, 20222019 - this does not match any 'standard' date formats since the month is indicated as '20'
+
+    $softwareList = New-Object System.Collections.Generic.List[System.Object]
+    [string[]] $formats = 'yyyyMMdd', 'yyyyMdd', 'yyyyMMd', 'yyyyMd'
+    foreach ($app in $installedHKLM){
+        $date = ""
+        if ($app.GetValue('InstallDate') -ne $null){
+            if ($app.GetValue('InstallDate').Trim() -ne "") {
+                try {
+                    $date = [datetime]::parseexact($app.GetValue('InstallDate'), $formats, [cultureinfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::None)
+                } catch {
+                    $date = $app.GetValue('InstallDate').Trim()
+                }
+            }
+        }
+
+        $tmp = [PSCustomObject]@{
+            DisplayName = $app.GetValue('DisplayName')
+            InstallDate = $date
+            InstallLocation = $app.GetValue('InstallLocation')
+            Publisher = $app.GetValue('Publisher')
+        }
+        if (-not $softwareList.contains($tmp)) {
+            $softwareList.Add($tmp) | Out-Null
+        }
+    }
+    foreach ($app in $InstalledHKCU){
+        $date = ""
+        if ($app.GetValue('InstallDate') -ne $null){
+            if ($app.GetValue('InstallDate').Trim() -ne "") {
+                try {
+                    $date = [datetime]::parseexact($app.GetValue('InstallDate'), $formats, [cultureinfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::None)
+                } catch {
+                    $date = $app.GetValue('InstallDate').Trim()
+                }
+            }
+        }
+        $tmp = [PSCustomObject]@{
+            DisplayName = $app.GetValue('DisplayName')
+            InstallDate = $date
+            InstallLocation = $app.GetValue('InstallLocation')
+            Publisher = $app.GetValue('Publisher')
+        }
+        if (-not $softwareList.contains($tmp)) {
+            $softwareList.Add($tmp) | Out-Null
+        }
+    }
+
+    foreach ($app in $softwareList){
+        foreach ($check in $suspicious_software){
+            if ($app.DisplayName -imatch $check){
+                $detection = [PSCustomObject]@{
+                    Name = 'Suspicious Software Installed'
+                    Risk = 'Medium'
+                    Source = 'Registry'
+                    Technique = "T1543: Create or Modify System Process"
+                    Meta = [PSCustomObject]@{
+                        Location = $app.InstallLocation
+                        Created = $app.InstallDate
+                        Publisher = $app.Publisher
+                        EntryValue = $app.DisplayName
+                    }
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
+}
+
 function Get-File-Hash($file){
     <#
     .SYNOPSIS
@@ -17811,6 +18172,10 @@ function Get-File-Hash($file){
     $file = $file.Trim("\")
     $file = $file.Trim("?")
     $file = $file.Trim("\")
+
+    if ($file -eq ""){
+        return "Invalid File Path"
+    }
 
     if ($file.StartsWith("system32")) {
         $file = $file -replace "system32",[System.Environment]::SystemDirectory
@@ -17827,7 +18192,7 @@ function Get-File-Hash($file){
         $filepath = $file
         $filefound = $true
     } elseif ($file.Contains(":")) {
-        return "File Not Found"
+        return "Invalid File Path"
     } elseif (Test-Path $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file) -PathType Leaf) {
         # check if in system32
         $filepath = $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file)
@@ -18501,6 +18866,18 @@ function Create-EventSource {
 }
 
 function Write-DetectionToEVTX($detection) {
+    # TODO - Give each detection their own EID
+    # TODO - Evaluate breaking up k=v of each detection similar to how PersistenceSniper does this as below:
+    # snippet borrowed from PS https://github.com/last-byte/PersistenceSniper/pull/18/files#diff-594bab796584c8283d08be6a7120923a730f027fe8e213952a932de851f3eaf1R2036
+    <#    foreach ($finding in $Findings) {
+          $evtID = $EventIDMapping[$finding.technique]
+          $id = New-Object System.Diagnostics.EventInstance($evtID, 1); # Info Event
+          $propertiesValue = $finding.PSObject.Properties | Select-Object -ExpandProperty Value
+          $evtObject = New-Object System.Diagnostics.EventLog;
+          $evtObject.Log = $evtlog;
+          $evtObject.Source = $source;
+          $evtObject.WriteEvent($id, $propertiesValue)
+        }#>
     Write-EventLog -LogName $evtx_logname -Source $evtx_source -EventID 9001 -EntryType Information -Message $($detection | ConvertTo-Json) -ErrorAction SilentlyContinue
 }
 
@@ -18540,6 +18917,7 @@ $possibleScanOptions = @(
 	"Connections",
 	"ContextMenu",
 	"DebuggerHijacks",
+    "DirectoryServicesRestoreMode",
     "DiskCleanupHandlers",
     "DisableLowIL",
 	"DNSServerLevelPluginDLL",
@@ -18551,6 +18929,7 @@ $possibleScanOptions = @(
 	"GPOScripts",
 	"HTMLHelpDLL",
 	"IFEO",
+    "InstalledSoftware",
 	"InternetSettingsLUIDll",
 	"KnownManagedDebuggers",
 	"LNK",
@@ -18584,6 +18963,7 @@ $possibleScanOptions = @(
 	"SCMDACL",
 	"ScreenSaverEXE",
 	"SEMgrWallet",
+    "ServiceControlManagerSD",
 	"ServiceHijacks",
 	"Services",
 	"SethcHijack",
@@ -18667,6 +19047,7 @@ function Main {
 			"DebuggerHijacks" { Check-Debugger-Hijacks }
 			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
             "DisableLowIL" { Check-DisableLowILProcessIsolation }
+            "DirectoryServicesRestoreMode" { Check-DirectoryServicesRestoreMode }
             "DiskCleanupHandlers" { Check-DiskCleanupHandlers }
 			"eRegChecks" { Check-Registry-Checks }
 			"ErrorHandlerCMD" { Check-ErrorHandlerCMD }
@@ -18676,6 +19057,7 @@ function Main {
 			"GPOScripts" { Check-GPO-Scripts }
 			"HTMLHelpDLL" { Check-HTMLHelpDLL }
 			"IFEO" { Check-IFEO }
+            "InstalledSoftware" { Check-InstalledSoftware }
 			"InternetSettingsLUIDll" { Check-InternetSettingsLUIDll }
 			"KnownManagedDebuggers" { Check-KnownManagedDebuggers }
 			"LNK" { Check-LNK }
@@ -18708,6 +19090,7 @@ function Main {
 			"ScheduledTasks" { Check-ScheduledTasks }
 			# "SCMDACL" {Check-SCM-DACL} # TODO
 			"ScreenSaverEXE" { Check-ScreenSaverEXE }
+            "ServiceControlManagerSD" {Check-ServiceControlManagerSD }
 			"SEMgrWallet" { Check-SEMgrWallet }
 			"ServiceHijacks" { Check-Service-Hijacks }
 			"Services" { Check-Services }
