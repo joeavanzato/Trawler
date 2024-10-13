@@ -17743,11 +17743,11 @@ function Check-DiskCleanupHandlers {
     }
 }
 
-function Check-DirectoryServiceRestoreMode {
+function Check-DirectoryServicesRestoreMode {
     # Supports Retargeting
-    Write-Message "Checking DirectoryServiceRestoreMode"
+    Write-Message "Checking DirectoryServicesRestoreMode"
     $path = "$regtarget_hklm`System\CurrentControlSet\Control\Lsa"
-    $path = "Registry::"+$item.Name
+    $path = "Registry::"+$path
     $data = Get-ItemProperty -LiteralPath $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
     $data.PSObject.Properties | ForEach-Object {
         if ($_.Name -eq 'DsrmAdminLogonBehavior' -and $_.Value -eq 2) {
@@ -18707,7 +18707,7 @@ function Main {
 			"DebuggerHijacks" { Check-Debugger-Hijacks }
 			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
             "DisableLowIL" { Check-DisableLowILProcessIsolation }
-            "DirectoryServicesRestoreMode" { Check-DirectoryServiceRestoreMode }
+            "DirectoryServicesRestoreMode" { Check-DirectoryServicesRestoreMode }
             "DiskCleanupHandlers" { Check-DiskCleanupHandlers }
 			"eRegChecks" { Check-Registry-Checks }
 			"ErrorHandlerCMD" { Check-ErrorHandlerCMD }
