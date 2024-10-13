@@ -117,6 +117,7 @@ param
 		"Connections",
 		"ContextMenu",
 		"DebuggerHijacks",
+		"DirectoryServicesRestoreMode",
         "DisableLowIL",
         "DiskCleanupHandlers",
 		"DNSServerLevelPluginDLL",
@@ -2485,7 +2486,6 @@ function Check-Startups {
                 Hash = Get-File-Hash $item.Location
             }
         }
-
         Write-Detection $detection
     }
 
@@ -2519,6 +2519,8 @@ function Check-Startups {
             }
         }
     }
+    # TODO - Add Startup Folder Program Review
+
 }
 
 function Check-BITS {
@@ -17741,6 +17743,32 @@ function Check-DiskCleanupHandlers {
     }
 }
 
+function Check-DirectoryServiceRestoreMode {
+    # Supports Retargeting
+    Write-Message "Checking DirectoryServiceRestoreMode"
+    $path = "$regtarget_hklm`System\CurrentControlSet\Control\Lsa"
+    $path = "Registry::"+$item.Name
+    $data = Get-ItemProperty -LiteralPath $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+    $data.PSObject.Properties | ForEach-Object {
+        if ($_.Name -eq 'DsrmAdminLogonBehavior' -and $_.Value -eq 2) {
+            $detection = [PSCustomObject]@{
+                Name = 'DirectoryServicesRestoreMode LocalAdmin Backdoor Enabled'
+                Risk = 'High'
+                Source = 'Registry'
+                Technique = "T1003.003: OS Credential Dumping"
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                    EntryName = $_.Name
+                    EntryValue = $_.Value
+                }
+                Reference = "https://adsecurity.org/?p=1785"
+            }
+            Write-Detection $detection
+        }
+    }
+}
+
+
 function Check-DisableLowILProcessIsolation {
     # Supports Drive Retargeting
     # Supports Snapshotting
@@ -18679,6 +18707,7 @@ function Main {
 			"DebuggerHijacks" { Check-Debugger-Hijacks }
 			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
             "DisableLowIL" { Check-DisableLowILProcessIsolation }
+            "DirectoryServicesRestoreMode" { Check-DirectoryServiceRestoreMode }
             "DiskCleanupHandlers" { Check-DiskCleanupHandlers }
 			"eRegChecks" { Check-Registry-Checks }
 			"ErrorHandlerCMD" { Check-ErrorHandlerCMD }
