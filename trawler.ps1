@@ -17863,6 +17863,10 @@ function Get-File-Hash($file){
     $file = $file.Trim("?")
     $file = $file.Trim("\")
 
+    if ($file -eq ""){
+        return "Invalid File Path"
+    }
+
     if ($file.StartsWith("system32")) {
         $file = $file -replace "system32",[System.Environment]::SystemDirectory
     }
@@ -17878,7 +17882,7 @@ function Get-File-Hash($file){
         $filepath = $file
         $filefound = $true
     } elseif ($file.Contains(":")) {
-        return "File Not Found"
+        return "Invalid File Path"
     } elseif (Test-Path $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file) -PathType Leaf) {
         # check if in system32
         $filepath = $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file)
