@@ -190,6 +190,9 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * BootVerificationProgram Check
 * DiskCleanupHandler Checks
 * Low Integrity Isolation Checks
+* Suspiciously-Named Installed Software
+* Directory Services Restore Mode Status
+* Service Control Manager Security Descriptor Modifications
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
