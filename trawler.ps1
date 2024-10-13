@@ -17704,7 +17704,6 @@ function Check-ContextMenu {
 
 }
 
-
 function Check-OfficeAI {
     # Supports Drive Retargeting
     # https://twitter.com/Laughing_Mantis/status/1645268114966470662
@@ -18081,9 +18080,16 @@ function Check-ServiceControlManagerSD {
 
 function Check-InstalledSoftware {
     Write-Message "Checking Installed Software"
-    $installedHKLM = Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
-    # TODO - Iterate HKCU Hives
-    $InstalledHKCU = Get-ChildItem "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+    $installedHKLM = Get-ChildItem "Registry::$regtarget_hklm`Software\Microsoft\Windows\CurrentVersion\Uninstall"
+    $InstalledHKCU = New-Object System.Collections.Generic.List[System.Object]
+    $basepath = "Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+    foreach ($p in $regtarget_hkcu_list){
+        $path = $basepath.Replace("HKEY_CURRENT_USER", $p)
+        $items = Get-ChildItem $path
+        foreach ($i in $items){
+            $InstalledHKCU.Add($i) | Out-Null
+        }
+    }
 
     # Sometimes there are weird dates in here - for example, 20222019 - this does not match any 'standard' date formats since the month is indicated as '20'
 
