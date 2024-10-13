@@ -806,6 +806,7 @@ $suspicious_software = @(
     ".*syspectr.*"
     ".*tactical rmm.*"
     ".*tailscale.*"
+    ".*teamviewer.*"
     ".*teledesktop.*"
     ".*tigervnc.*"
     ".*tightvnc.*"
@@ -2754,8 +2755,24 @@ function Check-Startups {
             }
         }
     }
-    # TODO - Add Startup Folder Program Review
 
+    $startup_dir = "$env_assumedhomedrive\Users\*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"
+    $startup_items = Get-ChildItem -Path $startup_dir -Recurse
+    foreach ($file in $startup_items){
+        $detection = [PSCustomObject]@{
+            Name = 'Startup Item Review'
+            Risk = 'Low'
+            Source = 'Startup'
+            Technique = "T1037.005: Boot or Logon Initialization Scripts: Startup Items"
+            Meta = [PSCustomObject]@{
+                Location = $file.FullName
+                Created = $file.CreationTime
+                Modified = $file.LastWriteTime
+                Hash = Get-File-Hash $file.FullName
+            }
+        }
+        Write-Detection $detection
+    }
 }
 
 function Check-BITS {
@@ -18090,7 +18107,7 @@ function Check-InstalledSoftware {
             $InstalledHKCU.Add($i) | Out-Null
         }
     }
-
+    # TODO - Condense to single list...DRY
     # Sometimes there are weird dates in here - for example, 20222019 - this does not match any 'standard' date formats since the month is indicated as '20'
 
     $softwareList = New-Object System.Collections.Generic.List[System.Object]
@@ -18141,7 +18158,7 @@ function Check-InstalledSoftware {
 
     foreach ($app in $softwareList){
         foreach ($check in $suspicious_software){
-            if ($app.DisplayName -imatch $check){
+            if (($app.DisplayName -imatch $check) -or ($app.Publisher -imatch $check)){
                 $detection = [PSCustomObject]@{
                     Name = 'Suspicious Software Installed'
                     Risk = 'Medium'
