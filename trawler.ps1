@@ -17704,10 +17704,6 @@ function Check-ContextMenu {
 
 }
 
-function Check-SCM-DACL {
-    # https://pentestlab.blog/2023/03/20/persistence-service-control-manager/
-    # TODO
-}
 
 function Check-OfficeAI {
     # Supports Drive Retargeting
