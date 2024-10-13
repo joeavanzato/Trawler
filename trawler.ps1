@@ -129,6 +129,7 @@ param
 		"GPOScripts",
 		"HTMLHelpDLL",
 		"IFEO",
+        "InstalledSoftware",
 		"InternetSettingsLUIDll",
 		"KnownManagedDebuggers",
 		"LNK",
@@ -593,6 +594,239 @@ $rat_terms = @(
     "za_connect"
     "zaservice"
     "zohotray"
+)
+# https://github.com/magicsword-io/LOLRMM/tree/main/yaml
+$suspicious_software = @(
+    ".*ithelp.*"
+    ".*access.*"
+    ".*absolute.*"
+    ".*acronic.*"
+    ".*remotix.*"
+    ".*action1.*"
+    ".*addigy.*"
+    ".*adobe connect.*"
+    ".*aeroadmin.*"
+    ".*aliwangwang.*"
+    ".*alpemix.*"
+    ".*ammyy.*"
+    ".*anydesk.*"
+    ".*anyplace.*"
+    ".*anyview.*"
+    ".*apple remote.*"
+    ".*atera.*"
+    ".*auvik.*"
+    ".*aweray.*"
+    ".*barracuda.*"
+    ".*basecamp.*"
+    ".*beamyourscreen.*"
+    ".*beanywhere.*"
+    ".*beinsync.*"
+    ".*beyondtrust.*"
+    ".*bitvise.*"
+    ".*bomgar.*"
+    ".*carotdav.*"
+    ".*centrastage.*"
+    ".*datto.*"
+    ".*centurion.*"
+    ".*chicken.*"
+    ".*chrome remote.*"
+    ".*cloudflare tunnel.*"
+    ".*cloudflared.*"
+    ".*comodo.*"
+    ".*connectwise.*"
+    ".*crossloop.*"
+    ".*crosstec.*"
+    ".*cruzcontrol.*"
+    ".*dameware.*"
+    ".*deskday.*"
+    ".*desknets.*"
+    ".*deskshare.*"
+    ".*desktopnow.*"
+    ".*tunnels.*"
+    ".*devolutions.*"
+    ".*distant desktop.*"
+    ".*domotz.*"
+    ".*dragondisk.*"
+    ".*duplicati.*"
+    ".*dw service.*"
+    ".*echoware.*"
+    ".*ehorus.*"
+    ".*kaseya.*"
+    ".*emco remote.*"
+    ".*encapto.*"
+    ".*ericom.*"
+    ".*accessnow.*"
+    ".*remote.*"
+    ".*extraputty.*"
+    ".*ezhelp.*"
+    ".*fastviewer.*"
+    ".*fixme.*"
+    ".*filezilla.*"
+    ".*fleetdeck.*"
+    ".*fortra.*"
+    ".*free ping.*"
+    ".*freenx.*"
+    ".*freerdp.*"
+    ".*gatherplace.*"
+    ".*getscreen.*"
+    ".*goto opener.*"
+    ".*gotoassist.*"
+    ".*gotohttp.*"
+    ".*gotomypc.*"
+    ".*guacamole.*"
+    ".*goverlan.*"
+    ".*helpbeam.*"
+    ".*helpu.*"
+    ".*intouch.*"
+    ".*imperoconnect.*"
+    ".*housecall.*"
+    ".*insync.*"
+    ".*intelliadmin.*"
+    ".*iperius.*"
+    ".*isl online.*"
+    ".*isl light.*"
+    ".*islonline.*"
+    ".*itarian.*"
+    ".*itsupport.*"
+    ".*ivanti.*"
+    ".*fastvnc.*"
+    ".*jump cloud.*"
+    ".*jump desktop.*"
+    ".*kabuto.*"
+    ".*khelpdesk.*"
+    ".*kickidler.*"
+    ".*kitty.*"
+    ".*koofr.*"
+    ".*labteach.*"
+    ".*labtech.*"
+    ".*landesk.*"
+    ".*laplink.*"
+    ".*level\.io.*"
+    ".*level.*"
+    ".*levelio.*"
+    ".*lite manager.*"
+    ".*litemanager.*"
+    ".*logmein.*"
+    ".*manage engine.*"
+    ".*manageengine.*"
+    ".*megasync.*"
+    ".*meshcentral.*"
+    ".*quick assist.*"
+    ".*mikogo.*"
+    ".*mionet.*"
+    ".*mobaxterm.*"
+    ".*mocha vnc.*"
+    ".*mremote.*"
+    ".*msp360.*"
+    ".*multicloud.*"
+    ".*mygreenpc.*"
+    ".*myivo.*"
+    ".*n-able.*"
+    ".*nateon.*"
+    ".*naverisk.*"
+    ".*netop.*"
+    ".*netreo.*"
+    ".*netsupport.*"
+    ".*neturo.*"
+    ".*netviewer.*"
+    ".*ngrok.*"
+    ".*ninjaone.*"
+    ".*ninjarmm.*"
+    ".*nomachine.*"
+    ".*nordlocker.*"
+    ".*noteon.*"
+    ".*ntr remote.*"
+    ".*ocs inventory.*"
+    ".*onionshare.*"
+    ".*optitune.*"
+    ".*pandora rc.*"
+    ".*panorama9.*"
+    ".*parallels.*"
+    ".*pcanywhere.*"
+    ".*pcnow.*"
+    ".*pcvisit.*"
+    ".*pdq connect.*"
+    ".*pilixo.*"
+    ".*pocket cloud.*"
+    ".*pocket controller.*"
+    ".*psexec.*"
+    ".*pulseway.*"
+    ".*putty.*"
+    ".*remote assistance.*"
+    ".*quest kace.*"
+    ".*quickassist.*"
+    ".*radmin.*"
+    ".*rdp2tcp.*"
+    ".*rdpview.*"
+    ".*rdpwrap.*"
+    ".*realvnc.*"
+    ".*remcos.*"
+    ".*remmina.*"
+    ".*remobo.*"
+    ".*remote\.it.*"
+    ".*devolutions.*"
+    ".*remote desktop.*"
+    ".*remote manipulator.*"
+    ".*remote utilities.*"
+    ".*remotecall.*"
+    ".*remotepc.*"
+    ".*remotepass.*"
+    ".*remoteview.*"
+    ".*res automation.*"
+    ".*rocketremote.*"
+    ".*royal apps.*"
+    ".*rport.*"
+    ".*rudesktop.*"
+    ".*runsmart.*"
+    ".*rustdesk.*"
+    ".*s3 browser.*"
+    ".*screenconnect.*"
+    ".*screenmeet.*"
+    ".*securecrt.*"
+    ".*seetrol.*"
+    ".*senso cloud.*"
+    ".*servereye.*"
+    ".*showmypc.*"
+    ".*simplehelp.*"
+    ".*site24.*"
+    ".*skyfex.*"
+    ".*web vnc.*"
+    ".*smartftp.*"
+    ".*smartty.*"
+    ".*sorillus.*"
+    ".*splashtop.*"
+    ".*spyanywhere.*"
+    ".*sunlogin.*"
+    ".*superops.*"
+    ".*supremo.*"
+    ".*syncro.*"
+    ".*syncthing.*"
+    ".*synergy.*"
+    ".*sysaid.*"
+    ".*syspectr.*"
+    ".*tactical rmm.*"
+    ".*tailscale.*"
+    ".*teledesktop.*"
+    ".*tigervnc.*"
+    ".*tightvnc.*"
+    ".*todesk.*"
+    ".*turbomeeting.*"
+    ".*ultra vnc.*"
+    ".*ultraviewer.*"
+    ".*ultravnc.*"
+    ".*webrdp.*"
+    ".*weezo.*"
+    ".*winscp.*"
+    ".*x2go.*"
+    ".*xeox.*"
+    ".*xpra.*"
+    ".*xrdp.*"
+    ".*xshell.*"
+    ".*yandex.*"
+    ".*zabbix.*"
+    ".*zerotier.*"
+    ".*zoc.*"
+    ".*zohoassist.*"
 )
 
 function Check-ScheduledTasks {
@@ -17849,6 +18083,82 @@ function Check-ServiceControlManagerSD {
     }
 }
 
+function Check-InstalledSoftware {
+    Write-Message "Checking Installed Software"
+    $installedHKLM = Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+    # TODO - Iterate HKCU Hives
+    $InstalledHKCU = Get-ChildItem "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+
+    # Sometimes there are weird dates in here - for example, 20222019 - this does not match any 'standard' date formats since the month is indicated as '20'
+
+    $softwareList = New-Object System.Collections.Generic.List[System.Object]
+    [string[]] $formats = 'yyyyMMdd', 'yyyyMdd', 'yyyyMMd', 'yyyyMd'
+    foreach ($app in $installedHKLM){
+        $date = ""
+        if ($app.GetValue('InstallDate') -ne $null){
+            if ($app.GetValue('InstallDate').Trim() -ne "") {
+                try {
+                    $date = [datetime]::parseexact($app.GetValue('InstallDate'), $formats, [cultureinfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::None)
+                } catch {
+                    $date = $app.GetValue('InstallDate').Trim()
+                }
+            }
+        }
+
+        $tmp = [PSCustomObject]@{
+            DisplayName = $app.GetValue('DisplayName')
+            InstallDate = $date
+            InstallLocation = $app.GetValue('InstallLocation')
+            Publisher = $app.GetValue('Publisher')
+        }
+        if (-not $softwareList.contains($tmp)) {
+            $softwareList.Add($tmp) | Out-Null
+        }
+    }
+    foreach ($app in $InstalledHKCU){
+        $date = ""
+        if ($app.GetValue('InstallDate') -ne $null){
+            if ($app.GetValue('InstallDate').Trim() -ne "") {
+                try {
+                    $date = [datetime]::parseexact($app.GetValue('InstallDate'), $formats, [cultureinfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::None)
+                } catch {
+                    $date = $app.GetValue('InstallDate').Trim()
+                }
+            }
+        }
+        $tmp = [PSCustomObject]@{
+            DisplayName = $app.GetValue('DisplayName')
+            InstallDate = $date
+            InstallLocation = $app.GetValue('InstallLocation')
+            Publisher = $app.GetValue('Publisher')
+        }
+        if (-not $softwareList.contains($tmp)) {
+            $softwareList.Add($tmp) | Out-Null
+        }
+    }
+
+    foreach ($app in $softwareList){
+        foreach ($check in $suspicious_software){
+            if ($app.DisplayName -imatch $check){
+                $detection = [PSCustomObject]@{
+                    Name = 'Suspicious Software Installed'
+                    Risk = 'Medium'
+                    Source = 'Registry'
+                    Technique = "T1543: Create or Modify System Process"
+                    Meta = [PSCustomObject]@{
+                        Location = $app.InstallLocation
+                        Created = $app.InstallDate
+                        Publisher = $app.Publisher
+                        EntryValue = $app.DisplayName
+                    }
+                }
+                Write-Detection $detection
+            }
+        }
+    }
+
+}
+
 function Get-File-Hash($file){
     <#
     .SYNOPSIS
@@ -18619,6 +18929,7 @@ $possibleScanOptions = @(
 	"GPOScripts",
 	"HTMLHelpDLL",
 	"IFEO",
+    "InstalledSoftware",
 	"InternetSettingsLUIDll",
 	"KnownManagedDebuggers",
 	"LNK",
@@ -18746,6 +19057,7 @@ function Main {
 			"GPOScripts" { Check-GPO-Scripts }
 			"HTMLHelpDLL" { Check-HTMLHelpDLL }
 			"IFEO" { Check-IFEO }
+            "InstalledSoftware" { Check-InstalledSoftware }
 			"InternetSettingsLUIDll" { Check-InternetSettingsLUIDll }
 			"KnownManagedDebuggers" { Check-KnownManagedDebuggers }
 			"LNK" { Check-LNK }
