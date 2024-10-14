@@ -3,26 +3,29 @@
 		trawler helps Incident Responders discover suspicious persistence mechanisms on Windows devices.
 	
 	.DESCRIPTION
-		trawler inspects a wide variety of Windows artifacts to help discover signals of persistence including the registry, scheduled tasks, services, startup items, etc.
-        For a full list of artifacts, please see github.com/joeavanzato/trawler
+		trawler inspects a wide variety of Windows artifacts to help discover signs of persistence including the registry, scheduled tasks, services, startup items, etc.
+        For a full list of inspected artifacts and MITRE Techniques, please see github.com/joeavanzato/trawler
 
-	.PARAMETER outpath
-		The fully-qualified file-path where detection output should be stored as a CSV
+	.PARAMETER OutputLocation
+		The fully-qualified file-path where detection output should be stored (defaults to $PSScriptRoot, the same location the script is executing from)
 
     .PARAMETER snapshot
-		If specified, tells trawler to capture a persistence snapshot
+		If specified, tells trawler to load the designated file as an allow-list (defaults to $PSScriptRoot, the same location the script is executing from)
 
-    .PARAMETER hide
+    .PARAMETER quiet
 		If specified, tells trawler to suppress detection output to console
 
-	.PARAMETER snapshotpath
-		The fully-qualified file-path where snapshot output should be stored - defaults to $PSScriptRoot\snapshot.csv
+    .PARAMETER evtx
+		If specified, tells trawler to log detections as JSON blobs to the specified Event Log (defaults to Log=Application, Source=trawler)
 
-    .PARAMETER loadsnapshot
-		The fully-qualified file-path to a previous snapshot to be loaded for allow-listing
+    .PARAMETER daysago
+		If specified, tells trawler how far back (in days) to consider for suppressing time-based detections (defaults to 45 days - for detections that involve time such as "recently created", this will serve as the threshold).
 
 	.PARAMETER ScanOptions
 		Set to pick specific scanners to run. Multiple can be used when separated by a comma. (Supports tab completion)
+
+	.PARAMETER HashMode
+		Tells trawler which hashing algorithm to use for detection metadata - SHA1, SHA256 or MD5
 
 	.EXAMPLE
 		.\trawler.ps1 -outpath "C:\detections.csv"
