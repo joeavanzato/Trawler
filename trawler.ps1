@@ -797,8 +797,11 @@ function Test-OutputDirectoryPermissions(){
     }
 }
 
-
 function New-TrawlerOutputItem() {
+    <#
+    .SYNOPSIS
+        Helper function to create output items and report on failures.
+    #>
 	param (
 		[string]
 		$FileName,
@@ -821,596 +824,12 @@ function New-TrawlerOutputItem() {
 	$output
 }
 
-$loadsnapshotdata = $PSBoundParameters.ContainsKey('snapshot')
-$drivechange = $PSBoundParameters.ContainsKey('drivetarget')
-$detection_list = New-Object -TypeName "System.Collections.ArrayList"
-
-
-# TODO - Non-Standard Service/Task running as/created by Local Administrator
-# TODO - Browser Extension Analysis
-# TODO - Temporary RID Hijacking
-# TODO - ntshrui.dll - https://www.mandiant.com/resources/blog/malware-persistence-windows-registry
-# TODO - Add file metadata for detected files (COM/DLL Hijacks, etc)
-# TODO - Add more suspicious paths for running processes
-# TODO - Iterate through HKEY_USERS when encountering HKEY_CURRENT_USER hive reference
-
-# TODO - Refactor this using condensed regex
-$suspicious_process_paths = @(
-	".*\\users\\administrator\\.*",
-	".*\\users\\default\\.*",
-	".*\\users\\public\\.*",
-    ".*\\users\\guest\\.*",
-	".*\\windows\\debug\\.*",
-	".*\\windows\\fonts\\.*",
-	".*\\windows\\media\\.*",
-	".*\\windows\\repair\\.*",
-	".*\\windows\\servicing\\.*",
-	".*\\windows\\temp\\.*",
-	".*recycle.bin.*"
-)
-$suspicious_extensions = @('*.exe', '*.bat', '*.ps1', '*.hta', '*.vb', '*.vba', '*.vbs','*.rar', '*.zip', '*.gz', '*.7z', '*.dll', '*.scr', '*.cmd', '*.com', '*.ws', '*.wsf', '*.scf', '*.scr', '*.pif', '*.dmp','*.htm', '*.doc*','*.xls*','*.ppt*')
-$suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|regedit|invoke-iex|frombase64|tobase64|rundll32|http:|https:|system\.net\.webclient|downloadfile|downloadstring|bitstransfer|system\.net\.sockets|tcpclient|xmlhttp|AssemblyBuilderAccess|shellcode|rc4bytestream|disablerealtimemonitoring|wmiobject|wmimethod|remotewmi|wmic|gzipstream|::decompress|io\.compression|write-zip|encodedcommand|wscript\.shell|MSXML2\.XMLHTTP|System\.Reflection\.Emit\.AssemblyBuilderAccess|System\.Runtime\.InteropServices\.MarshalAsAttribute|memorystream|SuspendThread|EncodedCommand|MiniDump|lsass\.exe|Invoke-DllInjection|Invoke-Shellcode|Invoke-WmiCommand|Get-GPPPassword|Get-Keystrokes|Get-TimedScreenshot|Get-VaultCredential|Invoke-CredentialInjection|Invoke-Mimikatz|Invoke-NinjaCopy|Invoke-TokenManipulation|Out-Minidump|VolumeShadowCopyTools|Invoke-ReflectivePEInjection|Invoke-UserHunter|Invoke-ACLScanner|Invoke-DowngradeAccount|Get-ServiceUnquoted|Get-ServiceFilePermission|Get-ServicePermission|Invoke-ServiceAbuse|Install-ServiceBinary|Get-RegAutoLogon|Get-VulnAutoRun|Get-VulnSchTask|Get-UnattendedInstallFile|Get-ApplicationHost|Get-RegAlwaysInstallElevated|Get-Unconstrained|Add-RegBackdoor|Add-ScrnSaveBackdoor|Gupt-Backdoor|Invoke-ADSBackdoor|Enabled-DuplicateToken|Invoke-PsUaCme|Remove-Update|Check-VM|Get-LSASecret|Get-PassHashes|Show-TargetScreen|Port-Scan|Invoke-PoshRatHttp|Invoke-PowerShellTCP|Invoke-PowerShellWMI|Add-Exfiltration|Add-Persistence|Do-Exfiltration|Start-CaptureServer|Get-ChromeDump|Get-ClipboardContents|Get-FoxDump|Get-IndexedItem|Get-Screenshot|Invoke-Inveigh|Invoke-NetRipper|Invoke-EgressCheck|Invoke-PostExfil|Invoke-PSInject|Invoke-RunAs|MailRaider|New-HoneyHash|Set-MacAttribute|Invoke-DCSync|Invoke-PowerDump|Exploit-Jboss|Invoke-ThunderStruck|Invoke-VoiceTroll|Set-Wallpaper|Invoke-InveighRelay|Invoke-PsExec|Invoke-SSHCommand|Get-SecurityPackages|Install-SSP|Invoke-BackdoorLNK|PowerBreach|Get-SiteListPassword|Get-System|Invoke-BypassUAC|Invoke-Tater|Invoke-WScriptBypassUAC|PowerUp|PowerView|Get-RickAstley|Find-Fruit|HTTP-Login|Find-TrustedDocuments|Invoke-Paranoia|Invoke-WinEnum|Invoke-ARPScan|Invoke-PortScan|Invoke-ReverseDNSLookup|Invoke-SMBScanner|Invoke-Mimikittenz|Invoke-SessionGopher|Invoke-AllChecks|Start-Dnscat|Invoke-KrbRelayUp|Invoke-Rubeus|Invoke-Pandemonium|Invoke-Mongoose|Invoke-NETMongoose|Invoke-SecretsDump|Invoke-NTDS|Invoke-SharpRDP|Invoke-Kirby|Invoke-SessionHunter|Invoke-PrintNightmare|Invoke-Monkey365|Invoke-AzureHound|Kerberoast|Bloodhound|Sharphound|DisableRealtimeMonitoring|DisableBehaviorMonitoring|DisableScriptScanning|DisableBlockAtFirstSeen|ExclusionPath).*"
-$ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
-$ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
-$office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", ".xlam", ".com", ".xla"
-$rat_terms = @(
-    #Remote Access Tool Indicators
-    # Any Process Name, Scheduled Task or Service containing these keywords will be flagged.
-    "aeroadmin"
-    "action1"
-    "ammyadmin"
-    "aa_v"
-    "anydesk"
-    "anyscreen"
-    "anyviewer"
-    "atera"
-    "aweray_remote"
-    "awrem32"
-    "awhost32"
-    "beyondtrust"
-    "bomgar"
-    "connectwise"
-    "cservice"
-    "dameware"
-    "desktopnow"
-    "distant-desktop"
-    "dwservice"
-    "dwagent"
-    "dwagsvc"
-    "dwrcs"
-    "famitrfc"
-    "g2comm"
-    "g2host"
-    "g2fileh"
-    "g2mainh"
-    "g2printh"
-    "g2svc"
-    "g2tray"
-    "gopcsrv"
-    "getscreen"
-    "iperius"
-    "kaseya"
-    "litemanager"
-    "logmein"
-    "lmiignition"
-    "lmiguardiansvc"
-    "meshagent"
-    "mstsc"
-    "ninja1"
-    "ninjaone"
-    "PCMonitorManager"
-    "pcmonitorsrv"
-    "pulseway"
-    "quickassist"
-    "radmin"
-    "rcclient"
-    "realvnc"
-    "remotepc"
-    "remotetopc"
-    "remote utilities"
-    "RepairTech"
-    "ROMServer"
-    "ROMFUSClient"
-    "rutserv"
-    "screenconnect"
-    "screenmeet"
-    "showmypc"
-    "smpcsetup"
-    "strwinclt"
-    "supremo"
-    "sightcall"
-    "splashtop"
-    "surfly"
-    "syncro"
-    "tacticalrmm"
-    "teamviewer"
-    "tightvnc"
-    "ultraviewer"
-    "vnc"
-    "winvnc"
-    "vncviewer"
-    "winvncsc"
-    "winwvc"
-    "xmreality"
-    "ultravnc"
-    "Zaservice"
-    "Zohours"
-    "ZohoMeeting"
-    "zoho"
-    "rpcgrab"
-    "rpcsetup"
-    "action1_agent"
-    "aeroadmin"
-    "alitask"
-    "alpemix"
-    "ammyy_admin"
-    "anydesk"
-    "apc_host"
-    "ateraagent"
-    "syncrosetup"
-    "auvik.agent"
-    "auvik.engine"
-    "beamyourscreen"
-    "beamyourscreen-host"
-    "basupsrvc"
-    "basupsrvcupdate"
-    "basuptshelper"
-    "bomgar-scc"
-    "CagService"
-    "ctiserv"
-    "remote_host"
-    "cloudflared"
-    "connectwisechat-customer"
-    "connectwisecontrol"
-    "itsmagent"
-    "rviewer"
-    "crossloopservice"
-    "pcivideo"
-    "supporttool"
-    "dntus"
-    "dwrcs"
-    "domotz_bash"
-    "echoserver"
-    "echoware"
-    "ehorus standalone"
-    "remoteconsole"
-    "accessserver"
-    "ericomconnnectconfigurationtool"
-    "era"
-    "ezhelp"
-    "eratool"
-    "ezhelpclient"
-    "ezhelpclientmanager"
-    "fastclient"
-    "fastmaster"
-    "fixmeitclient"
-    "fleetdeck_agent_svc"
-    "gp3"
-    "gp4"
-    "gp5"
-    "getscreen"
-    "g2a"
-    "gotoassist"
-    "gotohttp"
-    "g2file"
-    "g2quick"
-    "g2svc"
-    "g2tray"
-    "goverrmc"
-    "govsrv"
-    "guacd"
-    "helpbeam"
-    "iit"
-    "intouch"
-    "hsloader"
-    "ihcserver"
-    "instanthousecall"
-    "iadmin"
-    "intelliadmin"
-    "iperius"
-    "iperiusremote"
-    "ITSMAgent"
-    "ItsmRsp"
-    "ITSMService"
-    "RDesktop"
-    "RHost"
-    "RmmService"
-    "islalwaysonmonitor"
-    "isllight"
-    "isllightservice"
-    "jumpclient"
-    "jumpdesktop"
-    "jumpservice"
-    "agentmon"
-    "ltsvc"
-    "ltsvcmon"
-    "lttray"
-    "issuser"
-    "landeskagentbootstrap"
-    "ldinv32"
-    "ldsensors"
-    "laplink"
-    "laplinkeverywhere"
-    "llrcservice"
-    "serverproxyservice"
-    "laplink"
-    "tsircusr"
-    "romfusclient"
-    "romserver"
-    "romviewer"
-    "lmiguardiansvc"
-    "lmiignition"
-    "logmein"
-    "logmeinsystray"
-    "support-logmeinrescue"
-    "lmi_rescue"
-    "mesh"
-    "mikogo"
-    "mikogolauncher"
-    "mikogo-service"
-    "mikogo-starter"
-    "mionet"
-    "mionetmanager"
-    "myivomanager"
-    "myivomgr"
-    "nhostsvc"
-    "nhstw32"
-    "nldrw32"
-    "rmserverconsolemediator"
-    "client32"
-    "pcictlui"
-    "neturo"
-    "ntrntservice"
-    "netviewer"
-    "ngrok"
-    "ninjarmmagent"
-    "nomachine"
-    "nxd"
-    "nateon"
-    "nateon"
-    "nateonmain"
-    "ocsinventory"
-    "ocsservice"
-    "prl_deskctl_agent"
-    "prl_deskctl_wizard"
-    "prl_pm_service"
-    "awhost32"
-    "pcaquickconnect"
-    "winaw32"
-    "mwcliun"
-    "pcnmgr"
-    "webexpcnow"
-    "pcvisit"
-    "pcvisit_client"
-    "pcvisit-easysupport"
-    "pocketcontroller"
-    "pocketcloudservice"
-    "wysebrowser"
-    "qq"
-    "qqpcmgr"
-    "konea"
-    "quickassist"
-    "radmin"
-    "tdp2tcp"
-    "rdp2tcp.py"
-    "remobo"
-    "remobo_client"
-    "remobo_tracker"
-    "rfusclient"
-    "rutserv"
-    "rutserv"
-    "rutview"
-    "rcengmgru"
-    "rcmgrsvc"
-    "remotesupportplayeru"
-    "rxstartsupport"
-    "remotepass-access"
-    "rpaccess"
-    "rpwhostscr"
-    "remotepcservice"
-    "rpcsuite"
-    "remoteview"
-    "rvagent"
-    "rvagtray"
-    "wisshell"
-    "wmc"
-    "wmc_deployer"
-    "wmcsvc"
-    "royalts"
-    "rudesktop"
-    "rustdesk"
-    "screenconnect"
-    "screenconnect.windowsclient"
-    "seetrolcenter"
-    "seetrolclient"
-    "seetrolmyservice"
-    "seetrolremote"
-    "seetrolsetting"
-    "showmypc"
-    "simplehelpcustomer"
-    "simpleservice"
-    "windowslauncher"
-    "remote access"
-    "simplegatewayservice"
-    "clientmrinit"
-    "mgntsvc"
-    "routernt"
-    "sragent"
-    "srmanager"
-    "srserver"
-    "srservice"
-    "supremo"
-    "supremohelper"
-    "supremoservice"
-    "supremosystem"
-    "tacticalrmm"
-    "teamviewer"
-    "teamviewer_service"
-    "teamviewerqs"
-    "tv_w32"
-    "tv_w64"
-    "pstlaunch"
-    "ptdskclient"
-    "ptdskhost"
-    "todesk"
-    "pcstarter"
-    "turbomeeting"
-    "turbomeetingstarter"
-    "ultraviewer"
-    "ultraviewer_desktop"
-    "ultraviewer_service"
-    "vncserver"
-    "vncserverui"
-    "vncviewer"
-    "winvnc"
-    "webrdp"
-    "weezo"
-    "weezohttpd"
-    "xeox-agent_x64"
-    "za_connect"
-    "zaservice"
-    "zohotray"
-)
-# https://github.com/magicsword-io/LOLRMM/tree/main/yaml
-$suspicious_software = @(
-    ".*ithelp.*"
-    ".*access.*"
-    ".*absolute.*"
-    ".*acronic.*"
-    ".*remotix.*"
-    ".*action1.*"
-    ".*addigy.*"
-    ".*adobe connect.*"
-    ".*aeroadmin.*"
-    ".*aliwangwang.*"
-    ".*alpemix.*"
-    ".*ammyy.*"
-    ".*anydesk.*"
-    ".*anyplace.*"
-    ".*anyview.*"
-    ".*apple remote.*"
-    ".*atera.*"
-    ".*auvik.*"
-    ".*aweray.*"
-    ".*barracuda.*"
-    ".*basecamp.*"
-    ".*beamyourscreen.*"
-    ".*beanywhere.*"
-    ".*beinsync.*"
-    ".*beyondtrust.*"
-    ".*bitvise.*"
-    ".*bomgar.*"
-    ".*carotdav.*"
-    ".*centrastage.*"
-    ".*datto.*"
-    ".*centurion.*"
-    ".*chicken.*"
-    ".*chrome remote.*"
-    ".*cloudflare tunnel.*"
-    ".*cloudflared.*"
-    ".*comodo.*"
-    ".*connectwise.*"
-    ".*crossloop.*"
-    ".*crosstec.*"
-    ".*cruzcontrol.*"
-    ".*dameware.*"
-    ".*deskday.*"
-    ".*desknets.*"
-    ".*deskshare.*"
-    ".*desktopnow.*"
-    ".*tunnels.*"
-    ".*devolutions.*"
-    ".*distant desktop.*"
-    ".*domotz.*"
-    ".*dragondisk.*"
-    ".*duplicati.*"
-    ".*dw service.*"
-    ".*echoware.*"
-    ".*ehorus.*"
-    ".*kaseya.*"
-    ".*emco remote.*"
-    ".*encapto.*"
-    ".*ericom.*"
-    ".*accessnow.*"
-    ".*remote.*"
-    ".*extraputty.*"
-    ".*ezhelp.*"
-    ".*fastviewer.*"
-    ".*fixme.*"
-    ".*filezilla.*"
-    ".*fleetdeck.*"
-    ".*fortra.*"
-    ".*free ping.*"
-    ".*freenx.*"
-    ".*freerdp.*"
-    ".*gatherplace.*"
-    ".*getscreen.*"
-    ".*goto opener.*"
-    ".*gotoassist.*"
-    ".*gotohttp.*"
-    ".*gotomypc.*"
-    ".*guacamole.*"
-    ".*goverlan.*"
-    ".*helpbeam.*"
-    ".*helpu.*"
-    ".*intouch.*"
-    ".*imperoconnect.*"
-    ".*housecall.*"
-    ".*insync.*"
-    ".*intelliadmin.*"
-    ".*iperius.*"
-    ".*isl online.*"
-    ".*isl light.*"
-    ".*islonline.*"
-    ".*itarian.*"
-    ".*itsupport.*"
-    ".*ivanti.*"
-    ".*fastvnc.*"
-    ".*jump cloud.*"
-    ".*jump desktop.*"
-    ".*kabuto.*"
-    ".*khelpdesk.*"
-    ".*kickidler.*"
-    ".*kitty.*"
-    ".*koofr.*"
-    ".*labteach.*"
-    ".*labtech.*"
-    ".*landesk.*"
-    ".*laplink.*"
-    ".*level\.io.*"
-    ".*level.*"
-    ".*levelio.*"
-    ".*lite manager.*"
-    ".*litemanager.*"
-    ".*logmein.*"
-    ".*manage engine.*"
-    ".*manageengine.*"
-    ".*megasync.*"
-    ".*meshcentral.*"
-    ".*quick assist.*"
-    ".*mikogo.*"
-    ".*mionet.*"
-    ".*mobaxterm.*"
-    ".*mocha vnc.*"
-    ".*mremote.*"
-    ".*msp360.*"
-    ".*multicloud.*"
-    ".*mygreenpc.*"
-    ".*myivo.*"
-    ".*n-able.*"
-    ".*nateon.*"
-    ".*naverisk.*"
-    ".*netop.*"
-    ".*netreo.*"
-    ".*netsupport.*"
-    ".*neturo.*"
-    ".*netviewer.*"
-    ".*ngrok.*"
-    ".*ninjaone.*"
-    ".*ninjarmm.*"
-    ".*nomachine.*"
-    ".*nordlocker.*"
-    ".*noteon.*"
-    ".*ntr remote.*"
-    ".*ocs inventory.*"
-    ".*onionshare.*"
-    ".*optitune.*"
-    ".*pandora rc.*"
-    ".*panorama9.*"
-    ".*parallels.*"
-    ".*pcanywhere.*"
-    ".*pcnow.*"
-    ".*pcvisit.*"
-    ".*pdq connect.*"
-    ".*pilixo.*"
-    ".*pocket cloud.*"
-    ".*pocket controller.*"
-    ".*psexec.*"
-    ".*pulseway.*"
-    ".*putty.*"
-    ".*remote assistance.*"
-    ".*quest kace.*"
-    ".*quickassist.*"
-    ".*radmin.*"
-    ".*rdp2tcp.*"
-    ".*rdpview.*"
-    ".*rdpwrap.*"
-    ".*realvnc.*"
-    ".*remcos.*"
-    ".*remmina.*"
-    ".*remobo.*"
-    ".*remote\.it.*"
-    ".*devolutions.*"
-    ".*remote desktop.*"
-    ".*remote manipulator.*"
-    ".*remote utilities.*"
-    ".*remotecall.*"
-    ".*remotepc.*"
-    ".*remotepass.*"
-    ".*remoteview.*"
-    ".*res automation.*"
-    ".*rocketremote.*"
-    ".*royal apps.*"
-    ".*rport.*"
-    ".*rudesktop.*"
-    ".*runsmart.*"
-    ".*rustdesk.*"
-    ".*s3 browser.*"
-    ".*screenconnect.*"
-    ".*screenmeet.*"
-    ".*securecrt.*"
-    ".*seetrol.*"
-    ".*senso cloud.*"
-    ".*servereye.*"
-    ".*showmypc.*"
-    ".*simplehelp.*"
-    ".*site24.*"
-    ".*skyfex.*"
-    ".*web vnc.*"
-    ".*smartftp.*"
-    ".*smartty.*"
-    ".*sorillus.*"
-    ".*splashtop.*"
-    ".*spyanywhere.*"
-    ".*sunlogin.*"
-    ".*superops.*"
-    ".*supremo.*"
-    ".*syncro.*"
-    ".*syncthing.*"
-    ".*synergy.*"
-    ".*sysaid.*"
-    ".*syspectr.*"
-    ".*tactical rmm.*"
-    ".*tailscale.*"
-    ".*teamviewer.*"
-    ".*teledesktop.*"
-    ".*tigervnc.*"
-    ".*tightvnc.*"
-    ".*todesk.*"
-    ".*turbomeeting.*"
-    ".*ultra vnc.*"
-    ".*ultraviewer.*"
-    ".*ultravnc.*"
-    ".*webrdp.*"
-    ".*weezo.*"
-    ".*winscp.*"
-    ".*x2go.*"
-    ".*xeox.*"
-    ".*xpra.*"
-    ".*xrdp.*"
-    ".*xshell.*"
-    ".*yandex.*"
-    ".*zabbix.*"
-    ".*zerotier.*"
-    ".*zoc.*"
-    ".*zohoassist.*"
-)
-
 function Check-ScheduledTasks {
     # Can possibly support drive-retargeting by parsing Task XML
     # Working on this with regex from Task Files
     # ^ Mostly working now
     # TODO - Add Argument Comparison Checks
+    # TODO - Non-Standard Service/Task running as/created by Local Administrator
     Write-Message "Checking Scheduled Tasks"
 
     $task_base_path = "$env_homedrive\Windows\System32\Tasks"
@@ -1772,6 +1191,8 @@ function Check-Users {
 
 function Check-Services {
     # Support Drive Retargeting
+    # TODO - Non-Standard Service/Task running as/created by Local Administrator
+
     Write-Message "Checking Windows Services"
     $default_service_exe_paths = @(
 		"`"$env_assumedhomedrive\Program Files (x86)\Google\Update\GoogleUpdate.exe`" /medsvc",
@@ -12462,7 +11883,7 @@ function Check-COM-Hijacks {
                             if ($verified_match -ne $true -and $clsid_found){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack - Mismatch on stored CLSID'
-                                    Risk = 'Low'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = [PSCustomObject]@{
@@ -12505,7 +11926,7 @@ function Check-COM-Hijacks {
                                 if ($_.Value -match $path){
                                     $detection = [PSCustomObject]@{
                                         Name = 'Potential COM Hijack - Suspicious Entry Path'
-                                        Risk = 'Low'
+                                        Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                         Meta = [PSCustomObject]@{
@@ -12589,7 +12010,7 @@ function Check-COM-Hijacks {
                             if ($verified_match -ne $true -and $clsid_found){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack - Mismatch on stored CLSID'
-                                    Risk = 'Low'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = [PSCustomObject]@{
@@ -12632,7 +12053,7 @@ function Check-COM-Hijacks {
                                 if ($_.Value -match $path){
                                     $detection = [PSCustomObject]@{
                                         Name = 'Potential COM Hijack - Suspicious Entry Path'
-                                        Risk = 'Low'
+                                        Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                         Meta = [PSCustomObject]@{
@@ -12713,7 +12134,7 @@ function Check-COM-Hijacks {
                             if ($verified_match -ne $true -and $clsid_found){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack - Mismatch on stored CLSID'
-                                    Risk = 'Low'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = [PSCustomObject]@{
@@ -12756,7 +12177,7 @@ function Check-COM-Hijacks {
                                 if ($_.Value -match $path){
                                     $detection = [PSCustomObject]@{
                                         Name = 'Potential COM Hijack - Suspicious Entry Path'
-                                        Risk = 'Low'
+                                        Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                         Meta = [PSCustomObject]@{
@@ -17557,6 +16978,10 @@ function Check-ServiceControlManagerSD {
 }
 
 function Check-InstalledSoftware {
+    <#
+    .SYNOPSIS
+        Retrieves all installed software across HKLM/HKCU by checking Uninstall entries and compares to a list of 'known-suspicious' terms that represent many types of software such as RMM, File/Transfer, etc.
+    #>
     Write-Message "Checking Installed Software"
     $installedApps = New-Object System.Collections.Generic.List[System.Object]
     Get-ChildItem "Registry::$regtarget_hklm`Software\Microsoft\Windows\CurrentVersion\Uninstall" | ForEach-Object {$installedApps.Add($_)}
@@ -17692,6 +17117,10 @@ function Get-File-Hash($file){
 }
 
 function Format-MetadataToString($detectionmeta) {
+    <#
+    .SYNOPSIS
+        Receives an object representing the metadata of a specific detection and formats this to a more human-readable string for u se in CSV/Console output
+    #>
 	$output = ""
     $propertyCount = ($detectionmeta|Get-Member -Type NoteProperty).count
     $index = 1
@@ -17809,8 +17238,11 @@ function Prepare-DetectionForHash ($detection){
     return $detection
 }
 
-$detection_hash_array_snapshot = New-Object System.Collections.Generic.List[System.Object]
 function Load-DetectionSnapshot {
+    <#
+    .SYNOPSIS
+        Checks if provided snapshot file is valid and reads the content in order to prepare a list of hashes that represent 'allowed' detections.
+    #>
     Write-Message "Reading Snapshot File"
     if (-not (Test-Path -Path $snapshot)){
         Write-Message "Error - Could not find specified snapshot file: $snapshot"
@@ -17852,7 +17284,11 @@ function Format-DateTime($datetime, $utc_convert) {
 }
 
 function Detection-Metrics {
-	Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor White
+    <#
+    .SYNOPSIS
+        Presents metrics surrounding all detections to the end-user for a summary view.
+    #>
+    Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor White
 	Write-Message "Total Detections: $($detection_list.Count)"
     Write-Message "Total Suppressed Detections: $suppressed_detections"
 	foreach ($str in ($detection_list | Group-Object Risk | Select-Object Name, Count | Out-String).Split([System.Environment]::NewLine)) {
@@ -17863,6 +17299,10 @@ function Detection-Metrics {
 }
 
 function Drive-Change {
+    <#
+    .SYNOPSIS
+        An annoyingly complicated function designed to help operators target mounted drive images rather than the local system.
+    #>
     # HKLM associated hives detected on the target drive will be loaded as 'HKLM\ANALYSIS_$NAME' such as 'HKLM\ANALYSIS_SOFTWARE' for the SOFTWARE hive
     # User hives (NTUSER.DAT, USRCLASS.DAT) will be loaded as 'HKU\ANALYSIS_$NAME' and 'HKU\ANALYSIS_$NAME_Classes' respectively - such as 'HKU\ANALYSIS_JOE'/'HKU\ANALYSIS_JOE_Classes for each detected profile on the target drive.
     Write-Message "Setting up Registry Variables"
@@ -17966,7 +17406,6 @@ function Drive-Change {
 
 }
 
-$new_psdrives_list = @{}
 function Load-Hive($hive_name, $hive_path, $hive_root) {
     Write-Message "Loading Registry Hive File: $hive_path at location: $hive_root\$hive_name"
     $null = New-PSDrive -PSProvider Registry -Name $hive_name -Root $hive_root
@@ -18008,6 +17447,10 @@ function Create-EventSource {
 }
 
 function Write-DetectionToEVTX($detection) {
+    <#
+    .SYNOPSIS
+        Writes inbound detections to the associated Event Log and Source as a JSON blob
+    #>
     # TODO - Give each detection their own EID
     # TODO - Evaluate breaking up k=v of each detection similar to how PersistenceSniper does this as below:
     # snippet borrowed from PS https://github.com/last-byte/PersistenceSniper/pull/18/files#diff-594bab796584c8283d08be6a7120923a730f027fe8e213952a932de851f3eaf1R2036
@@ -18024,7 +17467,10 @@ function Write-DetectionToEVTX($detection) {
 }
 
 function Emit-Detections {
-
+    <#
+    .SYNOPSIS
+        Called at the end of the execution flow to emit all detections in the various specified formats.
+    #>
     # Emit detections in JSON format
     $detection_list | ConvertTo-Json | Out-File $script:JSONDetectionsPath.Path
 
@@ -18042,6 +17488,10 @@ function Emit-Detections {
 }
 
 function Clean-Up {
+    <#
+    .SYNOPSIS
+        If we are targeting a non-local drive, clean up all mounted hives
+    #>
     #Start-Sleep -seconds 5
     if ($drivechange){
         foreach ($hive in $new_psdrives_list.GetEnumerator()){
@@ -18197,7 +17647,6 @@ function Main {
     Clean-Up
     Detection-Metrics
 }
-
 
 if ($MyInvocation.InvocationName -match ".+.ps1")
 {
