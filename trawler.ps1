@@ -3,26 +3,32 @@
 		trawler helps Incident Responders discover suspicious persistence mechanisms on Windows devices.
 	
 	.DESCRIPTION
-		trawler inspects a wide variety of Windows artifacts to help discover signals of persistence including the registry, scheduled tasks, services, startup items, etc.
-        For a full list of artifacts, please see github.com/joeavanzato/trawler
+		trawler inspects a wide variety of Windows artifacts to help discover signs of persistence including the registry, scheduled tasks, services, startup items, etc.
+        For a full list of inspected artifacts and MITRE Techniques, please see github.com/joeavanzato/trawler
 
-	.PARAMETER outpath
-		The fully-qualified file-path where detection output should be stored as a CSV
+	.PARAMETER OutputLocation
+		The fully-qualified file-path where detection output should be stored (defaults to $PSScriptRoot, the same location the script is executing from)
 
     .PARAMETER snapshot
-		If specified, tells trawler to capture a persistence snapshot
+		If specified, tells trawler to load the designated file as an allow-list (defaults to $PSScriptRoot, the same location the script is executing from)
 
-    .PARAMETER hide
+    .PARAMETER quiet
 		If specified, tells trawler to suppress detection output to console
 
-	.PARAMETER snapshotpath
-		The fully-qualified file-path where snapshot output should be stored - defaults to $PSScriptRoot\snapshot.csv
+    .PARAMETER evtx
+		If specified, tells trawler to log detections as JSON blobs to the specified Event Log (defaults to Log=Application, Source=trawler)
 
-    .PARAMETER loadsnapshot
-		The fully-qualified file-path to a previous snapshot to be loaded for allow-listing
+    .PARAMETER daysago
+		If specified, tells trawler how far back (in days) to consider for suppressing time-based detections (defaults to 45 days - for detections that involve time such as "recently created", this will serve as the threshold).
 
 	.PARAMETER ScanOptions
 		Set to pick specific scanners to run. Multiple can be used when separated by a comma. (Supports tab completion)
+
+	.PARAMETER HashMode
+		Tells trawler which hashing algorithm to use for detection metadata - SHA1, SHA256 or MD5
+
+	.PARAMETER drivetarget
+		Tells trawler to target a separate drive rather than the local system.
 
 	.EXAMPLE
 		.\trawler.ps1 -outpath "C:\detections.csv"
@@ -185,93 +191,15 @@ $threshold_date = (Get-Date).adddays(-$daysago)
 # Event Log source used for creation/writing
 $evtx_source = "trawler"
 $evtx_logname = "Application"
-
-function Write-Message ($message){
-    <#
-    .SYNOPSIS
-        Write-Host wrapper to standardize messages to the console
-    #>
-    # TODO - Message 'types' to alter the symbol as appropriate (detection, info, warning, error, etc)
-    Write-Host "[+] $message"
-}
-
-function Test-OutputDirectoryPermissions(){
-    <#
-    .SYNOPSIS
-        Validates output directory exists and that current user has appropriate permissions to write files
-    #>
-    # if the output path doesn't exist, create it.
-    if (!(Test-Path $OutputLocation)) {
-        try{
-            New-Item $OutputLocation -Type Directory
-            return $true
-        } catch {
-            return $false
-        }
-    } else {
-        # Can we write to the specified dir?
-        $testfile = Join-Path $OutputLocation "trawler_writetest.trawler"
-        Try {
-            [io.file]::OpenWrite($testfile).close()
-            Remove-Item $testfile
-            return $true
-        }
-        Catch {
-            return $false
-        }
-    }
-}
-
-
-function New-TrawlerOutputItem() {
-	param (
-		[string]
-		$FileName,
-        [string]
-        $FileType
-	)
-	$timestamp = [System.DateTimeOffset]::Now.ToUnixTimeSeconds()
-	$output = [PSCustomObject]@{
-		Path = [System.IO.Path]::Combine($OutputLocation, "$($FileName)_$($timestamp).$($FileType.ToLower())")
-		CanWrite = $false
-	}
-    #TODO - Review as this check should be unnecessary as we already validate write capabilities before this
-	try {
-        [System.IO.File]::OpenWrite($output.Path).Close()
-        $output.CanWrite = $true
-    }
-    catch {
-        Write-Warning "Unable to write to provided output path: $($output.Path)"
-    }
-	$output
-}
-
+# Control Flow Variables
 $loadsnapshotdata = $PSBoundParameters.ContainsKey('snapshot')
 $drivechange = $PSBoundParameters.ContainsKey('drivetarget')
-$detection_list = New-Object -TypeName "System.Collections.ArrayList"
 
-
-# TODO - Non-Standard Service/Task running as/created by Local Administrator
-# TODO - Browser Extension Analysis
-# TODO - Temporary RID Hijacking
-# TODO - ntshrui.dll - https://www.mandiant.com/resources/blog/malware-persistence-windows-registry
-# TODO - Add file metadata for detected files (COM/DLL Hijacks, etc)
-# TODO - Add more suspicious paths for running processes
-# TODO - Iterate through HKEY_USERS when encountering HKEY_CURRENT_USER hive reference
-
-# TODO - Refactor this using condensed regex
+# Variables used for augmenting detections throughout the script
 $suspicious_process_paths = @(
-	".*\\users\\administrator\\.*",
-	".*\\users\\default\\.*",
-	".*\\users\\public\\.*",
-    ".*\\users\\guest\\.*",
-	".*\\windows\\debug\\.*",
-	".*\\windows\\fonts\\.*",
-	".*\\windows\\media\\.*",
-	".*\\windows\\repair\\.*",
-	".*\\windows\\servicing\\.*",
-	".*\\windows\\temp\\.*",
-	".*recycle.bin.*"
+	".*\\users\\(administrator|default|public|guest)\\.*",
+	".*\\windows\\(debug|fonts|media|repair|servicing|temp)\\.*",
+	".*recycle\.bin.*"
 )
 $suspicious_extensions = @('*.exe', '*.bat', '*.ps1', '*.hta', '*.vb', '*.vba', '*.vbs','*.rar', '*.zip', '*.gz', '*.7z', '*.dll', '*.scr', '*.cmd', '*.com', '*.ws', '*.wsf', '*.scf', '*.scr', '*.pif', '*.dmp','*.htm', '*.doc*','*.xls*','*.ppt*')
 $suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|regedit|invoke-iex|frombase64|tobase64|rundll32|http:|https:|system\.net\.webclient|downloadfile|downloadstring|bitstransfer|system\.net\.sockets|tcpclient|xmlhttp|AssemblyBuilderAccess|shellcode|rc4bytestream|disablerealtimemonitoring|wmiobject|wmimethod|remotewmi|wmic|gzipstream|::decompress|io\.compression|write-zip|encodedcommand|wscript\.shell|MSXML2\.XMLHTTP|System\.Reflection\.Emit\.AssemblyBuilderAccess|System\.Runtime\.InteropServices\.MarshalAsAttribute|memorystream|SuspendThread|EncodedCommand|MiniDump|lsass\.exe|Invoke-DllInjection|Invoke-Shellcode|Invoke-WmiCommand|Get-GPPPassword|Get-Keystrokes|Get-TimedScreenshot|Get-VaultCredential|Invoke-CredentialInjection|Invoke-Mimikatz|Invoke-NinjaCopy|Invoke-TokenManipulation|Out-Minidump|VolumeShadowCopyTools|Invoke-ReflectivePEInjection|Invoke-UserHunter|Invoke-ACLScanner|Invoke-DowngradeAccount|Get-ServiceUnquoted|Get-ServiceFilePermission|Get-ServicePermission|Invoke-ServiceAbuse|Install-ServiceBinary|Get-RegAutoLogon|Get-VulnAutoRun|Get-VulnSchTask|Get-UnattendedInstallFile|Get-ApplicationHost|Get-RegAlwaysInstallElevated|Get-Unconstrained|Add-RegBackdoor|Add-ScrnSaveBackdoor|Gupt-Backdoor|Invoke-ADSBackdoor|Enabled-DuplicateToken|Invoke-PsUaCme|Remove-Update|Check-VM|Get-LSASecret|Get-PassHashes|Show-TargetScreen|Port-Scan|Invoke-PoshRatHttp|Invoke-PowerShellTCP|Invoke-PowerShellWMI|Add-Exfiltration|Add-Persistence|Do-Exfiltration|Start-CaptureServer|Get-ChromeDump|Get-ClipboardContents|Get-FoxDump|Get-IndexedItem|Get-Screenshot|Invoke-Inveigh|Invoke-NetRipper|Invoke-EgressCheck|Invoke-PostExfil|Invoke-PSInject|Invoke-RunAs|MailRaider|New-HoneyHash|Set-MacAttribute|Invoke-DCSync|Invoke-PowerDump|Exploit-Jboss|Invoke-ThunderStruck|Invoke-VoiceTroll|Set-Wallpaper|Invoke-InveighRelay|Invoke-PsExec|Invoke-SSHCommand|Get-SecurityPackages|Install-SSP|Invoke-BackdoorLNK|PowerBreach|Get-SiteListPassword|Get-System|Invoke-BypassUAC|Invoke-Tater|Invoke-WScriptBypassUAC|PowerUp|PowerView|Get-RickAstley|Find-Fruit|HTTP-Login|Find-TrustedDocuments|Invoke-Paranoia|Invoke-WinEnum|Invoke-ARPScan|Invoke-PortScan|Invoke-ReverseDNSLookup|Invoke-SMBScanner|Invoke-Mimikittenz|Invoke-SessionGopher|Invoke-AllChecks|Start-Dnscat|Invoke-KrbRelayUp|Invoke-Rubeus|Invoke-Pandemonium|Invoke-Mongoose|Invoke-NETMongoose|Invoke-SecretsDump|Invoke-NTDS|Invoke-SharpRDP|Invoke-Kirby|Invoke-SessionHunter|Invoke-PrintNightmare|Invoke-Monkey365|Invoke-AzureHound|Kerberoast|Bloodhound|Sharphound|DisableRealtimeMonitoring|DisableBehaviorMonitoring|DisableScriptScanning|DisableBlockAtFirstSeen|ExclusionPath).*"
@@ -831,11 +759,80 @@ $suspicious_software = @(
     ".*zohoassist.*"
 )
 
+# Script level container for detections
+$detection_list = New-Object -TypeName "System.Collections.ArrayList"
+$detection_hash_array_snapshot = New-Object System.Collections.Generic.List[System.Object]
+$new_psdrives_list = @{}
+
+function Write-Message ($message){
+    <#
+    .SYNOPSIS
+        Write-Host wrapper to standardize messages to the console
+    #>
+    # TODO - Message 'types' to alter the symbol as appropriate (detection, info, warning, error, etc)
+    Write-Host "[+] $message"
+}
+
+function Test-OutputDirectoryPermissions(){
+    <#
+    .SYNOPSIS
+        Validates output directory exists and that current user has appropriate permissions to write files
+    #>
+    # if the output path doesn't exist, create it.
+    if (!(Test-Path $OutputLocation)) {
+        try{
+            New-Item $OutputLocation -Type Directory
+            return $true
+        } catch {
+            return $false
+        }
+    } else {
+        # Can we write to the specified dir?
+        $testfile = Join-Path $OutputLocation "trawler_writetest.trawler"
+        Try {
+            [io.file]::OpenWrite($testfile).close()
+            Remove-Item $testfile
+            return $true
+        }
+        Catch {
+            return $false
+        }
+    }
+}
+
+function New-TrawlerOutputItem() {
+    <#
+    .SYNOPSIS
+        Helper function to create output items and report on failures.
+    #>
+	param (
+		[string]
+		$FileName,
+        [string]
+        $FileType
+	)
+	$timestamp = [System.DateTimeOffset]::Now.ToUnixTimeSeconds()
+	$output = [PSCustomObject]@{
+		Path = [System.IO.Path]::Combine($OutputLocation, "$($FileName)_$($timestamp).$($FileType.ToLower())")
+		CanWrite = $false
+	}
+    #TODO - Review as this check should be unnecessary as we already validate write capabilities before this
+	try {
+        [System.IO.File]::OpenWrite($output.Path).Close()
+        $output.CanWrite = $true
+    }
+    catch {
+        Write-Warning "Unable to write to provided output path: $($output.Path)"
+    }
+	$output
+}
+
 function Check-ScheduledTasks {
     # Can possibly support drive-retargeting by parsing Task XML
     # Working on this with regex from Task Files
     # ^ Mostly working now
     # TODO - Add Argument Comparison Checks
+    # TODO - Non-Standard Service/Task running as/created by Local Administrator
     Write-Message "Checking Scheduled Tasks"
 
     $task_base_path = "$env_homedrive\Windows\System32\Tasks"
@@ -1197,6 +1194,8 @@ function Check-Users {
 
 function Check-Services {
     # Support Drive Retargeting
+    # TODO - Non-Standard Service/Task running as/created by Local Administrator
+
     Write-Message "Checking Windows Services"
     $default_service_exe_paths = @(
 		"`"$env_assumedhomedrive\Program Files (x86)\Google\Update\GoogleUpdate.exe`" /medsvc",
@@ -11887,7 +11886,7 @@ function Check-COM-Hijacks {
                             if ($verified_match -ne $true -and $clsid_found){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack - Mismatch on stored CLSID'
-                                    Risk = 'Low'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = [PSCustomObject]@{
@@ -11930,7 +11929,7 @@ function Check-COM-Hijacks {
                                 if ($_.Value -match $path){
                                     $detection = [PSCustomObject]@{
                                         Name = 'Potential COM Hijack - Suspicious Entry Path'
-                                        Risk = 'Low'
+                                        Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                         Meta = [PSCustomObject]@{
@@ -12014,7 +12013,7 @@ function Check-COM-Hijacks {
                             if ($verified_match -ne $true -and $clsid_found){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack - Mismatch on stored CLSID'
-                                    Risk = 'Low'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = [PSCustomObject]@{
@@ -12057,7 +12056,7 @@ function Check-COM-Hijacks {
                                 if ($_.Value -match $path){
                                     $detection = [PSCustomObject]@{
                                         Name = 'Potential COM Hijack - Suspicious Entry Path'
-                                        Risk = 'Low'
+                                        Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                         Meta = [PSCustomObject]@{
@@ -12138,7 +12137,7 @@ function Check-COM-Hijacks {
                             if ($verified_match -ne $true -and $clsid_found){
                                 $detection = [PSCustomObject]@{
                                     Name = 'Potential COM Hijack - Mismatch on stored CLSID'
-                                    Risk = 'Low'
+                                    Risk = 'Medium'
                                     Source = 'Registry'
                                     Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                     Meta = [PSCustomObject]@{
@@ -12181,7 +12180,7 @@ function Check-COM-Hijacks {
                                 if ($_.Value -match $path){
                                     $detection = [PSCustomObject]@{
                                         Name = 'Potential COM Hijack - Suspicious Entry Path'
-                                        Risk = 'Low'
+                                        Risk = 'Medium'
                                         Source = 'Registry'
                                         Technique = "T1546.015: Event Triggered Execution: Component Object Model Hijacking"
                                         Meta = [PSCustomObject]@{
@@ -13588,8 +13587,18 @@ function Check-Process-Modules {
         "wlanhlp.dll",
         "wlbsctrl.dll",
         "wow64log.dll",
-        "WptsExtensions.dll"
+        "WptsExtensions.dll",
+        "oci.dll",
+        "TPPCOIPW32.dll",
+        "tpgenlic.dll",
+        "thinmon.dll",
+        "fxsst.dll",
+        "msTracer.dll",
         "fveapi.dll"
+    )
+    $allowlist = @(
+        ".*\\Windows\\(SYSTEM32|SysWOW64)\\(wbemcomn|rpcss|FVEAPI|wlanhlp|windowsperformancerecordercontrol)\.dll",
+        ".*\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
     )
     foreach ($process in $processes){
         $modules = Get-Process -id $process.ProcessId -ErrorAction SilentlyContinue  | Select-Object -ExpandProperty modules -ErrorAction SilentlyContinue | Select-Object Company,FileName,ModuleName
@@ -13597,8 +13606,18 @@ function Check-Process-Modules {
             foreach ($module in $modules){
                 if ($module.ModuleName -in $suspicious_unsigned_dll_names) {
                     $signature = Get-AuthenticodeSignature $module.FileName
+                    $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select-Object *
+                    $match = $false
+                    foreach ($alloweditem in $allowlist){
+                        if ($module.FileName -match $alloweditem){
+                            $match = $true
+                        }
+                    }
+                    if ($match){
+                        continue
+                    }
+
                     if ($signature.Status -ne 'Valid'){
-                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select-Object *
                         $detection = [PSCustomObject]@{
                             Name = 'Suspicious Unsigned DLL with commonly-masqueraded name loaded into running process.'
                             Risk = 'Very High'
@@ -13616,7 +13635,9 @@ function Check-Process-Modules {
                         }
                         Write-Detection $detection
                     } else {
-                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select-Object *
+                        if ($signature.SignerCertificate.SubjectName.Name -match "(.*Microsoft Windows.*|.*Microsoft Corporation.*|.*Microsoft Windows Publisher.*)"){
+                            continue
+                        }
                         $detection = [PSCustomObject]@{
                             Name = 'Suspicious DLL with commonly-masqueraded name loaded into running process.'
                             Risk = 'High'
@@ -13632,8 +13653,7 @@ function Check-Process-Modules {
                                 Hash = Get-File-Hash $module.FileName
                             }
                         }
-                        # TODO - This is too noisy to use as-is - these DLLs get loaded into quite a few processes.
-                        # Write-Detection $detection
+                        Write-Detection $detection
                     }
                 }
             }
@@ -16982,6 +17002,10 @@ function Check-ServiceControlManagerSD {
 }
 
 function Check-InstalledSoftware {
+    <#
+    .SYNOPSIS
+        Retrieves all installed software across HKLM/HKCU by checking Uninstall entries and compares to a list of 'known-suspicious' terms that represent many types of software such as RMM, File/Transfer, etc.
+    #>
     Write-Message "Checking Installed Software"
     $installedApps = New-Object System.Collections.Generic.List[System.Object]
     Get-ChildItem "Registry::$regtarget_hklm`Software\Microsoft\Windows\CurrentVersion\Uninstall" | ForEach-Object {$installedApps.Add($_)}
@@ -17040,8 +17064,8 @@ function Check-InstalledSoftware {
             }
         }
     }
-
 }
+
 
 function Get-File-Hash($file){
     <#
@@ -17117,6 +17141,10 @@ function Get-File-Hash($file){
 }
 
 function Format-MetadataToString($detectionmeta) {
+    <#
+    .SYNOPSIS
+        Receives an object representing the metadata of a specific detection and formats this to a more human-readable string for u se in CSV/Console output
+    #>
 	$output = ""
     $propertyCount = ($detectionmeta|Get-Member -Type NoteProperty).count
     $index = 1
@@ -17152,6 +17180,10 @@ function Write-Detection($det) {
             $det.$($field) = "Error"
             # We will not return for now as there still may be useful information but this is a critical issue
         }
+    }
+
+    if (-not (@("Very Low", "Low", "Medium", "High", "Very High") -contains $det.Risk)){
+        Write-Reportable-Issue "Detection has invalid Risk Value: $($det.Risk)"
     }
 
     # Before anything else, we find all datetime objects within the Meta field of a detection and generate a corresponding UTC timestamp so consumers can use either-or
@@ -17234,20 +17266,27 @@ function Prepare-DetectionForHash ($detection){
     return $detection
 }
 
-$detection_hash_array_snapshot = New-Object System.Collections.Generic.List[System.Object]
 function Load-DetectionSnapshot {
-    Write-Message "Reading Snapshot File"
+    <#
+    .SYNOPSIS
+        Checks if provided snapshot file is valid and reads the content in order to prepare a list of hashes that represent 'allowed' detections.
+    #>
+    Write-Message "Reading Snapshot File: $snapshot"
     if (-not (Test-Path -Path $snapshot)){
         Write-Message "Error - Could not find specified snapshot file: $snapshot"
         return
     }
 
+    $snapshot_detection_count = 0
     $json = Get-Content $snapshot | Out-String | ConvertFrom-Json
     foreach ($det in $json){
         $detection_prepared = Prepare-DetectionForHash($det)
         $detection_hash = Get-HashOfString $($detection_prepared | ConvertTo-Json)
         $detection_hash_array_snapshot.Add($detection_hash) | Out-Null
+        $snapshot_detection_count += 1
     }
+    Write-Message "Loaded $snapshot_detection_count Allowed Detections from Snapshot: $snapshot"
+
 }
 
 function Get-HashOfString($string){
@@ -17277,7 +17316,11 @@ function Format-DateTime($datetime, $utc_convert) {
 }
 
 function Detection-Metrics {
-	Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor White
+    <#
+    .SYNOPSIS
+        Presents metrics surrounding all detections to the end-user for a summary view.
+    #>
+    Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor White
 	Write-Message "Total Detections: $($detection_list.Count)"
     Write-Message "Total Suppressed Detections: $suppressed_detections"
 	foreach ($str in ($detection_list | Group-Object Risk | Select-Object Name, Count | Out-String).Split([System.Environment]::NewLine)) {
@@ -17288,6 +17331,10 @@ function Detection-Metrics {
 }
 
 function Drive-Change {
+    <#
+    .SYNOPSIS
+        An annoyingly complicated function designed to help operators target mounted drive images rather than the local system.
+    #>
     # HKLM associated hives detected on the target drive will be loaded as 'HKLM\ANALYSIS_$NAME' such as 'HKLM\ANALYSIS_SOFTWARE' for the SOFTWARE hive
     # User hives (NTUSER.DAT, USRCLASS.DAT) will be loaded as 'HKU\ANALYSIS_$NAME' and 'HKU\ANALYSIS_$NAME_Classes' respectively - such as 'HKU\ANALYSIS_JOE'/'HKU\ANALYSIS_JOE_Classes for each detected profile on the target drive.
     Write-Message "Setting up Registry Variables"
@@ -17391,7 +17438,6 @@ function Drive-Change {
 
 }
 
-$new_psdrives_list = @{}
 function Load-Hive($hive_name, $hive_path, $hive_root) {
     Write-Message "Loading Registry Hive File: $hive_path at location: $hive_root\$hive_name"
     $null = New-PSDrive -PSProvider Registry -Name $hive_name -Root $hive_root
@@ -17433,6 +17479,10 @@ function Create-EventSource {
 }
 
 function Write-DetectionToEVTX($detection) {
+    <#
+    .SYNOPSIS
+        Writes inbound detections to the associated Event Log and Source as a JSON blob
+    #>
     # TODO - Give each detection their own EID
     # TODO - Evaluate breaking up k=v of each detection similar to how PersistenceSniper does this as below:
     # snippet borrowed from PS https://github.com/last-byte/PersistenceSniper/pull/18/files#diff-594bab796584c8283d08be6a7120923a730f027fe8e213952a932de851f3eaf1R2036
@@ -17449,7 +17499,10 @@ function Write-DetectionToEVTX($detection) {
 }
 
 function Emit-Detections {
-
+    <#
+    .SYNOPSIS
+        Called at the end of the execution flow to emit all detections in the various specified formats.
+    #>
     # Emit detections in JSON format
     $detection_list | ConvertTo-Json | Out-File $script:JSONDetectionsPath.Path
 
@@ -17467,6 +17520,10 @@ function Emit-Detections {
 }
 
 function Clean-Up {
+    <#
+    .SYNOPSIS
+        If we are targeting a non-local drive, clean up all mounted hives
+    #>
     #Start-Sleep -seconds 5
     if ($drivechange){
         foreach ($hive in $new_psdrives_list.GetEnumerator()){
@@ -17622,7 +17679,6 @@ function Main {
     Clean-Up
     Detection-Metrics
 }
-
 
 if ($MyInvocation.InvocationName -match ".+.ps1")
 {
