@@ -17206,14 +17206,32 @@ function Check-DetectionInSnapshot($detection){
     if (-not $snapshot){
         return $false
     }
+
     # Return the hash representation of the current detection
-    $detection_hash = Get-HashOfString $($detection | ConvertTo-Json)
+    $prepared_detection = Prepare-DetectionForHash $detection
+    $jsondetection = $prepared_detection | ConvertTo-Json
+    $detection_hash = Get-HashOfString $jsondetection
+    $detection_hash # for some reason, this only works when this is here - I have no idea why right now.
     # Check if this already exists in our hash array of the loaded detection snapshot
-    if ($detection_hash_array_snapshot.contains($detection_hash)) {
+    if ($detection_hash_array_snapshot -contains $detection_hash) {
         return $true
     } else {
         return $false
     }
+}
+
+function Prepare-DetectionForHash ($detection){
+    <#
+    .SYNOPSIS
+        Receives a detection and removes any allow-listed fields from specific detections to improve the fidelity of allow-listing.
+    #>
+    if ($detection.Name -eq "Established Connection on Suspicious Port"){
+        $detection.Meta.PSObject.Properties.Remove('LocalAddress')
+        $detection.Meta.PSObject.Properties.Remove('LocalPort')
+        $detection.Meta.PSObject.Properties.Remove('PID')
+    }
+
+    return $detection
 }
 
 $detection_hash_array_snapshot = New-Object System.Collections.Generic.List[System.Object]
@@ -17226,7 +17244,8 @@ function Load-DetectionSnapshot {
 
     $json = Get-Content $snapshot | Out-String | ConvertFrom-Json
     foreach ($det in $json){
-        $detection_hash = Get-HashOfString $($det | ConvertTo-Json)
+        $detection_prepared = Prepare-DetectionForHash($det)
+        $detection_hash = Get-HashOfString $($detection_prepared | ConvertTo-Json)
         $detection_hash_array_snapshot.Add($detection_hash) | Out-Null
     }
 }
