@@ -27,6 +27,9 @@
 	.PARAMETER HashMode
 		Tells trawler which hashing algorithm to use for detection metadata - SHA1, SHA256 or MD5
 
+	.PARAMETER drivetarget
+		Tells trawler to target a separate drive rather than the local system.
+
 	.EXAMPLE
 		.\trawler.ps1 -outpath "C:\detections.csv"
 
@@ -13584,8 +13587,18 @@ function Check-Process-Modules {
         "wlanhlp.dll",
         "wlbsctrl.dll",
         "wow64log.dll",
-        "WptsExtensions.dll"
+        "WptsExtensions.dll",
+        "oci.dll",
+        "TPPCOIPW32.dll",
+        "tpgenlic.dll",
+        "thinmon.dll",
+        "fxsst.dll",
+        "msTracer.dll",
         "fveapi.dll"
+    )
+    $allowlist = @(
+        ".*\\Windows\\(SYSTEM32|SysWOW64)\\(wbemcomn|rpcss|FVEAPI|wlanhlp|windowsperformancerecordercontrol)\.dll",
+        ".*\\Windows\\System32\\Speech_OneCore\\Common\\sapi_onecore\.dll"
     )
     foreach ($process in $processes){
         $modules = Get-Process -id $process.ProcessId -ErrorAction SilentlyContinue  | Select-Object -ExpandProperty modules -ErrorAction SilentlyContinue | Select-Object Company,FileName,ModuleName
@@ -13593,8 +13606,18 @@ function Check-Process-Modules {
             foreach ($module in $modules){
                 if ($module.ModuleName -in $suspicious_unsigned_dll_names) {
                     $signature = Get-AuthenticodeSignature $module.FileName
+                    $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select-Object *
+                    $match = $false
+                    foreach ($alloweditem in $allowlist){
+                        if ($module.FileName -match $alloweditem){
+                            $match = $true
+                        }
+                    }
+                    if ($match){
+                        continue
+                    }
+
                     if ($signature.Status -ne 'Valid'){
-                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select-Object *
                         $detection = [PSCustomObject]@{
                             Name = 'Suspicious Unsigned DLL with commonly-masqueraded name loaded into running process.'
                             Risk = 'Very High'
@@ -13612,7 +13635,9 @@ function Check-Process-Modules {
                         }
                         Write-Detection $detection
                     } else {
-                        $item = Get-ChildItem -Path $module.FileName -File -ErrorAction SilentlyContinue | Select-Object *
+                        if ($signature.SignerCertificate.SubjectName.Name -match "(.*Microsoft Windows.*|.*Microsoft Corporation.*|.*Microsoft Windows Publisher.*)"){
+                            continue
+                        }
                         $detection = [PSCustomObject]@{
                             Name = 'Suspicious DLL with commonly-masqueraded name loaded into running process.'
                             Risk = 'High'
@@ -13628,8 +13653,7 @@ function Check-Process-Modules {
                                 Hash = Get-File-Hash $module.FileName
                             }
                         }
-                        # TODO - This is too noisy to use as-is - these DLLs get loaded into quite a few processes.
-                        # Write-Detection $detection
+                        Write-Detection $detection
                     }
                 }
             }
@@ -17040,8 +17064,8 @@ function Check-InstalledSoftware {
             }
         }
     }
-
 }
+
 
 function Get-File-Hash($file){
     <#
@@ -17158,6 +17182,10 @@ function Write-Detection($det) {
         }
     }
 
+    if (-not (@("Very Low", "Low", "Medium", "High", "Very High") -contains $det.Risk)){
+        Write-Reportable-Issue "Detection has invalid Risk Value: $($det.Risk)"
+    }
+
     # Before anything else, we find all datetime objects within the Meta field of a detection and generate a corresponding UTC timestamp so consumers can use either-or
     if ($det.PSobject.Properties.Name -contains "Meta"){
         $det.Meta.PSObject.Properties | ForEach-Object {
@@ -17243,18 +17271,22 @@ function Load-DetectionSnapshot {
     .SYNOPSIS
         Checks if provided snapshot file is valid and reads the content in order to prepare a list of hashes that represent 'allowed' detections.
     #>
-    Write-Message "Reading Snapshot File"
+    Write-Message "Reading Snapshot File: $snapshot"
     if (-not (Test-Path -Path $snapshot)){
         Write-Message "Error - Could not find specified snapshot file: $snapshot"
         return
     }
 
+    $snapshot_detection_count = 0
     $json = Get-Content $snapshot | Out-String | ConvertFrom-Json
     foreach ($det in $json){
         $detection_prepared = Prepare-DetectionForHash($det)
         $detection_hash = Get-HashOfString $($detection_prepared | ConvertTo-Json)
         $detection_hash_array_snapshot.Add($detection_hash) | Out-Null
+        $snapshot_detection_count += 1
     }
+    Write-Message "Loaded $snapshot_detection_count Allowed Detections from Snapshot: $snapshot"
+
 }
 
 function Get-HashOfString($string){
