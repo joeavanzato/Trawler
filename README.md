@@ -41,10 +41,10 @@ Additionally, if you identify obvious false positives, please let me know by ope
 -quiet : Suppress Detection output to console
 -snapshot : Path to a previous trawler JSON output to use as an allow-list.
 -outpath : Define a custom file-path for saving detection output to (defaults to "$PSScriptRoot\detections.csv")
--drivetarget : Define the variable for a mounted target drive (eg. .\trawler.ps1 -targetdrive "D:") - skipping this argument leads to an 'assumed homedrive' variable of C: for analysis purposes
+-drivetarget : Define the variable for a mounted target drive (eg. .\trawler.ps1 -targetdrive "D:") - (defaults to local system)
 -daysago : Define how many 'days back' we want to take into consideration for time-based detections (defaults to 45)
--hashmode : Define which hashing algorithm we want to use for supported detections - supports sha1, md5 or sha256
--evtx : Enable creation of Event Log Source and Writing of Detections to Application event log under Source=trawler with EID=9001
+-hashmode : Define which hashing algorithm we want to use for supported detections - supports sha1, md5 or sha256 (defaults to sha1)
+-evtx : Enable creation of Event Log Source and Writing of Detections to Application event log under Source=trawler with EID=9001 (default is disabled)
 ```
 
 ## What separates this from PersistenceSniper?
@@ -116,6 +116,7 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * BITS Jobs Discovery
 * Windows Accessibility Feature Modifications
 * PowerShell Profile Existence
+* Office TrustedDocuments
 * Office Addins from Trusted Locations
 * SilentProcessExit Monitoring
 * Winlogon Helper DLL Hijacking
