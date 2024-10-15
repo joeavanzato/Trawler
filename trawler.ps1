@@ -14207,12 +14207,9 @@ function Check-OfficeTrustedDocuments {
         Attempt to detect potentially-suspicious documents interacted with by the user.
     #>
     # When a user enables macros or creates a macro-enabled document, a reference to the document is stored at HKEY_CURRENT_USER\Software\Microsoft\Office\[office_version]\(Word|Excel|PowerPoint)\Security\Trusted Documents\TrustRecords
-    # We can iterate this key to attempt and find any initial access related malware
-
     $basepath = "Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\*\*\Security\Trusted Documents\TrustRecords"
     $paths = Get-Item $basepath
     $reference = "https://www.bleepingcomputer.com/news/security/windows-registry-helps-find-malicious-docs-behind-infections/"
-    # Last 4 bytes of "Data" will be 01 00 00 00 if we 'Enable Editing', FF FF FF 7F if we 'Enable Content'
     foreach ($path in $paths){
         $path = "Registry::$path"
         $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
@@ -14222,6 +14219,7 @@ function Check-OfficeTrustedDocuments {
             $hexbin.Value = $val
             $hexString = $hexbin.ToString()
             $macroEnabled = $false
+            # Last 4 bytes of "Data" will be 01 00 00 00 if we 'Enable Editing' (any record in here by default usually) or FF FF FF 7F if we 'Enable Content' - usually seen when downloading untrusted documents and explicitly clicking "Enable Content"
             if ($hexString.EndsWith("FFFFFF7F")){
                 $macroEnabled = $true
             }
