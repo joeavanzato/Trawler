@@ -56,137 +56,137 @@
 [CmdletBinding()]
 param
 (
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = 'The directory where Trawler output will be saved, defaults to the location where the script ran from')]
-	[string]
-	$OutputLocation = $PSScriptRoot,
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = 'Which hashing algorithm to use. Defaults to SHA1')]
-	[ValidateSet("SHA1", "SHA256", "MD5")]
-	$HashMode = "SHA1",
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = 'Suppress Detection Output to Console')]
-	[switch]
-	$Quiet,
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = 'Enable EventLog output - trawler will write detections to the Application EventLog under Source=trawler with EventID=9001 - events will be written in JSON format.  Must be running as administrator to create the Event Log source initially.')]
-	[switch]
-	$evtx,
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = 'The fully-qualified file-path of the snapshot to use for comparison - this should be a JSON file from a previous trawler execution')]
-	[string]
-	$snapshot,
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = 'The drive to target for analysis - for example, if mounting an imaged system as a second drive on an analysis device, specify via -drivetarget "D:" (PARTIALLY IMPLEMENTED)')]
-	[string]
-	$drivetarget,
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = 'How many days back to search when doing time-based detections')]
-	[int]
-	$daysago = 45,
-	[Parameter(
-		Mandatory = $false,
-		HelpMessage = "Allows for performing certain checks and ignoring others. Leave blank to execute all Persistence checks (or use 'All')")]
-	[ValidateSet(
-		"ActiveSetup",
-		"All",
-		"AMSIProviders",
-		"AppCertDLLs",
-		"AppInitDLLs",
-		"ApplicationShims",
-		"AppPaths",
-		"AssociationHijack",
-		"AutoDialDLL",
-		"BIDDll",
-		"BITS",
-        "BootVerificationProgram",
-		"COMHijacks",
-		"CommandAutoRunProcessors",
-		"Connections",
-		"ContextMenu",
-		"DebuggerHijacks",
-		"DirectoryServicesRestoreMode",
-        "DisableLowIL",
-        "DiskCleanupHandlers",
-		"DNSServerLevelPluginDLL",
-		"eRegChecks",
-		"ErrorHandlerCMD",
-		"ExplorerHelperUtilities",
-		"FolderOpen",
-		"GPOExtensions",
-		"GPOScripts",
-		"HTMLHelpDLL",
-		"IFEO",
-        "InstalledSoftware",
-		"InternetSettingsLUIDll",
-		"KnownManagedDebuggers",
-		"LNK",
-		"LSA",
-		"MicrosoftTelemetryCommands",
-		"ModifiedWindowsAccessibilityFeature",
-		"MSDTCDll",
-		"Narrator",
-		"NaturalLanguageDevelopmentDLLs",
-		"NetSHDLLs",
-		"NotepadPPPlugins",
-		"OfficeAI",
-		"OfficeGlobalDotName",
-		"Officetest",
-        "OfficeTrustedDocuments",
-		"OfficeTrustedLocations",
-		"OutlookStartup",
-		"PATHHijacks",
-		"PeerDistExtensionDll",
-		"PolicyManager",
-		"PowerShellProfiles",
-		"PrintMonitorDLLs",
-		"PrintProcessorDLLs",
-		"Processes",
-		"ProcessModules",
-		"RATS",
-		"RDPShadowConsent",
-		"RDPStartupPrograms",
-		"RegistryChecks",
-		"RemoteUACSetting",
-		"ScheduledTasks",
-		"SCMDACL",
-		"ScreenSaverEXE",
-		"SEMgrWallet",
-        "ServiceControlManagerSD",
-		"ServiceHijacks",
-		"Services",
-		"SethcHijack",
-		"SilentProcessExitMonitoring",
-		"Startups",
-		"SuspiciousCertificates",
-		"SuspiciousFileLocation",
-		"TerminalProfiles",
-		"TerminalServicesDLL",
-		"TerminalServicesInitialProgram",
-		"TimeProviderDLLs",
-		"TrustProviderDLL",
-		"UninstallStrings",
-		"UserInitMPRScripts",
-		"Users",
-		"UtilmanHijack",
-		"WellKnownCOM",
-		"WERRuntimeExceptionHandlers",
-		"WindowsLoadKey",
-		"WindowsUnsignedFiles",
-		"WindowsUpdateTestDlls",
-		"WinlogonHelperDLLs",
-		"WMIConsumers",
-		"Wow64LayerAbuse",
-        "WSL"
-	)]
-	$ScanOptions = "All"
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'The directory where Trawler output will be saved, defaults to the location where the script ran from')]
+  [string]
+  $OutputLocation = $PSScriptRoot,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Which hashing algorithm to use. Defaults to SHA1')]
+  [ValidateSet("SHA1", "SHA256", "MD5")]
+  $HashMode = "SHA1",
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Suppress Detection Output to Console')]
+  [switch]
+  $Quiet,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Enable EventLog output - trawler will write detections to the Application EventLog under Source=trawler with EventID=9001 - events will be written in JSON format.  Must be running as administrator to create the Event Log source initially.')]
+  [switch]
+  $evtx,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'The fully-qualified file-path of the snapshot to use for comparison - this should be a JSON file from a previous trawler execution')]
+  [string]
+  $snapshot,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'The drive to target for analysis - for example, if mounting an imaged system as a second drive on an analysis device, specify via -drivetarget "D:" (PARTIALLY IMPLEMENTED)')]
+  [string]
+  $drivetarget,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'How many days back to search when doing time-based detections')]
+  [int]
+  $daysago = 45,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = "Allows for performing certain checks and ignoring others. Leave blank to execute all Persistence checks (or use 'All')")]
+  [ValidateSet(
+    "ActiveSetup",
+    "All",
+    "AMSIProviders",
+    "AppCertDLLs",
+    "AppInitDLLs",
+    "ApplicationShims",
+    "AppPaths",
+    "AssociationHijack",
+    "AutoDialDLL",
+    "BIDDll",
+    "BITS",
+    "BootVerificationProgram",
+    "COMHijacks",
+    "CommandAutoRunProcessors",
+    "Connections",
+    "ContextMenu",
+    "DebuggerHijacks",
+    "DirectoryServicesRestoreMode",
+    "DisableLowIL",
+    "DiskCleanupHandlers",
+    "DNSServerLevelPluginDLL",
+    "eRegChecks",
+    "ErrorHandlerCMD",
+    "ExplorerHelperUtilities",
+    "FolderOpen",
+    "GPOExtensions",
+    "GPOScripts",
+    "HTMLHelpDLL",
+    "IFEO",
+    "InstalledSoftware",
+    "InternetSettingsLUIDll",
+    "KnownManagedDebuggers",
+    "LNK",
+    "LSA",
+    "MicrosoftTelemetryCommands",
+    "ModifiedWindowsAccessibilityFeature",
+    "MSDTCDll",
+    "Narrator",
+    "NaturalLanguageDevelopmentDLLs",
+    "NetSHDLLs",
+    "NotepadPPPlugins",
+    "OfficeAI",
+    "OfficeGlobalDotName",
+    "Officetest",
+    "OfficeTrustedDocuments",
+    "OfficeTrustedLocations",
+    "OutlookStartup",
+    "PATHHijacks",
+    "PeerDistExtensionDll",
+    "PolicyManager",
+    "PowerShellProfiles",
+    "PrintMonitorDLLs",
+    "PrintProcessorDLLs",
+    "Processes",
+    "ProcessModules",
+    "RATS",
+    "RDPShadowConsent",
+    "RDPStartupPrograms",
+    "RegistryChecks",
+    "RemoteUACSetting",
+    "ScheduledTasks",
+    "SCMDACL",
+    "ScreenSaverEXE",
+    "SEMgrWallet",
+    "ServiceControlManagerSD",
+    "ServiceHijacks",
+    "Services",
+    "SethcHijack",
+    "SilentProcessExitMonitoring",
+    "Startups",
+    "SuspiciousCertificates",
+    "SuspiciousFileLocation",
+    "TerminalProfiles",
+    "TerminalServicesDLL",
+    "TerminalServicesInitialProgram",
+    "TimeProviderDLLs",
+    "TrustProviderDLL",
+    "UninstallStrings",
+    "UserInitMPRScripts",
+    "Users",
+    "UtilmanHijack",
+    "WellKnownCOM",
+    "WERRuntimeExceptionHandlers",
+    "WindowsLoadKey",
+    "WindowsUnsignedFiles",
+    "WindowsUpdateTestDlls",
+    "WinlogonHelperDLLs",
+    "WMIConsumers",
+    "Wow64LayerAbuse",
+    "WSL"
+  )]
+  $ScanOptions = "All"
 )
 
 # Used for tracking snapshot effectiveness
@@ -203,572 +203,573 @@ $drivechange = $PSBoundParameters.ContainsKey('drivetarget')
 
 # Variables used for augmenting detections throughout the script
 $suspicious_process_paths = @(
-	".*\\users\\(administrator|default|public|guest)\\.*",
-	".*\\windows\\(debug|fonts|media|repair|servicing|temp)\\.*",
-	".*recycle\.bin.*"
+  ".*\\users\\(administrator|default|public|guest)\\.*",
+  ".*\\windows\\(debug|fonts|media|repair|servicing|temp)\\.*",
+  ".*recycle\.bin.*"
 )
-$suspicious_extensions = @('*.exe', '*.bat', '*.ps1', '*.hta', '*.vb', '*.vba', '*.vbs','*.rar', '*.zip', '*.gz', '*.7z', '*.dll', '*.scr', '*.cmd', '*.com', '*.ws', '*.wsf', '*.scf', '*.scr', '*.pif', '*.dmp','*.htm', '*.doc*','*.xls*','*.ppt*')
+$suspicious_extensions = @('*.exe', '*.bat', '*.ps1', '*.hta', '*.vb', '*.vba', '*.vbs', '*.rar', '*.zip', '*.gz', '*.7z', '*.dll', '*.scr', '*.cmd', '*.com', '*.ws', '*.wsf', '*.scf', '*.scr', '*.pif', '*.dmp', '*.htm', '*.doc*', '*.xls*', '*.ppt*')
 $suspicious_terms = ".*(\[System\.Reflection\.Assembly\]|regedit|invoke-iex|frombase64|tobase64|rundll32|http:|https:|system\.net\.webclient|downloadfile|downloadstring|bitstransfer|system\.net\.sockets|tcpclient|xmlhttp|AssemblyBuilderAccess|shellcode|rc4bytestream|disablerealtimemonitoring|wmiobject|wmimethod|remotewmi|wmic|gzipstream|::decompress|io\.compression|write-zip|encodedcommand|wscript\.shell|MSXML2\.XMLHTTP|System\.Reflection\.Emit\.AssemblyBuilderAccess|System\.Runtime\.InteropServices\.MarshalAsAttribute|memorystream|SuspendThread|EncodedCommand|MiniDump|lsass\.exe|Invoke-DllInjection|Invoke-Shellcode|Invoke-WmiCommand|Get-GPPPassword|Get-Keystrokes|Get-TimedScreenshot|Get-VaultCredential|Invoke-CredentialInjection|Invoke-Mimikatz|Invoke-NinjaCopy|Invoke-TokenManipulation|Out-Minidump|VolumeShadowCopyTools|Invoke-ReflectivePEInjection|Invoke-UserHunter|Invoke-ACLScanner|Invoke-DowngradeAccount|Get-ServiceUnquoted|Get-ServiceFilePermission|Get-ServicePermission|Invoke-ServiceAbuse|Install-ServiceBinary|Get-RegAutoLogon|Get-VulnAutoRun|Get-VulnSchTask|Get-UnattendedInstallFile|Get-ApplicationHost|Get-RegAlwaysInstallElevated|Get-Unconstrained|Add-RegBackdoor|Add-ScrnSaveBackdoor|Gupt-Backdoor|Invoke-ADSBackdoor|Enabled-DuplicateToken|Invoke-PsUaCme|Remove-Update|Check-VM|Get-LSASecret|Get-PassHashes|Show-TargetScreen|Port-Scan|Invoke-PoshRatHttp|Invoke-PowerShellTCP|Invoke-PowerShellWMI|Add-Exfiltration|Add-Persistence|Do-Exfiltration|Start-CaptureServer|Get-ChromeDump|Get-ClipboardContents|Get-FoxDump|Get-IndexedItem|Get-Screenshot|Invoke-Inveigh|Invoke-NetRipper|Invoke-EgressCheck|Invoke-PostExfil|Invoke-PSInject|Invoke-RunAs|MailRaider|New-HoneyHash|Set-MacAttribute|Invoke-DCSync|Invoke-PowerDump|Exploit-Jboss|Invoke-ThunderStruck|Invoke-VoiceTroll|Set-Wallpaper|Invoke-InveighRelay|Invoke-PsExec|Invoke-SSHCommand|Get-SecurityPackages|Install-SSP|Invoke-BackdoorLNK|PowerBreach|Get-SiteListPassword|Get-System|Invoke-BypassUAC|Invoke-Tater|Invoke-WScriptBypassUAC|PowerUp|PowerView|Get-RickAstley|Find-Fruit|HTTP-Login|Find-TrustedDocuments|Invoke-Paranoia|Invoke-WinEnum|Invoke-ARPScan|Invoke-PortScan|Invoke-ReverseDNSLookup|Invoke-SMBScanner|Invoke-Mimikittenz|Invoke-SessionGopher|Invoke-AllChecks|Start-Dnscat|Invoke-KrbRelayUp|Invoke-Rubeus|Invoke-Pandemonium|Invoke-Mongoose|Invoke-NETMongoose|Invoke-SecretsDump|Invoke-NTDS|Invoke-SharpRDP|Invoke-Kirby|Invoke-SessionHunter|Invoke-PrintNightmare|Invoke-Monkey365|Invoke-AzureHound|Kerberoast|Bloodhound|Sharphound|DisableRealtimeMonitoring|DisableBehaviorMonitoring|DisableScriptScanning|DisableBlockAtFirstSeen|ExclusionPath).*"
 $ipv4_pattern = '.*((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).*'
 $ipv6_pattern = '.*:(?::[a-f\d]{1,4}){0,5}(?:(?::[a-f\d]{1,4}){1,2}|:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})))|[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}:(?:[a-f\d]{1,4}|:)|(?::(?:[a-f\d]{1,4})?|(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))))|:(?:(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|[a-f\d]{1,4}(?::[a-f\d]{1,4})?|))|(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|:[a-f\d]{1,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){0,2})|:))|(?:(?::[a-f\d]{1,4}){0,2}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,3}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:))|(?:(?::[a-f\d]{1,4}){0,4}(?::(?:(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))|(?::[a-f\d]{1,4}){1,2})|:)).*'
-$office_addin_extensions = ".wll",".xll",".ppam",".ppa",".dll",".vsto",".vba", ".xlam", ".com", ".xla"
+$office_addin_extensions = ".wll", ".xll", ".ppam", ".ppa", ".dll", ".vsto", ".vba", ".xlam", ".com", ".xla"
 $rat_terms = @(
-    #Remote Access Tool Indicators
-    # Any Process Name, Scheduled Task or Service containing these keywords will be flagged.
-    "aeroadmin"
-    "action1"
-    "ammyadmin"
-    "aa_v"
-    "anydesk"
-    "anyscreen"
-    "anyviewer"
-    "atera"
-    "aweray_remote"
-    "awrem32"
-    "awhost32"
-    "beyondtrust"
-    "bomgar"
-    "connectwise"
-    "cservice"
-    "dameware"
-    "desktopnow"
-    "distant-desktop"
-    "dwservice"
-    "dwagent"
-    "dwagsvc"
-    "dwrcs"
-    "famitrfc"
-    "g2comm"
-    "g2host"
-    "g2fileh"
-    "g2mainh"
-    "g2printh"
-    "g2svc"
-    "g2tray"
-    "gopcsrv"
-    "getscreen"
-    "iperius"
-    "kaseya"
-    "litemanager"
-    "logmein"
-    "lmiignition"
-    "lmiguardiansvc"
-    "meshagent"
-    "mstsc"
-    "ninja1"
-    "ninjaone"
-    "PCMonitorManager"
-    "pcmonitorsrv"
-    "pulseway"
-    "quickassist"
-    "radmin"
-    "rcclient"
-    "realvnc"
-    "remotepc"
-    "remotetopc"
-    "remote utilities"
-    "RepairTech"
-    "ROMServer"
-    "ROMFUSClient"
-    "rutserv"
-    "screenconnect"
-    "screenmeet"
-    "showmypc"
-    "smpcsetup"
-    "strwinclt"
-    "supremo"
-    "sightcall"
-    "splashtop"
-    "surfly"
-    "syncro"
-    "tacticalrmm"
-    "teamviewer"
-    "tightvnc"
-    "ultraviewer"
-    "vnc"
-    "winvnc"
-    "vncviewer"
-    "winvncsc"
-    "winwvc"
-    "xmreality"
-    "ultravnc"
-    "Zaservice"
-    "Zohours"
-    "ZohoMeeting"
-    "zoho"
-    "rpcgrab"
-    "rpcsetup"
-    "action1_agent"
-    "aeroadmin"
-    "alitask"
-    "alpemix"
-    "ammyy_admin"
-    "anydesk"
-    "apc_host"
-    "ateraagent"
-    "syncrosetup"
-    "auvik.agent"
-    "auvik.engine"
-    "beamyourscreen"
-    "beamyourscreen-host"
-    "basupsrvc"
-    "basupsrvcupdate"
-    "basuptshelper"
-    "bomgar-scc"
-    "CagService"
-    "ctiserv"
-    "remote_host"
-    "cloudflared"
-    "connectwisechat-customer"
-    "connectwisecontrol"
-    "itsmagent"
-    "rviewer"
-    "crossloopservice"
-    "pcivideo"
-    "supporttool"
-    "dntus"
-    "dwrcs"
-    "domotz_bash"
-    "echoserver"
-    "echoware"
-    "ehorus standalone"
-    "remoteconsole"
-    "accessserver"
-    "ericomconnnectconfigurationtool"
-    "era"
-    "ezhelp"
-    "eratool"
-    "ezhelpclient"
-    "ezhelpclientmanager"
-    "fastclient"
-    "fastmaster"
-    "fixmeitclient"
-    "fleetdeck_agent_svc"
-    "gp3"
-    "gp4"
-    "gp5"
-    "getscreen"
-    "g2a"
-    "gotoassist"
-    "gotohttp"
-    "g2file"
-    "g2quick"
-    "g2svc"
-    "g2tray"
-    "goverrmc"
-    "govsrv"
-    "guacd"
-    "helpbeam"
-    "iit"
-    "intouch"
-    "hsloader"
-    "ihcserver"
-    "instanthousecall"
-    "iadmin"
-    "intelliadmin"
-    "iperius"
-    "iperiusremote"
-    "ITSMAgent"
-    "ItsmRsp"
-    "ITSMService"
-    "RDesktop"
-    "RHost"
-    "RmmService"
-    "islalwaysonmonitor"
-    "isllight"
-    "isllightservice"
-    "jumpclient"
-    "jumpdesktop"
-    "jumpservice"
-    "agentmon"
-    "ltsvc"
-    "ltsvcmon"
-    "lttray"
-    "issuser"
-    "landeskagentbootstrap"
-    "ldinv32"
-    "ldsensors"
-    "laplink"
-    "laplinkeverywhere"
-    "llrcservice"
-    "serverproxyservice"
-    "laplink"
-    "tsircusr"
-    "romfusclient"
-    "romserver"
-    "romviewer"
-    "lmiguardiansvc"
-    "lmiignition"
-    "logmein"
-    "logmeinsystray"
-    "support-logmeinrescue"
-    "lmi_rescue"
-    "mesh"
-    "mikogo"
-    "mikogolauncher"
-    "mikogo-service"
-    "mikogo-starter"
-    "mionet"
-    "mionetmanager"
-    "myivomanager"
-    "myivomgr"
-    "nhostsvc"
-    "nhstw32"
-    "nldrw32"
-    "rmserverconsolemediator"
-    "client32"
-    "pcictlui"
-    "neturo"
-    "ntrntservice"
-    "netviewer"
-    "ngrok"
-    "ninjarmmagent"
-    "nomachine"
-    "nxd"
-    "nateon"
-    "nateon"
-    "nateonmain"
-    "ocsinventory"
-    "ocsservice"
-    "prl_deskctl_agent"
-    "prl_deskctl_wizard"
-    "prl_pm_service"
-    "awhost32"
-    "pcaquickconnect"
-    "winaw32"
-    "mwcliun"
-    "pcnmgr"
-    "webexpcnow"
-    "pcvisit"
-    "pcvisit_client"
-    "pcvisit-easysupport"
-    "pocketcontroller"
-    "pocketcloudservice"
-    "wysebrowser"
-    "qq"
-    "qqpcmgr"
-    "konea"
-    "quickassist"
-    "radmin"
-    "tdp2tcp"
-    "rdp2tcp.py"
-    "remobo"
-    "remobo_client"
-    "remobo_tracker"
-    "rfusclient"
-    "rutserv"
-    "rutserv"
-    "rutview"
-    "rcengmgru"
-    "rcmgrsvc"
-    "remotesupportplayeru"
-    "rxstartsupport"
-    "remotepass-access"
-    "rpaccess"
-    "rpwhostscr"
-    "remotepcservice"
-    "rpcsuite"
-    "remoteview"
-    "rvagent"
-    "rvagtray"
-    "wisshell"
-    "wmc"
-    "wmc_deployer"
-    "wmcsvc"
-    "royalts"
-    "rudesktop"
-    "rustdesk"
-    "screenconnect"
-    "screenconnect.windowsclient"
-    "seetrolcenter"
-    "seetrolclient"
-    "seetrolmyservice"
-    "seetrolremote"
-    "seetrolsetting"
-    "showmypc"
-    "simplehelpcustomer"
-    "simpleservice"
-    "windowslauncher"
-    "remote access"
-    "simplegatewayservice"
-    "clientmrinit"
-    "mgntsvc"
-    "routernt"
-    "sragent"
-    "srmanager"
-    "srserver"
-    "srservice"
-    "supremo"
-    "supremohelper"
-    "supremoservice"
-    "supremosystem"
-    "tacticalrmm"
-    "teamviewer"
-    "teamviewer_service"
-    "teamviewerqs"
-    "tv_w32"
-    "tv_w64"
-    "pstlaunch"
-    "ptdskclient"
-    "ptdskhost"
-    "todesk"
-    "pcstarter"
-    "turbomeeting"
-    "turbomeetingstarter"
-    "ultraviewer"
-    "ultraviewer_desktop"
-    "ultraviewer_service"
-    "vncserver"
-    "vncserverui"
-    "vncviewer"
-    "winvnc"
-    "webrdp"
-    "weezo"
-    "weezohttpd"
-    "xeox-agent_x64"
-    "za_connect"
-    "zaservice"
-    "zohotray"
+  #Remote Access Tool Indicators
+  # Any Process Name, Scheduled Task or Service containing these keywords will be flagged.
+  "aeroadmin"
+  "action1"
+  "ammyadmin"
+  "aa_v"
+  "anydesk"
+  "anyscreen"
+  "anyviewer"
+  "atera"
+  "aweray_remote"
+  "awrem32"
+  "awhost32"
+  "beyondtrust"
+  "bomgar"
+  "connectwise"
+  "cservice"
+  "dameware"
+  "desktopnow"
+  "distant-desktop"
+  "dwservice"
+  "dwagent"
+  "dwagsvc"
+  "dwrcs"
+  "famitrfc"
+  "g2comm"
+  "g2host"
+  "g2fileh"
+  "g2mainh"
+  "g2printh"
+  "g2svc"
+  "g2tray"
+  "gopcsrv"
+  "getscreen"
+  "iperius"
+  "kaseya"
+  "litemanager"
+  "logmein"
+  "lmiignition"
+  "lmiguardiansvc"
+  "meshagent"
+  "mstsc"
+  "ninja1"
+  "ninjaone"
+  "PCMonitorManager"
+  "pcmonitorsrv"
+  "pulseway"
+  "quickassist"
+  "radmin"
+  "rcclient"
+  "realvnc"
+  "remotepc"
+  "remotetopc"
+  "remote utilities"
+  "RepairTech"
+  "ROMServer"
+  "ROMFUSClient"
+  "rutserv"
+  "screenconnect"
+  "screenmeet"
+  "showmypc"
+  "smpcsetup"
+  "strwinclt"
+  "supremo"
+  "sightcall"
+  "splashtop"
+  "surfly"
+  "syncro"
+  "tacticalrmm"
+  "teamviewer"
+  "tightvnc"
+  "ultraviewer"
+  "vnc"
+  "winvnc"
+  "vncviewer"
+  "winvncsc"
+  "winwvc"
+  "xmreality"
+  "ultravnc"
+  "Zaservice"
+  "Zohours"
+  "ZohoMeeting"
+  "zoho"
+  "rpcgrab"
+  "rpcsetup"
+  "action1_agent"
+  "aeroadmin"
+  "alitask"
+  "alpemix"
+  "ammyy_admin"
+  "anydesk"
+  "apc_host"
+  "ateraagent"
+  "syncrosetup"
+  "auvik.agent"
+  "auvik.engine"
+  "beamyourscreen"
+  "beamyourscreen-host"
+  "basupsrvc"
+  "basupsrvcupdate"
+  "basuptshelper"
+  "bomgar-scc"
+  "CagService"
+  "ctiserv"
+  "remote_host"
+  "cloudflared"
+  "connectwisechat-customer"
+  "connectwisecontrol"
+  "itsmagent"
+  "rviewer"
+  "crossloopservice"
+  "pcivideo"
+  "supporttool"
+  "dntus"
+  "dwrcs"
+  "domotz_bash"
+  "echoserver"
+  "echoware"
+  "ehorus standalone"
+  "remoteconsole"
+  "accessserver"
+  "ericomconnnectconfigurationtool"
+  "era"
+  "ezhelp"
+  "eratool"
+  "ezhelpclient"
+  "ezhelpclientmanager"
+  "fastclient"
+  "fastmaster"
+  "fixmeitclient"
+  "fleetdeck_agent_svc"
+  "gp3"
+  "gp4"
+  "gp5"
+  "getscreen"
+  "g2a"
+  "gotoassist"
+  "gotohttp"
+  "g2file"
+  "g2quick"
+  "g2svc"
+  "g2tray"
+  "goverrmc"
+  "govsrv"
+  "guacd"
+  "helpbeam"
+  "iit"
+  "intouch"
+  "hsloader"
+  "ihcserver"
+  "instanthousecall"
+  "iadmin"
+  "intelliadmin"
+  "iperius"
+  "iperiusremote"
+  "ITSMAgent"
+  "ItsmRsp"
+  "ITSMService"
+  "RDesktop"
+  "RHost"
+  "RmmService"
+  "islalwaysonmonitor"
+  "isllight"
+  "isllightservice"
+  "jumpclient"
+  "jumpdesktop"
+  "jumpservice"
+  "agentmon"
+  "ltsvc"
+  "ltsvcmon"
+  "lttray"
+  "issuser"
+  "landeskagentbootstrap"
+  "ldinv32"
+  "ldsensors"
+  "laplink"
+  "laplinkeverywhere"
+  "llrcservice"
+  "serverproxyservice"
+  "laplink"
+  "tsircusr"
+  "romfusclient"
+  "romserver"
+  "romviewer"
+  "lmiguardiansvc"
+  "lmiignition"
+  "logmein"
+  "logmeinsystray"
+  "support-logmeinrescue"
+  "lmi_rescue"
+  "mesh"
+  "mikogo"
+  "mikogolauncher"
+  "mikogo-service"
+  "mikogo-starter"
+  "mionet"
+  "mionetmanager"
+  "myivomanager"
+  "myivomgr"
+  "nhostsvc"
+  "nhstw32"
+  "nldrw32"
+  "rmserverconsolemediator"
+  "client32"
+  "pcictlui"
+  "neturo"
+  "ntrntservice"
+  "netviewer"
+  "ngrok"
+  "ninjarmmagent"
+  "nomachine"
+  "nxd"
+  "nateon"
+  "nateon"
+  "nateonmain"
+  "ocsinventory"
+  "ocsservice"
+  "prl_deskctl_agent"
+  "prl_deskctl_wizard"
+  "prl_pm_service"
+  "awhost32"
+  "pcaquickconnect"
+  "winaw32"
+  "mwcliun"
+  "pcnmgr"
+  "webexpcnow"
+  "pcvisit"
+  "pcvisit_client"
+  "pcvisit-easysupport"
+  "pocketcontroller"
+  "pocketcloudservice"
+  "wysebrowser"
+  "qq"
+  "qqpcmgr"
+  "konea"
+  "quickassist"
+  "radmin"
+  "tdp2tcp"
+  "rdp2tcp.py"
+  "remobo"
+  "remobo_client"
+  "remobo_tracker"
+  "rfusclient"
+  "rutserv"
+  "rutserv"
+  "rutview"
+  "rcengmgru"
+  "rcmgrsvc"
+  "remotesupportplayeru"
+  "rxstartsupport"
+  "remotepass-access"
+  "rpaccess"
+  "rpwhostscr"
+  "remotepcservice"
+  "rpcsuite"
+  "remoteview"
+  "rvagent"
+  "rvagtray"
+  "wisshell"
+  "wmc"
+  "wmc_deployer"
+  "wmcsvc"
+  "royalts"
+  "rudesktop"
+  "rustdesk"
+  "screenconnect"
+  "screenconnect.windowsclient"
+  "seetrolcenter"
+  "seetrolclient"
+  "seetrolmyservice"
+  "seetrolremote"
+  "seetrolsetting"
+  "showmypc"
+  "simplehelpcustomer"
+  "simpleservice"
+  "windowslauncher"
+  "remote access"
+  "simplegatewayservice"
+  "clientmrinit"
+  "mgntsvc"
+  "routernt"
+  "sragent"
+  "srmanager"
+  "srserver"
+  "srservice"
+  "supremo"
+  "supremohelper"
+  "supremoservice"
+  "supremosystem"
+  "tacticalrmm"
+  "teamviewer"
+  "teamviewer_service"
+  "teamviewerqs"
+  "tv_w32"
+  "tv_w64"
+  "pstlaunch"
+  "ptdskclient"
+  "ptdskhost"
+  "todesk"
+  "pcstarter"
+  "turbomeeting"
+  "turbomeetingstarter"
+  "ultraviewer"
+  "ultraviewer_desktop"
+  "ultraviewer_service"
+  "vncserver"
+  "vncserverui"
+  "vncviewer"
+  "winvnc"
+  "webrdp"
+  "weezo"
+  "weezohttpd"
+  "xeox-agent_x64"
+  "za_connect"
+  "zaservice"
+  "zohotray"
 )
 # https://github.com/magicsword-io/LOLRMM/tree/main/yaml
 $suspicious_software = @(
-    ".*ithelp.*"
-    ".*access.*"
-    ".*absolute.*"
-    ".*acronic.*"
-    ".*remotix.*"
-    ".*action1.*"
-    ".*addigy.*"
-    ".*adobe connect.*"
-    ".*aeroadmin.*"
-    ".*aliwangwang.*"
-    ".*alpemix.*"
-    ".*ammyy.*"
-    ".*anydesk.*"
-    ".*anyplace.*"
-    ".*anyview.*"
-    ".*apple remote.*"
-    ".*atera.*"
-    ".*auvik.*"
-    ".*aweray.*"
-    ".*barracuda.*"
-    ".*basecamp.*"
-    ".*beamyourscreen.*"
-    ".*beanywhere.*"
-    ".*beinsync.*"
-    ".*beyondtrust.*"
-    ".*bitvise.*"
-    ".*bomgar.*"
-    ".*carotdav.*"
-    ".*centrastage.*"
-    ".*datto.*"
-    ".*centurion.*"
-    ".*chicken.*"
-    ".*chrome remote.*"
-    ".*cloudflare tunnel.*"
-    ".*cloudflared.*"
-    ".*comodo.*"
-    ".*connectwise.*"
-    ".*crossloop.*"
-    ".*crosstec.*"
-    ".*cruzcontrol.*"
-    ".*dameware.*"
-    ".*deskday.*"
-    ".*desknets.*"
-    ".*deskshare.*"
-    ".*desktopnow.*"
-    ".*tunnels.*"
-    ".*devolutions.*"
-    ".*distant desktop.*"
-    ".*domotz.*"
-    ".*dragondisk.*"
-    ".*duplicati.*"
-    ".*dw service.*"
-    ".*echoware.*"
-    ".*ehorus.*"
-    ".*kaseya.*"
-    ".*emco remote.*"
-    ".*encapto.*"
-    ".*ericom.*"
-    ".*accessnow.*"
-    ".*remote.*"
-    ".*extraputty.*"
-    ".*ezhelp.*"
-    ".*fastviewer.*"
-    ".*fixme.*"
-    ".*filezilla.*"
-    ".*fleetdeck.*"
-    ".*fortra.*"
-    ".*free ping.*"
-    ".*freenx.*"
-    ".*freerdp.*"
-    ".*gatherplace.*"
-    ".*getscreen.*"
-    ".*goto opener.*"
-    ".*gotoassist.*"
-    ".*gotohttp.*"
-    ".*gotomypc.*"
-    ".*guacamole.*"
-    ".*goverlan.*"
-    ".*helpbeam.*"
-    ".*helpu.*"
-    ".*intouch.*"
-    ".*imperoconnect.*"
-    ".*housecall.*"
-    ".*insync.*"
-    ".*intelliadmin.*"
-    ".*iperius.*"
-    ".*isl online.*"
-    ".*isl light.*"
-    ".*islonline.*"
-    ".*itarian.*"
-    ".*itsupport.*"
-    ".*ivanti.*"
-    ".*fastvnc.*"
-    ".*jump cloud.*"
-    ".*jump desktop.*"
-    ".*kabuto.*"
-    ".*khelpdesk.*"
-    ".*kickidler.*"
-    ".*kitty.*"
-    ".*koofr.*"
-    ".*labteach.*"
-    ".*labtech.*"
-    ".*landesk.*"
-    ".*laplink.*"
-    ".*level\.io.*"
-    ".*level.*"
-    ".*levelio.*"
-    ".*lite manager.*"
-    ".*litemanager.*"
-    ".*logmein.*"
-    ".*manage engine.*"
-    ".*manageengine.*"
-    ".*megasync.*"
-    ".*meshcentral.*"
-    ".*quick assist.*"
-    ".*mikogo.*"
-    ".*mionet.*"
-    ".*mobaxterm.*"
-    ".*mocha vnc.*"
-    ".*mremote.*"
-    ".*msp360.*"
-    ".*multicloud.*"
-    ".*mygreenpc.*"
-    ".*myivo.*"
-    ".*n-able.*"
-    ".*nateon.*"
-    ".*naverisk.*"
-    ".*netop.*"
-    ".*netreo.*"
-    ".*netsupport.*"
-    ".*neturo.*"
-    ".*netviewer.*"
-    ".*ngrok.*"
-    ".*ninjaone.*"
-    ".*ninjarmm.*"
-    ".*nomachine.*"
-    ".*nordlocker.*"
-    ".*noteon.*"
-    ".*ntr remote.*"
-    ".*ocs inventory.*"
-    ".*onionshare.*"
-    ".*optitune.*"
-    ".*pandora rc.*"
-    ".*panorama9.*"
-    ".*parallels.*"
-    ".*pcanywhere.*"
-    ".*pcnow.*"
-    ".*pcvisit.*"
-    ".*pdq connect.*"
-    ".*pilixo.*"
-    ".*pocket cloud.*"
-    ".*pocket controller.*"
-    ".*psexec.*"
-    ".*pulseway.*"
-    ".*putty.*"
-    ".*remote assistance.*"
-    ".*quest kace.*"
-    ".*quickassist.*"
-    ".*radmin.*"
-    ".*rdp2tcp.*"
-    ".*rdpview.*"
-    ".*rdpwrap.*"
-    ".*realvnc.*"
-    ".*remcos.*"
-    ".*remmina.*"
-    ".*remobo.*"
-    ".*remote\.it.*"
-    ".*devolutions.*"
-    ".*remote desktop.*"
-    ".*remote manipulator.*"
-    ".*remote utilities.*"
-    ".*remotecall.*"
-    ".*remotepc.*"
-    ".*remotepass.*"
-    ".*remoteview.*"
-    ".*res automation.*"
-    ".*rocketremote.*"
-    ".*royal apps.*"
-    ".*rport.*"
-    ".*rudesktop.*"
-    ".*runsmart.*"
-    ".*rustdesk.*"
-    ".*s3 browser.*"
-    ".*screenconnect.*"
-    ".*screenmeet.*"
-    ".*securecrt.*"
-    ".*seetrol.*"
-    ".*senso cloud.*"
-    ".*servereye.*"
-    ".*showmypc.*"
-    ".*simplehelp.*"
-    ".*site24.*"
-    ".*skyfex.*"
-    ".*web vnc.*"
-    ".*smartftp.*"
-    ".*smartty.*"
-    ".*sorillus.*"
-    ".*splashtop.*"
-    ".*spyanywhere.*"
-    ".*sunlogin.*"
-    ".*superops.*"
-    ".*supremo.*"
-    ".*syncro.*"
-    ".*syncthing.*"
-    ".*synergy.*"
-    ".*sysaid.*"
-    ".*syspectr.*"
-    ".*tactical rmm.*"
-    ".*tailscale.*"
-    ".*teamviewer.*"
-    ".*teledesktop.*"
-    ".*tigervnc.*"
-    ".*tightvnc.*"
-    ".*todesk.*"
-    ".*turbomeeting.*"
-    ".*ultra vnc.*"
-    ".*ultraviewer.*"
-    ".*ultravnc.*"
-    ".*webrdp.*"
-    ".*weezo.*"
-    ".*winscp.*"
-    ".*x2go.*"
-    ".*xeox.*"
-    ".*xpra.*"
-    ".*xrdp.*"
-    ".*xshell.*"
-    ".*yandex.*"
-    ".*zabbix.*"
-    ".*zerotier.*"
-    ".*zoc.*"
-    ".*zohoassist.*"
+  ".*ithelp.*"
+  ".*access.*"
+  ".*absolute.*"
+  ".*acronic.*"
+  ".*remotix.*"
+  ".*action1.*"
+  ".*addigy.*"
+  ".*adobe connect.*"
+  ".*aeroadmin.*"
+  ".*aliwangwang.*"
+  ".*alpemix.*"
+  ".*ammyy.*"
+  ".*anydesk.*"
+  ".*anyplace.*"
+  ".*anyview.*"
+  ".*apple remote.*"
+  ".*atera.*"
+  ".*auvik.*"
+  ".*aweray.*"
+  ".*barracuda.*"
+  ".*basecamp.*"
+  ".*beamyourscreen.*"
+  ".*beanywhere.*"
+  ".*beinsync.*"
+  ".*beyondtrust.*"
+  ".*bitvise.*"
+  ".*bomgar.*"
+  ".*carotdav.*"
+  ".*centrastage.*"
+  ".*datto.*"
+  ".*centurion.*"
+  ".*chicken.*"
+  ".*chrome remote.*"
+  ".*cloudflare tunnel.*"
+  ".*cloudflared.*"
+  ".*comodo.*"
+  ".*connectwise.*"
+  ".*crossloop.*"
+  ".*crosstec.*"
+  ".*cruzcontrol.*"
+  ".*dameware.*"
+  ".*deskday.*"
+  ".*desknets.*"
+  ".*deskshare.*"
+  ".*desktopnow.*"
+  ".*tunnels.*"
+  ".*devolutions.*"
+  ".*distant desktop.*"
+  ".*domotz.*"
+  ".*dragondisk.*"
+  ".*duplicati.*"
+  ".*dw service.*"
+  ".*echoware.*"
+  ".*ehorus.*"
+  ".*kaseya.*"
+  ".*emco remote.*"
+  ".*encapto.*"
+  ".*ericom.*"
+  ".*accessnow.*"
+  ".*remote.*"
+  ".*extraputty.*"
+  ".*ezhelp.*"
+  ".*fastviewer.*"
+  ".*fixme.*"
+  ".*filezilla.*"
+  ".*fleetdeck.*"
+  ".*fortra.*"
+  ".*free ping.*"
+  ".*freenx.*"
+  ".*freerdp.*"
+  ".*gatherplace.*"
+  ".*getscreen.*"
+  ".*goto opener.*"
+  ".*gotoassist.*"
+  ".*gotohttp.*"
+  ".*gotomypc.*"
+  ".*guacamole.*"
+  ".*goverlan.*"
+  ".*helpbeam.*"
+  ".*helpu.*"
+  ".*intouch.*"
+  ".*imperoconnect.*"
+  ".*housecall.*"
+  ".*insync.*"
+  ".*intelliadmin.*"
+  ".*iperius.*"
+  ".*isl online.*"
+  ".*isl light.*"
+  ".*islonline.*"
+  ".*itarian.*"
+  ".*itsupport.*"
+  ".*ivanti.*"
+  ".*fastvnc.*"
+  ".*jump cloud.*"
+  ".*jump desktop.*"
+  ".*kabuto.*"
+  ".*khelpdesk.*"
+  ".*kickidler.*"
+  ".*kitty.*"
+  ".*koofr.*"
+  ".*labteach.*"
+  ".*labtech.*"
+  ".*landesk.*"
+  ".*laplink.*"
+  ".*level\.io.*"
+  ".*level.*"
+  ".*levelio.*"
+  ".*lite manager.*"
+  ".*litemanager.*"
+  ".*logmein.*"
+  ".*manage engine.*"
+  ".*manageengine.*"
+  ".*megasync.*"
+  ".*meshcentral.*"
+  ".*quick assist.*"
+  ".*mikogo.*"
+  ".*mionet.*"
+  ".*mobaxterm.*"
+  ".*mocha vnc.*"
+  ".*mremote.*"
+  ".*msp360.*"
+  ".*multicloud.*"
+  ".*mygreenpc.*"
+  ".*myivo.*"
+  ".*n-able.*"
+  ".*nateon.*"
+  ".*naverisk.*"
+  ".*netop.*"
+  ".*netreo.*"
+  ".*netsupport.*"
+  ".*neturo.*"
+  ".*netviewer.*"
+  ".*ngrok.*"
+  ".*ninjaone.*"
+  ".*ninjarmm.*"
+  ".*nomachine.*"
+  ".*nordlocker.*"
+  ".*noteon.*"
+  ".*ntr remote.*"
+  ".*ocs inventory.*"
+  ".*onionshare.*"
+  ".*optitune.*"
+  ".*pandora rc.*"
+  ".*panorama9.*"
+  ".*parallels.*"
+  ".*pcanywhere.*"
+  ".*pcnow.*"
+  ".*pcvisit.*"
+  ".*pdq connect.*"
+  ".*pilixo.*"
+  ".*pocket cloud.*"
+  ".*pocket controller.*"
+  ".*psexec.*"
+  ".*pulseway.*"
+  ".*putty.*"
+  ".*remote assistance.*"
+  ".*quest kace.*"
+  ".*quickassist.*"
+  ".*radmin.*"
+  ".*rdp2tcp.*"
+  ".*rdpview.*"
+  ".*rdpwrap.*"
+  ".*realvnc.*"
+  ".*remcos.*"
+  ".*remmina.*"
+  ".*remobo.*"
+  ".*remote\.it.*"
+  ".*devolutions.*"
+  ".*remote desktop.*"
+  ".*remote manipulator.*"
+  ".*remote utilities.*"
+  ".*remotecall.*"
+  ".*remotepc.*"
+  ".*remotepass.*"
+  ".*remoteview.*"
+  ".*res automation.*"
+  ".*rocketremote.*"
+  ".*royal apps.*"
+  ".*rport.*"
+  ".*rudesktop.*"
+  ".*runsmart.*"
+  ".*rustdesk.*"
+  ".*s3 browser.*"
+  ".*screenconnect.*"
+  ".*screenmeet.*"
+  ".*securecrt.*"
+  ".*seetrol.*"
+  ".*senso cloud.*"
+  ".*servereye.*"
+  ".*showmypc.*"
+  ".*simplehelp.*"
+  ".*site24.*"
+  ".*skyfex.*"
+  ".*web vnc.*"
+  ".*smartftp.*"
+  ".*smartty.*"
+  ".*sorillus.*"
+  ".*splashtop.*"
+  ".*spyanywhere.*"
+  ".*sunlogin.*"
+  ".*superops.*"
+  ".*supremo.*"
+  ".*syncro.*"
+  ".*syncthing.*"
+  ".*synergy.*"
+  ".*sysaid.*"
+  ".*syspectr.*"
+  ".*tactical rmm.*"
+  ".*tailscale.*"
+  ".*teamviewer.*"
+  ".*teledesktop.*"
+  ".*tigervnc.*"
+  ".*tightvnc.*"
+  ".*todesk.*"
+  ".*turbomeeting.*"
+  ".*ultra vnc.*"
+  ".*ultraviewer.*"
+  ".*ultravnc.*"
+  ".*webrdp.*"
+  ".*weezo.*"
+  ".*winscp.*"
+  ".*x2go.*"
+  ".*xeox.*"
+  ".*xpra.*"
+  ".*xrdp.*"
+  ".*xshell.*"
+  ".*yandex.*"
+  ".*zabbix.*"
+  ".*zerotier.*"
+  ".*zoc.*"
+  ".*zohoassist.*"
 )
 
 # Script level container for detections
 $detection_list = New-Object -TypeName "System.Collections.ArrayList"
 $detection_hash_array_snapshot = New-Object System.Collections.Generic.List[System.Object]
 $new_psdrives_list = @{}
+#region Technique: NotApplicable
 function Check-Suspicious-File-Locations {
     Write-Message "Checking Suspicious File Locations"
     $recursive_paths_to_check = @(
@@ -796,6 +797,8 @@ function Check-Suspicious-File-Locations {
         }
     }
 }
+#endregion
+#region Technique: T1003
 function Check-DirectoryServicesRestoreMode {
     # Supports Retargeting
     Write-Message "Checking DirectoryServicesRestoreMode"
@@ -820,6 +823,8 @@ function Check-DirectoryServicesRestoreMode {
         }
     }
 }
+#endregion
+#region Technique: T1037
 function Check-Startups {
     # Supports Drive Retargeting
     Write-Message "Checking Startup Items"
@@ -1092,6 +1097,8 @@ function Check-UserInitMPRScripts {
         }
     }
 }
+#endregion
+#region Technique: T1053
 function Check-ScheduledTasks {
     # Can possibly support drive-retargeting by parsing Task XML
     # Working on this with regex from Task Files
@@ -1423,6 +1430,8 @@ function Check-ScheduledTasks {
         }
     }
 }
+#endregion
+#region Technique: T1055
 function Check-DNSServerLevelPluginDLL {
     # Supports Drive Retargeting
     Write-Message "Checking DNSServerLevelPlugin DLL"
@@ -1448,6 +1457,8 @@ function Check-DNSServerLevelPluginDLL {
         }
     }
 }
+#endregion
+#region Technique: T1059
 function Check-Processes {
     # Does not support drive retargeting
     # TODO - Check for processes spawned from netsh.dll
@@ -1518,6 +1529,8 @@ function Check-Processes {
 
     }
 }
+#endregion
+#region Technique: T107
 function Check-Connections {
     # Does not support drive-retargeting
     if ($drivechange){
@@ -1604,6 +1617,8 @@ function Check-Connections {
         }
     }
 }
+#endregion
+#region Technique: T1098
 function Check-RDPShadowConsent {
     # Supports Drive Retargeting
     Write-Message "Checking RDP Shadow Consent"
@@ -1652,6 +1667,8 @@ function Check-ServiceControlManagerSD {
         Write-Detection $detection
     }
 }
+#endregion
+#region Technique: T1112
 function Check-MicrosoftTelemetryCommands {
     # Supports Drive Retargeting
     Write-Message "Checking Microsoft TelemetryController"
@@ -1855,6 +1872,8 @@ function Check-BootVerificationProgram {
         }
     }
 }
+#endregion
+#region Technique: T1136
 function Check-Users {
     # Can possibly support drive retargeting by reading SAM/SYSTEM Hives if intact
     # https://habr.com/en/articles/441410/
@@ -1887,6 +1906,8 @@ function Check-Users {
     }
     
 }
+#endregion
+#region Technique: T1137
 function Check-Outlook-Startup {
     # Supports Drive Retargeting
     Write-Message "Checking Outlook Macros"
@@ -2154,6 +2175,8 @@ function Check-OfficeGlobalDotName {
         }
     }
 }
+#endregion
+#region Technique: T1197
 function Check-BITS {
     # Maybe with Drive Retargeting
     # C:\ProgramData\Microsoft\Network\Downloader
@@ -2186,6 +2209,8 @@ function Check-BITS {
         Write-Detection $detection
     }
 }
+#endregion
+#region Technique: T1219
 function Check-RATS {
     # Supports Drive Retargeting
 
@@ -2428,6 +2453,8 @@ function Check-RATS {
         }
     }
 }
+#endregion
+#region Technique: T1484
 function Check-GPOExtensions {
     # Supports Drive Retargeting
     Write-Message "Checking GPO Extension DLLs"
@@ -2487,6 +2514,8 @@ function Check-GPOExtensions {
         }
     }
 }
+#endregion
+#region Technique: T1505
 function Check-TerminalServicesDLL {
     # Supports Drive Retargeting
     Write-Message "Checking TerminalServices DLL"
@@ -2512,6 +2541,8 @@ function Check-TerminalServicesDLL {
         }
     }
 }
+#endregion
+#region Technique: T1543
 function Check-Services {
     # Support Drive Retargeting
     # TODO - Non-Standard Service/Task running as/created by Local Administrator
@@ -4795,6 +4826,8 @@ function Check-InstalledSoftware {
         }
     }
 }
+#endregion
+#region Technique: T1546
 function Check-WMIConsumers {
     # Drive Retargeting..maybe
     # https://netsecninja.github.io/dfir-notes/wmi-forensics/
@@ -15603,6 +15636,8 @@ function Check-DisableLowILProcessIsolation {
         }
     }
 }
+#endregion
+#region Technique: T1547
 function Check-LNK {
     # Supports Drive Retargeting
     Write-Message "Checking LNK Targets"
@@ -15999,6 +16034,8 @@ function Check-PrintProcessorDLLs {
         }
     }
 }
+#endregion
+#region Technique: T1553
 function Check-Suspicious-Certificates {
     # Can maybe support drive retargeting
     if ($drivechange){
@@ -16256,6 +16293,8 @@ function Check-TrustProviderDLL {
         }
     }
 }
+#endregion
+#region Technique: T1564
 function Check-WSL {
     <#
     .SYNOPSIS
@@ -16314,6 +16353,8 @@ function Check-WSL {
     }
 
 }
+#endregion
+#region Technique: T1574
 function Check-Process-Modules {
     # Does not support Drive Retargeting
     if ($drivechange){
@@ -17097,22 +17138,25 @@ function Check-MSDTCDll {
         }
     }
 }
+#endregion
+#region Detections
+
 function Write-Detection($det) {
     <#
     .SYNOPSIS
         Receives a 'Detection' - a PowerShell custom object containing specific fields - writes this to Console, EventLog, CSV and a global array for storage depending on specified options.
     #>
 
-	# det is a custom object which will contain various pieces of metadata for the detection
-	# Name - The name of the detection logic.
-	# Risk (Very Low, Low, Medium, High, Very High)
-	# Source - The source 'module' reporting the detection
-	# Technique - The most relevant MITRE Technique
-	# Meta - Embedded object containing reference material specific to the received detection
+    # det is a custom object which will contain various pieces of metadata for the detection
+    # Name - The name of the detection logic.
+    # Risk (Very Low, Low, Medium, High, Very High)
+    # Source - The source 'module' reporting the detection
+    # Technique - The most relevant MITRE Technique
+    # Meta - Embedded object containing reference material specific to the received detection
 
     # Validate core fields
-    $core_fields = @("Name","Risk","Source","Technique","Meta")
-    foreach ($field in $core_fields){
+    $core_fields = @("Name", "Risk", "Source", "Technique", "Meta")
+    foreach ($field in $core_fields) {
         if (-not $($det.PSobject.Properties.Name -contains $field)) {
             Write-Reportable-Issue "Detection Missing '$field' Field! [$det]"
             $det.$($field) = "Error"
@@ -17120,12 +17164,12 @@ function Write-Detection($det) {
         }
     }
 
-    if (-not (@("Very Low", "Low", "Medium", "High", "Very High") -contains $det.Risk)){
+    if (-not (@("Very Low", "Low", "Medium", "High", "Very High") -contains $det.Risk)) {
         Write-Reportable-Issue "Detection has invalid Risk Value: $($det.Risk)"
     }
 
     # Before anything else, we find all datetime objects within the Meta field of a detection and generate a corresponding UTC timestamp so consumers can use either-or
-    if ($det.PSobject.Properties.Name -contains "Meta"){
+    if ($det.PSobject.Properties.Name -contains "Meta") {
         $det.Meta.PSObject.Properties | ForEach-Object {
             if ($_.Value -is [datetime]) {
                 $tmp = $_.Value
@@ -17136,44 +17180,44 @@ function Write-Detection($det) {
     }
 
     # If there is no reference, just set it as "N/A" for now
-    if (-not $($det.PSobject.Properties.Name -contains "Reference")){
+    if (-not $($det.PSobject.Properties.Name -contains "Reference")) {
         $det | Add-Member -MemberType NoteProperty -Name Reference -Value "N/A"
     }
 
     # Then we do a hash of the detection to determine if it exists in a snapshot - if we are using snapshot and it exists, skip, else, keep going
     $should_we_skip = Check-DetectionInSnapshot($det)
-    if ($should_we_skip){
+    if ($should_we_skip) {
         $script:suppressed_detections += 1
         return
     }
 
-	$detection_list.Add($det) | Out-Null
+    $detection_list.Add($det) | Out-Null
 
-	switch ($det.Risk) {
-		"Very Low" { $fg_color = "Green" }
-		"Low" { $fg_color = "Green" }
-		"Medium" { $fg_color = "Yellow" }
-		"High" { $fg_color = "Red" }
-		"Very High" { $fg_color = "Magenta" }
-		Default { $fg_color = "Yellow" }
-	}
+    switch ($det.Risk) {
+        "Very Low" { $fg_color = "Green" }
+        "Low" { $fg_color = "Green" }
+        "Medium" { $fg_color = "Yellow" }
+        "High" { $fg_color = "Red" }
+        "Very High" { $fg_color = "Magenta" }
+        Default { $fg_color = "Yellow" }
+    }
 
     # Console Output
-	if (-not($Quiet)) {
-		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
-		Write-Host "[%] $(Format-MetadataToString($det.Meta))" -ForegroundColor White
-	}
+    if (-not($Quiet)) {
+        Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
+        Write-Host "[%] $(Format-MetadataToString($det.Meta))" -ForegroundColor White
+    }
 
 
 }
 
-function Check-DetectionInSnapshot($detection){
+function Check-DetectionInSnapshot($detection) {
     <#
     .SYNOPSIS
         Receives a detection and checks if it exists in the snapshow allow-list - if so, return $true, else or if we are not using snapshot, return $false
     #>
     # First we check if we are even using a snapshot - if no, then immediately return
-    if (-not $snapshot){
+    if (-not $snapshot) {
         return $false
     }
 
@@ -17185,17 +17229,18 @@ function Check-DetectionInSnapshot($detection){
     # Check if this already exists in our hash array of the loaded detection snapshot
     if ($detection_hash_array_snapshot -contains $detection_hash) {
         return $true
-    } else {
+    }
+    else {
         return $false
     }
 }
 
-function Prepare-DetectionForHash ($detection){
+function Prepare-DetectionForHash ($detection) {
     <#
     .SYNOPSIS
         Receives a detection and removes any allow-listed fields from specific detections to improve the fidelity of allow-listing.
     #>
-    if ($detection.Name -eq "Established Connection on Suspicious Port"){
+    if ($detection.Name -eq "Established Connection on Suspicious Port") {
         $detection.Meta.PSObject.Properties.Remove('LocalAddress')
         $detection.Meta.PSObject.Properties.Remove('LocalPort')
         $detection.Meta.PSObject.Properties.Remove('PID')
@@ -17210,14 +17255,14 @@ function Load-DetectionSnapshot {
         Checks if provided snapshot file is valid and reads the content in order to prepare a list of hashes that represent 'allowed' detections.
     #>
     Write-Message "Reading Snapshot File: $snapshot"
-    if (-not (Test-Path -Path $snapshot)){
+    if (-not (Test-Path -Path $snapshot)) {
         Write-Message "Error - Could not find specified snapshot file: $snapshot"
         return
     }
 
     $snapshot_detection_count = 0
     $json = Get-Content $snapshot | Out-String | ConvertFrom-Json
-    foreach ($det in $json){
+    foreach ($det in $json) {
         $detection_prepared = Prepare-DetectionForHash($det)
         $detection_hash = Get-HashOfString $($detection_prepared | ConvertTo-Json)
         $detection_hash_array_snapshot.Add($detection_hash) | Out-Null
@@ -17233,13 +17278,13 @@ function Detection-Metrics {
         Presents metrics surrounding all detections to the end-user for a summary view.
     #>
     Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor White
-	Write-Message "Total Detections: $($detection_list.Count)"
+    Write-Message "Total Detections: $($detection_list.Count)"
     Write-Message "Total Suppressed Detections: $suppressed_detections"
-	foreach ($str in ($detection_list | Group-Object Risk | Select-Object Name, Count | Out-String).Split([System.Environment]::NewLine)) {
-		if (-not ([System.String]::IsNullOrWhiteSpace($str))){
-			Write-Message $str
-		}
-	}
+    foreach ($str in ($detection_list | Group-Object Risk | Select-Object Name, Count | Out-String).Split([System.Environment]::NewLine)) {
+        if (-not ([System.String]::IsNullOrWhiteSpace($str))) {
+            Write-Message $str
+        }
+    }
 }
 
 function Emit-Detections {
@@ -17250,7 +17295,7 @@ function Emit-Detections {
     # Emit detections in JSON format
     $detection_list | ConvertTo-Json | Out-File $script:JSONDetectionsPath.Path
 
-    foreach ($det in $detection_list){
+    foreach ($det in $detection_list) {
         #EVTX Output
         if ($evtx) {
             Write-DetectionToEVTX $det
@@ -17262,6 +17307,10 @@ function Emit-Detections {
     }
 
 }
+
+#endregion
+#region EventLogging
+
 function Create-EventSource {
     <#
     .SYNOPSIS
@@ -17275,12 +17324,14 @@ function Create-EventSource {
             Write-Message("Successfully created Event Log Source: $evtx_source")
             # Created ok
             return $true
-        } catch {
+        }
+        catch {
             # Error creating
             Write-Message("Failed to create Event Log Source: $evtx_source")
             return $false
         }
-    } else {
+    }
+    else {
         # Source already exists
         Write-Message("Event Log Source already exists")
         return $true
@@ -17306,171 +17357,208 @@ function Write-DetectionToEVTX($detection) {
         }#>
     Write-EventLog -LogName $evtx_logname -Source $evtx_source -EventID 9001 -EntryType Information -Message $($detection | ConvertTo-Json) -ErrorAction SilentlyContinue
 }
-function Write-Detection($det) {
+
+#endregion
+#region HelperMethods
+
+function Write-Message ($message) {
     <#
     .SYNOPSIS
-        Receives a 'Detection' - a PowerShell custom object containing specific fields - writes this to Console, EventLog, CSV and a global array for storage depending on specified options.
+        Write-Host wrapper to standardize messages to the console
     #>
+    # TODO - Message 'types' to alter the symbol as appropriate (detection, info, warning, error, etc)
+    Write-Host "[+] $message"
+}
 
-	# det is a custom object which will contain various pieces of metadata for the detection
-	# Name - The name of the detection logic.
-	# Risk (Very Low, Low, Medium, High, Very High)
-	# Source - The source 'module' reporting the detection
-	# Technique - The most relevant MITRE Technique
-	# Meta - Embedded object containing reference material specific to the received detection
-
-    # Validate core fields
-    $core_fields = @("Name","Risk","Source","Technique","Meta")
-    foreach ($field in $core_fields){
-        if (-not $($det.PSobject.Properties.Name -contains $field)) {
-            Write-Reportable-Issue "Detection Missing '$field' Field! [$det]"
-            $det.$($field) = "Error"
-            # We will not return for now as there still may be useful information but this is a critical issue
+function Test-OutputDirectoryPermissions() {
+    <#
+    .SYNOPSIS
+        Validates output directory exists and that current user has appropriate permissions to write files
+    #>
+    # if the output path doesn't exist, create it.
+    if (!(Test-Path $OutputLocation)) {
+        try {
+            New-Item $OutputLocation -Type Directory
+            return $true
+        }
+        catch {
+            return $false
         }
     }
+    else {
+        # Can we write to the specified dir?
+        $testfile = Join-Path $OutputLocation "trawler_writetest.trawler"
+        Try {
+            [io.file]::OpenWrite($testfile).close()
+            Remove-Item $testfile
+            return $true
+        }
+        Catch {
+            return $false
+        }
+    }
+}
 
-    if (-not (@("Very Low", "Low", "Medium", "High", "Very High") -contains $det.Risk)){
-        Write-Reportable-Issue "Detection has invalid Risk Value: $($det.Risk)"
+function New-TrawlerOutputItem() {
+    <#
+    .SYNOPSIS
+        Helper function to create output items and report on failures.
+    #>
+    param (
+        [string]
+        $FileName,
+        [string]
+        $FileType
+    )
+    $timestamp = [System.DateTimeOffset]::Now.ToUnixTimeSeconds()
+    $output = [PSCustomObject]@{
+        Path     = [System.IO.Path]::Combine($OutputLocation, "$($FileName)_$($timestamp).$($FileType.ToLower())")
+        CanWrite = $false
+    }
+    #TODO - Review as this check should be unnecessary as we already validate write capabilities before this
+    try {
+        [System.IO.File]::OpenWrite($output.Path).Close()
+        $output.CanWrite = $true
+    }
+    catch {
+        Write-Warning "Unable to write to provided output path: $($output.Path)"
+    }
+    $output
+}
+
+function Write-Reportable-Issue($msg) {
+    Write-Warning $msg
+    Write-Warning "Please report this issue at https://github.com/joeavanzato/Trawler/issues"
+}
+
+function Get-File-Hash($file) {
+    <#
+    .SYNOPSIS
+        Receives a path to a file as a string, validates the path exists and uses the globally-defined HashMode to return either an MD5, SHA1 or SHA256 hash.
+    #>
+    # Path
+    # %SystemRoot%\system32 ([System.Environment]::SystemDirectory)
+    # %SystemRoot%
+    $file = $file.Trim()
+    $file = $file.Trim("`"")
+    $file = $file.Trim("\")
+    $file = $file.Trim("?")
+    $file = $file.Trim("\")
+
+    if ($file -eq "") {
+        return "Invalid File Path"
     }
 
-    # Before anything else, we find all datetime objects within the Meta field of a detection and generate a corresponding UTC timestamp so consumers can use either-or
-    if ($det.PSobject.Properties.Name -contains "Meta"){
-        $det.Meta.PSObject.Properties | ForEach-Object {
-            if ($_.Value -is [datetime]) {
-                $tmp = $_.Value
-                $det.Meta.$($_.Name) = Format-Datetime $tmp $false
-                $det.Meta | Add-Member -NotePropertyName "$($_.Name)_UTC" -NotePropertyValue $(Format-Datetime $tmp $true)
+    if ($file.StartsWith("system32")) {
+        $file = $file -replace "system32", [System.Environment]::SystemDirectory
+    }
+
+    if ($file.Contains("<") -or $file.Contains(">") -or $file.Contains("`"") -or $file.Contains("/") -or $file.Contains("|") -or $file.Contains("?") -or $file.Contains("*")) {
+        return "Invalid File Path"
+    }
+
+
+    $filepath = ""
+    $filefound = $false
+    if (Test-Path $file -PathType Leaf) {
+        $filepath = $file
+        $filefound = $true
+    }
+    elseif ($file.Contains(":")) {
+        return "Invalid File Path"
+    }
+    elseif (Test-Path $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file) -PathType Leaf) {
+        # check if in system32
+        $filepath = $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file)
+        $filefound = $true
+    }
+    elseif (Test-Path $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file) -PathType Leaf) {
+        # check if in windows
+        $filepath = $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file)
+        $filefound = $true
+    }
+    else {
+        # Check all dirs in path to see if it exists
+        $paths = $env:Path -split ";"
+        foreach ($p in $paths) {
+            $p = $p.Trim()
+            if ($p -eq "") {
+                continue
+            }
+            $test = $(Join-Path -Path $p -ChildPath $file)
+            if (Test-Path $test -PathType Leaf) {
+                $filepath = $test
+                $filefound = $true
+                break
             }
         }
     }
 
-    # If there is no reference, just set it as "N/A" for now
-    if (-not $($det.PSobject.Properties.Name -contains "Reference")){
-        $det | Add-Member -MemberType NoteProperty -Name Reference -Value "N/A"
+    if (-not $filefound) {
+        return "File Not Found"
     }
 
-    # Then we do a hash of the detection to determine if it exists in a snapshot - if we are using snapshot and it exists, skip, else, keep going
-    $should_we_skip = Check-DetectionInSnapshot($det)
-    if ($should_we_skip){
-        $script:suppressed_detections += 1
-        return
+    try {
+        # Couldn't find initial
+        $hash = Get-FileHash -Algorithm $HashMode -Path $file
+        return $hash.Hash
     }
-
-	$detection_list.Add($det) | Out-Null
-
-	switch ($det.Risk) {
-		"Very Low" { $fg_color = "Green" }
-		"Low" { $fg_color = "Green" }
-		"Medium" { $fg_color = "Yellow" }
-		"High" { $fg_color = "Red" }
-		"Very High" { $fg_color = "Magenta" }
-		Default { $fg_color = "Yellow" }
-	}
-
-    # Console Output
-	if (-not($Quiet)) {
-		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
-		Write-Host "[%] $(Format-MetadataToString($det.Meta))" -ForegroundColor White
-	}
-
-
+    catch {
+        return "Access Error"
+    }
+    return "Hashing Error"
 }
 
-function Check-DetectionInSnapshot($detection){
+function Format-MetadataToString($detectionmeta) {
     <#
     .SYNOPSIS
-        Receives a detection and checks if it exists in the snapshow allow-list - if so, return $true, else or if we are not using snapshot, return $false
+        Receives an object representing the metadata of a specific detection and formats this to a more human-readable string for u se in CSV/Console output
     #>
-    # First we check if we are even using a snapshot - if no, then immediately return
-    if (-not $snapshot){
-        return $false
-    }
-
-    # Return the hash representation of the current detection
-    $prepared_detection = Prepare-DetectionForHash $detection
-    $jsondetection = $prepared_detection | ConvertTo-Json
-    $detection_hash = Get-HashOfString $jsondetection
-    $detection_hash # for some reason, this only works when this is here - I have no idea why right now.
-    # Check if this already exists in our hash array of the loaded detection snapshot
-    if ($detection_hash_array_snapshot -contains $detection_hash) {
-        return $true
-    } else {
-        return $false
-    }
-}
-
-function Prepare-DetectionForHash ($detection){
-    <#
-    .SYNOPSIS
-        Receives a detection and removes any allow-listed fields from specific detections to improve the fidelity of allow-listing.
-    #>
-    if ($detection.Name -eq "Established Connection on Suspicious Port"){
-        $detection.Meta.PSObject.Properties.Remove('LocalAddress')
-        $detection.Meta.PSObject.Properties.Remove('LocalPort')
-        $detection.Meta.PSObject.Properties.Remove('PID')
-    }
-
-    return $detection
-}
-
-function Load-DetectionSnapshot {
-    <#
-    .SYNOPSIS
-        Checks if provided snapshot file is valid and reads the content in order to prepare a list of hashes that represent 'allowed' detections.
-    #>
-    Write-Message "Reading Snapshot File: $snapshot"
-    if (-not (Test-Path -Path $snapshot)){
-        Write-Message "Error - Could not find specified snapshot file: $snapshot"
-        return
-    }
-
-    $snapshot_detection_count = 0
-    $json = Get-Content $snapshot | Out-String | ConvertFrom-Json
-    foreach ($det in $json){
-        $detection_prepared = Prepare-DetectionForHash($det)
-        $detection_hash = Get-HashOfString $($detection_prepared | ConvertTo-Json)
-        $detection_hash_array_snapshot.Add($detection_hash) | Out-Null
-        $snapshot_detection_count += 1
-    }
-    Write-Message "Loaded $snapshot_detection_count Allowed Detections from Snapshot: $snapshot"
-
-}
-
-function Detection-Metrics {
-    <#
-    .SYNOPSIS
-        Presents metrics surrounding all detections to the end-user for a summary view.
-    #>
-    Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor White
-	Write-Message "Total Detections: $($detection_list.Count)"
-    Write-Message "Total Suppressed Detections: $suppressed_detections"
-	foreach ($str in ($detection_list | Group-Object Risk | Select-Object Name, Count | Out-String).Split([System.Environment]::NewLine)) {
-		if (-not ([System.String]::IsNullOrWhiteSpace($str))){
-			Write-Message $str
-		}
-	}
-}
-
-function Emit-Detections {
-    <#
-    .SYNOPSIS
-        Called at the end of the execution flow to emit all detections in the various specified formats.
-    #>
-    # Emit detections in JSON format
-    $detection_list | ConvertTo-Json | Out-File $script:JSONDetectionsPath.Path
-
-    foreach ($det in $detection_list){
-        #EVTX Output
-        if ($evtx) {
-            Write-DetectionToEVTX $det
+    $output = ""
+    $propertyCount = ($detectionmeta | Get-Member -Type NoteProperty).count
+    $index = 1
+    foreach ($prop in $detectionmeta.PSObject.Properties) {
+        if ($index -eq $propertyCount) {
+            $output += "$($prop.Name): $($prop.Value)"
         }
-
-        # CSV Output
-        $det.Meta = Format-MetadataToString($det.Meta)
-        $det | Export-CSV $script:CSVDetectionsPath.Path -Append -NoTypeInformation -Encoding UTF8 -Force
+        else {
+            $output += "$($prop.Name): $($prop.Value), "
+        }
+        $index += 1
     }
-
+    return $output
 }
+
+function Get-HashOfString($string) {
+    <#
+    .SYNOPSIS
+        Receives a string and converts it to a hash-representation, emitting the resulting hash
+    #>
+    $stream = [System.IO.MemoryStream]::new()
+    $w = [System.IO.StreamWriter]::new($stream)
+    $w.write($string)
+    $w.Flush()
+    $stream.Position = 0
+    $hash = Get-FileHash -Algorithm SHA1 -InputStream $stream
+    return $hash.Hash
+}
+
+function Format-DateTime($datetime, $utc_convert) {
+    <#
+    .SYNOPSIS
+        Receives a PowerShell datetime object and a boolean - returns a standardized string representation - if utc_convert is $true, converts the (assumed) local timestamp into UTC
+    #>
+    if ($utc_convert) {
+        return $datetime.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss")
+    }
+    else {
+        return $datetime.ToString("yyyy-MM-dd'T'HH:mm:ss")
+    }
+}
+
+#endregion
+#region DriveChanges
+
 function Drive-Change {
     <#
     .SYNOPSIS
@@ -17479,21 +17567,21 @@ function Drive-Change {
     # HKLM associated hives detected on the target drive will be loaded as 'HKLM\ANALYSIS_$NAME' such as 'HKLM\ANALYSIS_SOFTWARE' for the SOFTWARE hive
     # User hives (NTUSER.DAT, USRCLASS.DAT) will be loaded as 'HKU\ANALYSIS_$NAME' and 'HKU\ANALYSIS_$NAME_Classes' respectively - such as 'HKU\ANALYSIS_JOE'/'HKU\ANALYSIS_JOE_Classes for each detected profile on the target drive.
     Write-Message "Setting up Registry Variables"
-    if ($drivechange){
+    if ($drivechange) {
         Write-Host "[!] Moving Target Drive to $drivetarget"
-        if ($drivetarget -notmatch "^[A-Za-z]{1}:$"){
+        if ($drivetarget -notmatch "^[A-Za-z]{1}:$") {
             #Write-Warning "[!] Invalid Target Drive Format - should be in format like 'D:'"
             #exit
         }
         $dirs = Get-ChildItem $drivetarget -Attributes Directory | Select-Object *
         $windows_found = $false
-        foreach ($dir in $dirs){
-            if ($dir.Name -eq "Windows"){
+        foreach ($dir in $dirs) {
+            if ($dir.Name -eq "Windows") {
                 $windows_found = $true
                 break
             }
         }
-        if ($windows_found -eq $false){
+        if ($windows_found -eq $false) {
             Write-Warning "[!] Could not find Windows Directory in Specified Target Path ($drivetarget)!"
             Write-Message "Make sure to specify ROOT directory containing imaged data (eg. 'F:')"
             exit
@@ -17506,33 +17594,32 @@ function Drive-Change {
             "SOFTWARE"
             "SYSTEM"
         )
-        foreach ($hive in $reg_target_hives){
+        foreach ($hive in $reg_target_hives) {
             $hive_path = "$env_homedrive\Windows\System32\Config\$hive"
-            if (Test-Path $hive_path){
+            if (Test-Path $hive_path) {
                 Load-Hive "ANALYSIS_$hive" $hive_path "HKEY_LOCAL_MACHINE"
             }
         }
 
         $script:reg_user_hives = @{}
-        if (Test-Path "$env_homedrive\Users")
-        {
+        if (Test-Path "$env_homedrive\Users") {
             $user_hive_list = New-Object -TypeName "System.Collections.ArrayList"
             $user_hive_list_classes = New-Object -TypeName "System.Collections.ArrayList"
             $script:regtarget_hkcu_list = @()
             $script:regtarget_hkcu_class_list = @()
             $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
-            foreach ($user in $profile_names){
+            foreach ($user in $profile_names) {
                 $name = $user.Name
                 $ntuser_path = "$env_homedrive\Users\$name\NTUSER.DAT"
                 $class_path = "$env_homedrive\Users\$name\AppData\Local\Microsoft\Windows\UsrClass.DAT"
-                if (Test-Path $ntuser_path){
+                if (Test-Path $ntuser_path) {
                     $full_hive_path = "ANALYSIS_{0}" -f $name
                     Load-Hive $full_hive_path $ntuser_path "HKEY_USERS"
                     $user_hive_list.Add($full_hive_path) | Out-Null
                     $tmphivepath = "HKEY_USERS\$full_hive_path"
                     $script:regtarget_hkcu_list += $tmphivepath
                 }
-                if (Test-Path $class_path){
+                if (Test-Path $class_path) {
                     $full_hive_path = "ANALYSIS_{0}_Classes" -f $name
                     Load-Hive $full_hive_path $class_path "HKEY_USERS"
                     $user_hive_list_classes.Add($full_hive_path) | Out-Null
@@ -17542,7 +17629,8 @@ function Drive-Change {
 
             }
 
-        } else {
+        }
+        else {
             $profile_names = @()
             Write-Warning "[!] Could not find '$env_homedrive\Users'!"
         }
@@ -17554,16 +17642,18 @@ function Drive-Change {
         $script:currentcontrolset = "ControlSet001"
 
 
-    } elseif ($drivechange -eq $false){
+    }
+    elseif ($drivechange -eq $false) {
         # Load all HKU hives into lists for global reference
         $script:regtarget_hkcu_list = @()
         $script:regtarget_hkcu_class_list = @()
         $base_key = "HKEY_USERS"
-        $items = Get-ChildItem -Path "Registry::$base_key" | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        $items = Get-ChildItem -Path "Registry::$base_key" | Select-Object * -ExcludeProperty PSPath, PSParentPath, PSChildName, PSProvider
         foreach ($item in $items) {
-            if ($item.Name -match ".*_Classes"){
+            if ($item.Name -match ".*_Classes") {
                 $script:regtarget_hkcu_class_list += $item.Name
-            } else {
+            }
+            else {
                 $script:regtarget_hkcu_list += $item.Name
             }
         }
@@ -17587,78 +17677,82 @@ function Load-Hive($hive_name, $hive_path, $hive_root) {
     $new_psdrives_list.Add($reg_fullpath, $hive_name)
 }
 
-function Unload-Hive($hive_fullpath, $hive_value){
+function Unload-Hive($hive_fullpath, $hive_value) {
     Write-Message "Unloading $hive_fullpath"
     [gc]::collect()
     $null = reg unload $hive_fullpath
     #$null = Remove-PSDrive -Name $hive_value -Root $hive_root
 }
+
+#endregion
+#region Main Functionality
+
 function Clean-Up {
-    <#
+	<#
     .SYNOPSIS
         If we are targeting a non-local drive, clean up all mounted hives
     #>
-    #Start-Sleep -seconds 5
-    if ($drivechange){
-        foreach ($hive in $new_psdrives_list.GetEnumerator()){
-            $hive_key = $hive.Key
-            if (Test-Path "Registry::$hive_key"){
-                Unload-Hive $hive.Key $hive.Value
-            }
-        }
-    }
+	#Start-Sleep -seconds 5
+	if ($drivechange) {
+		foreach ($hive in $new_psdrives_list.GetEnumerator()) {
+			$hive_key = $hive.Key
+			if (Test-Path "Registry::$hive_key") {
+				Unload-Hive $hive.Key $hive.Value
+			}
+		}
+	}
 }
 
 function Logo {
-    $logo = "
+	$logo = "
   __________  ___ _       ____    __________ 
  /_  __/ __ \/   | |     / / /   / ____/ __ \
   / / / /_/ / /| | | /| / / /   / __/ / /_/ /
  / / / _, _/ ___ | |/ |/ / /___/ /___/ _, _/ 
 /_/ /_/ |_/_/  |_|__/|__/_____/_____/_/ |_|  
     "
-    Write-Host $logo -ForegroundColor White
-    Write-Host "Trawler - Dredging Windows for Persistence" -ForegroundColor White
-    Write-Host "github.com/joeavanzato/trawler" -ForegroundColor White
-    Write-Host ""
+	Write-Host $logo -ForegroundColor White
+	Write-Host "Trawler - Dredging Windows for Persistence" -ForegroundColor White
+	Write-Host "github.com/joeavanzato/trawler" -ForegroundColor White
+	Write-Host ""
 }
 
 function Main {
-    Logo
+	Logo
 
-    # Check Outputs
-    $permissions_ok = Test-OutputDirectoryPermissions
-    if (-not $permissions_ok){
-        Write-Message "Fatal Error - Could not create/access specified output directory!"
-        return
-    }
-
-    # Create detection output files
-    $script:JSONDetectionsPath = New-TrawlerOutputItem -FileName "detections" -FileType "json"
-    $script:CSVDetectionsPath = New-TrawlerOutputItem -FileName "detections" -FileType "csv"
-    Write-Message "Detection Output Files: $($script:JSONDetectionsPath.Path), $($script:CSVDetectionsPath.Path)"
-
-    # Setting up required script-level variables
-    Drive-Change
-
-    if ($loadsnapshotdata){
-        Load-DetectionSnapshot
-    }
-
-	if ($ScanOptions -eq "All") {
-        $ScanOptions = (Get-Variable "ScanOptions").Attributes.ValidValues
+	# Check Outputs
+	$permissions_ok = Test-OutputDirectoryPermissions
+	if (-not $permissions_ok) {
+		Write-Message "Fatal Error - Could not create/access specified output directory!"
+		return
 	}
 
-    if ($evtx){
-        $evtx_creation_status = Create-EventSource
-        if (-not $evtx_creation_status){
-            # Fatal Error attempting to create event log
-            Write-Message("Fatal Error setting up EventLog Source - are we running as admin?")
-            return
-        }
-    }
+	# Create detection output files
+	$script:JSONDetectionsPath = New-TrawlerOutputItem -FileName "detections" -FileType "json"
+	$script:CSVDetectionsPath = New-TrawlerOutputItem -FileName "detections" -FileType "csv"
+	Write-Message "Detection Output Files: $($script:JSONDetectionsPath.Path), $($script:CSVDetectionsPath.Path)"
 
-	foreach ($option in $ScanOptions){
+	# Setting up required script-level variables
+	Drive-Change
+
+	if ($loadsnapshotdata) {
+		Load-DetectionSnapshot
+	}
+
+	if ($ScanOptions -eq "All") {
+		$ScanOptions = (Get-Variable "ScanOptions").Attributes.ValidValues
+	}
+
+	if ($evtx) {
+		$evtx_creation_status = Create-EventSource
+		if (-not $evtx_creation_status) {
+			# Fatal Error attempting to create event log
+			Write-Message("Fatal Error setting up EventLog Source - are we running as admin?")
+			return
+		}
+	}
+
+	foreach ($option in $ScanOptions) {
 		switch ($option) {
 			"ActiveSetup" { Check-ActiveSetup }
 			"AMSIProviders" { Check-AMSIProviders }
@@ -17670,16 +17764,16 @@ function Main {
 			"AutoDialDLL" { Check-AutoDialDLL }
 			"BIDDll" { Check-BIDDll }
 			"BITS" { Check-BITS }
-            "BootVerificationProgram" { Check-BootVerificationProgram }
+			"BootVerificationProgram" { Check-BootVerificationProgram }
 			"COMHijacks" { Check-COM-Hijacks }
 			"CommandAutoRunProcessors" { Check-CommandAutoRunProcessors }
 			"Connections" { Check-Connections }
 			"ContextMenu" { Check-ContextMenu }
 			"DebuggerHijacks" { Check-Debugger-Hijacks }
 			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
-            "DisableLowIL" { Check-DisableLowILProcessIsolation }
-            "DirectoryServicesRestoreMode" { Check-DirectoryServicesRestoreMode }
-            "DiskCleanupHandlers" { Check-DiskCleanupHandlers }
+			"DisableLowIL" { Check-DisableLowILProcessIsolation }
+			"DirectoryServicesRestoreMode" { Check-DirectoryServicesRestoreMode }
+			"DiskCleanupHandlers" { Check-DiskCleanupHandlers }
 			"eRegChecks" { Check-Registry-Checks }
 			"ErrorHandlerCMD" { Check-ErrorHandlerCMD }
 			"ExplorerHelperUtilities" { Check-ExplorerHelperUtilities }
@@ -17688,7 +17782,7 @@ function Main {
 			"GPOScripts" { Check-GPO-Scripts }
 			"HTMLHelpDLL" { Check-HTMLHelpDLL }
 			"IFEO" { Check-IFEO }
-            "InstalledSoftware" { Check-InstalledSoftware }
+			"InstalledSoftware" { Check-InstalledSoftware }
 			"InternetSettingsLUIDll" { Check-InternetSettingsLUIDll }
 			"KnownManagedDebuggers" { Check-KnownManagedDebuggers }
 			"LNK" { Check-LNK }
@@ -17704,7 +17798,7 @@ function Main {
 			"OfficeGlobalDotName" { Check-OfficeGlobalDotName }
 			"Officetest" { Check-Officetest }
 			"OfficeTrustedLocations" { Check-Office-Trusted-Locations }
-            "OfficeTrustedDocuments"  { Check-OfficeTrustedDocuments }
+			"OfficeTrustedDocuments" { Check-OfficeTrustedDocuments }
 			"OutlookStartup" { Check-Outlook-Startup }
 			"PATHHijacks" { Check-PATH-Hijacks }
 			"PeerDistExtensionDll" { Check-PeerDistExtensionDll }
@@ -17721,7 +17815,7 @@ function Main {
 			"RemoteUACSetting" { Check-RemoteUACSetting }
 			"ScheduledTasks" { Check-ScheduledTasks }
 			"ScreenSaverEXE" { Check-ScreenSaverEXE }
-            "ServiceControlManagerSD" {Check-ServiceControlManagerSD }
+			"ServiceControlManagerSD" { Check-ServiceControlManagerSD }
 			"SEMgrWallet" { Check-SEMgrWallet }
 			"ServiceHijacks" { Check-Service-Hijacks }
 			"Services" { Check-Services }
@@ -17747,15 +17841,16 @@ function Main {
 			"WinlogonHelperDLLs" { Check-WinlogonHelperDLLs }
 			"WMIConsumers" { Check-WMIConsumers }
 			"Wow64LayerAbuse" { Check-Wow64LayerAbuse }
-            "WSL" {Check-WSL }
+			"WSL" { Check-WSL }
 		}
 	}
-    Emit-Detections
-    Clean-Up
-    Detection-Metrics
+	Emit-Detections
+	Clean-Up
+	Detection-Metrics
 }
 
-if ($MyInvocation.InvocationName -match ".+.ps1")
-{
-    Main
+if ($MyInvocation.InvocationName -match ".+.ps1") {
+	Main
 }
+
+#endregion

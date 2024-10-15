@@ -1,4 +1,6 @@
-function Write-Message ($message){
+#region HelperMethods
+
+function Write-Message ($message) {
     <#
     .SYNOPSIS
         Write-Host wrapper to standardize messages to the console
@@ -7,20 +9,22 @@ function Write-Message ($message){
     Write-Host "[+] $message"
 }
 
-function Test-OutputDirectoryPermissions(){
+function Test-OutputDirectoryPermissions() {
     <#
     .SYNOPSIS
         Validates output directory exists and that current user has appropriate permissions to write files
     #>
     # if the output path doesn't exist, create it.
     if (!(Test-Path $OutputLocation)) {
-        try{
+        try {
             New-Item $OutputLocation -Type Directory
             return $true
-        } catch {
+        }
+        catch {
             return $false
         }
-    } else {
+    }
+    else {
         # Can we write to the specified dir?
         $testfile = Join-Path $OutputLocation "trawler_writetest.trawler"
         Try {
@@ -39,26 +43,26 @@ function New-TrawlerOutputItem() {
     .SYNOPSIS
         Helper function to create output items and report on failures.
     #>
-	param (
-		[string]
-		$FileName,
+    param (
+        [string]
+        $FileName,
         [string]
         $FileType
-	)
-	$timestamp = [System.DateTimeOffset]::Now.ToUnixTimeSeconds()
-	$output = [PSCustomObject]@{
-		Path = [System.IO.Path]::Combine($OutputLocation, "$($FileName)_$($timestamp).$($FileType.ToLower())")
-		CanWrite = $false
-	}
+    )
+    $timestamp = [System.DateTimeOffset]::Now.ToUnixTimeSeconds()
+    $output = [PSCustomObject]@{
+        Path     = [System.IO.Path]::Combine($OutputLocation, "$($FileName)_$($timestamp).$($FileType.ToLower())")
+        CanWrite = $false
+    }
     #TODO - Review as this check should be unnecessary as we already validate write capabilities before this
-	try {
+    try {
         [System.IO.File]::OpenWrite($output.Path).Close()
         $output.CanWrite = $true
     }
     catch {
         Write-Warning "Unable to write to provided output path: $($output.Path)"
     }
-	$output
+    $output
 }
 
 function Write-Reportable-Issue($msg) {
@@ -66,7 +70,7 @@ function Write-Reportable-Issue($msg) {
     Write-Warning "Please report this issue at https://github.com/joeavanzato/Trawler/issues"
 }
 
-function Get-File-Hash($file){
+function Get-File-Hash($file) {
     <#
     .SYNOPSIS
         Receives a path to a file as a string, validates the path exists and uses the globally-defined HashMode to return either an MD5, SHA1 or SHA256 hash.
@@ -80,12 +84,12 @@ function Get-File-Hash($file){
     $file = $file.Trim("?")
     $file = $file.Trim("\")
 
-    if ($file -eq ""){
+    if ($file -eq "") {
         return "Invalid File Path"
     }
 
     if ($file.StartsWith("system32")) {
-        $file = $file -replace "system32",[System.Environment]::SystemDirectory
+        $file = $file -replace "system32", [System.Environment]::SystemDirectory
     }
 
     if ($file.Contains("<") -or $file.Contains(">") -or $file.Contains("`"") -or $file.Contains("/") -or $file.Contains("|") -or $file.Contains("?") -or $file.Contains("*")) {
@@ -98,26 +102,30 @@ function Get-File-Hash($file){
     if (Test-Path $file -PathType Leaf) {
         $filepath = $file
         $filefound = $true
-    } elseif ($file.Contains(":")) {
+    }
+    elseif ($file.Contains(":")) {
         return "Invalid File Path"
-    } elseif (Test-Path $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file) -PathType Leaf) {
+    }
+    elseif (Test-Path $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file) -PathType Leaf) {
         # check if in system32
         $filepath = $(Join-Path -Path ([System.Environment]::SystemDirectory) -ChildPath $file)
         $filefound = $true
-    } elseif (Test-Path $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file) -PathType Leaf) {
+    }
+    elseif (Test-Path $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file) -PathType Leaf) {
         # check if in windows
         $filepath = $(Join-Path -Path ([Environment]::GetFolderPath("Windows")) -ChildPath $file)
         $filefound = $true
-    } else {
+    }
+    else {
         # Check all dirs in path to see if it exists
         $paths = $env:Path -split ";"
-        foreach ($p in $paths){
+        foreach ($p in $paths) {
             $p = $p.Trim()
-            if ($p -eq ""){
+            if ($p -eq "") {
                 continue
             }
             $test = $(Join-Path -Path $p -ChildPath $file)
-            if (Test-Path $test -PathType Leaf){
+            if (Test-Path $test -PathType Leaf) {
                 $filepath = $test
                 $filefound = $true
                 break
@@ -125,7 +133,7 @@ function Get-File-Hash($file){
         }
     }
 
-    if (-not $filefound){
+    if (-not $filefound) {
         return "File Not Found"
     }
 
@@ -133,7 +141,8 @@ function Get-File-Hash($file){
         # Couldn't find initial
         $hash = Get-FileHash -Algorithm $HashMode -Path $file
         return $hash.Hash
-    } catch {
+    }
+    catch {
         return "Access Error"
     }
     return "Hashing Error"
@@ -144,21 +153,22 @@ function Format-MetadataToString($detectionmeta) {
     .SYNOPSIS
         Receives an object representing the metadata of a specific detection and formats this to a more human-readable string for u se in CSV/Console output
     #>
-	$output = ""
-    $propertyCount = ($detectionmeta|Get-Member -Type NoteProperty).count
+    $output = ""
+    $propertyCount = ($detectionmeta | Get-Member -Type NoteProperty).count
     $index = 1
     foreach ($prop in $detectionmeta.PSObject.Properties) {
-        if ($index -eq $propertyCount){
+        if ($index -eq $propertyCount) {
             $output += "$($prop.Name): $($prop.Value)"
-        } else {
+        }
+        else {
             $output += "$($prop.Name): $($prop.Value), "
         }
         $index += 1
     }
-	return $output
+    return $output
 }
 
-function Get-HashOfString($string){
+function Get-HashOfString($string) {
     <#
     .SYNOPSIS
         Receives a string and converts it to a hash-representation, emitting the resulting hash
@@ -177,9 +187,12 @@ function Format-DateTime($datetime, $utc_convert) {
     .SYNOPSIS
         Receives a PowerShell datetime object and a boolean - returns a standardized string representation - if utc_convert is $true, converts the (assumed) local timestamp into UTC
     #>
-    if ($utc_convert){
+    if ($utc_convert) {
         return $datetime.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss")
-    } else {
+    }
+    else {
         return $datetime.ToString("yyyy-MM-dd'T'HH:mm:ss")
     }
 }
+
+#endregion

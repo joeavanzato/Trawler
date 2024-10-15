@@ -1,19 +1,21 @@
+#region Detections
+
 function Write-Detection($det) {
     <#
     .SYNOPSIS
         Receives a 'Detection' - a PowerShell custom object containing specific fields - writes this to Console, EventLog, CSV and a global array for storage depending on specified options.
     #>
 
-	# det is a custom object which will contain various pieces of metadata for the detection
-	# Name - The name of the detection logic.
-	# Risk (Very Low, Low, Medium, High, Very High)
-	# Source - The source 'module' reporting the detection
-	# Technique - The most relevant MITRE Technique
-	# Meta - Embedded object containing reference material specific to the received detection
+    # det is a custom object which will contain various pieces of metadata for the detection
+    # Name - The name of the detection logic.
+    # Risk (Very Low, Low, Medium, High, Very High)
+    # Source - The source 'module' reporting the detection
+    # Technique - The most relevant MITRE Technique
+    # Meta - Embedded object containing reference material specific to the received detection
 
     # Validate core fields
-    $core_fields = @("Name","Risk","Source","Technique","Meta")
-    foreach ($field in $core_fields){
+    $core_fields = @("Name", "Risk", "Source", "Technique", "Meta")
+    foreach ($field in $core_fields) {
         if (-not $($det.PSobject.Properties.Name -contains $field)) {
             Write-Reportable-Issue "Detection Missing '$field' Field! [$det]"
             $det.$($field) = "Error"
@@ -21,12 +23,12 @@ function Write-Detection($det) {
         }
     }
 
-    if (-not (@("Very Low", "Low", "Medium", "High", "Very High") -contains $det.Risk)){
+    if (-not (@("Very Low", "Low", "Medium", "High", "Very High") -contains $det.Risk)) {
         Write-Reportable-Issue "Detection has invalid Risk Value: $($det.Risk)"
     }
 
     # Before anything else, we find all datetime objects within the Meta field of a detection and generate a corresponding UTC timestamp so consumers can use either-or
-    if ($det.PSobject.Properties.Name -contains "Meta"){
+    if ($det.PSobject.Properties.Name -contains "Meta") {
         $det.Meta.PSObject.Properties | ForEach-Object {
             if ($_.Value -is [datetime]) {
                 $tmp = $_.Value
@@ -37,44 +39,44 @@ function Write-Detection($det) {
     }
 
     # If there is no reference, just set it as "N/A" for now
-    if (-not $($det.PSobject.Properties.Name -contains "Reference")){
+    if (-not $($det.PSobject.Properties.Name -contains "Reference")) {
         $det | Add-Member -MemberType NoteProperty -Name Reference -Value "N/A"
     }
 
     # Then we do a hash of the detection to determine if it exists in a snapshot - if we are using snapshot and it exists, skip, else, keep going
     $should_we_skip = Check-DetectionInSnapshot($det)
-    if ($should_we_skip){
+    if ($should_we_skip) {
         $script:suppressed_detections += 1
         return
     }
 
-	$detection_list.Add($det) | Out-Null
+    $detection_list.Add($det) | Out-Null
 
-	switch ($det.Risk) {
-		"Very Low" { $fg_color = "Green" }
-		"Low" { $fg_color = "Green" }
-		"Medium" { $fg_color = "Yellow" }
-		"High" { $fg_color = "Red" }
-		"Very High" { $fg_color = "Magenta" }
-		Default { $fg_color = "Yellow" }
-	}
+    switch ($det.Risk) {
+        "Very Low" { $fg_color = "Green" }
+        "Low" { $fg_color = "Green" }
+        "Medium" { $fg_color = "Yellow" }
+        "High" { $fg_color = "Red" }
+        "Very High" { $fg_color = "Magenta" }
+        Default { $fg_color = "Yellow" }
+    }
 
     # Console Output
-	if (-not($Quiet)) {
-		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
-		Write-Host "[%] $(Format-MetadataToString($det.Meta))" -ForegroundColor White
-	}
+    if (-not($Quiet)) {
+        Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
+        Write-Host "[%] $(Format-MetadataToString($det.Meta))" -ForegroundColor White
+    }
 
 
 }
 
-function Check-DetectionInSnapshot($detection){
+function Check-DetectionInSnapshot($detection) {
     <#
     .SYNOPSIS
         Receives a detection and checks if it exists in the snapshow allow-list - if so, return $true, else or if we are not using snapshot, return $false
     #>
     # First we check if we are even using a snapshot - if no, then immediately return
-    if (-not $snapshot){
+    if (-not $snapshot) {
         return $false
     }
 
@@ -86,17 +88,18 @@ function Check-DetectionInSnapshot($detection){
     # Check if this already exists in our hash array of the loaded detection snapshot
     if ($detection_hash_array_snapshot -contains $detection_hash) {
         return $true
-    } else {
+    }
+    else {
         return $false
     }
 }
 
-function Prepare-DetectionForHash ($detection){
+function Prepare-DetectionForHash ($detection) {
     <#
     .SYNOPSIS
         Receives a detection and removes any allow-listed fields from specific detections to improve the fidelity of allow-listing.
     #>
-    if ($detection.Name -eq "Established Connection on Suspicious Port"){
+    if ($detection.Name -eq "Established Connection on Suspicious Port") {
         $detection.Meta.PSObject.Properties.Remove('LocalAddress')
         $detection.Meta.PSObject.Properties.Remove('LocalPort')
         $detection.Meta.PSObject.Properties.Remove('PID')
@@ -111,14 +114,14 @@ function Load-DetectionSnapshot {
         Checks if provided snapshot file is valid and reads the content in order to prepare a list of hashes that represent 'allowed' detections.
     #>
     Write-Message "Reading Snapshot File: $snapshot"
-    if (-not (Test-Path -Path $snapshot)){
+    if (-not (Test-Path -Path $snapshot)) {
         Write-Message "Error - Could not find specified snapshot file: $snapshot"
         return
     }
 
     $snapshot_detection_count = 0
     $json = Get-Content $snapshot | Out-String | ConvertFrom-Json
-    foreach ($det in $json){
+    foreach ($det in $json) {
         $detection_prepared = Prepare-DetectionForHash($det)
         $detection_hash = Get-HashOfString $($detection_prepared | ConvertTo-Json)
         $detection_hash_array_snapshot.Add($detection_hash) | Out-Null
@@ -134,13 +137,13 @@ function Detection-Metrics {
         Presents metrics surrounding all detections to the end-user for a summary view.
     #>
     Write-Host "[!] ### Detection Metadata ###" -ForeGroundColor White
-	Write-Message "Total Detections: $($detection_list.Count)"
+    Write-Message "Total Detections: $($detection_list.Count)"
     Write-Message "Total Suppressed Detections: $suppressed_detections"
-	foreach ($str in ($detection_list | Group-Object Risk | Select-Object Name, Count | Out-String).Split([System.Environment]::NewLine)) {
-		if (-not ([System.String]::IsNullOrWhiteSpace($str))){
-			Write-Message $str
-		}
-	}
+    foreach ($str in ($detection_list | Group-Object Risk | Select-Object Name, Count | Out-String).Split([System.Environment]::NewLine)) {
+        if (-not ([System.String]::IsNullOrWhiteSpace($str))) {
+            Write-Message $str
+        }
+    }
 }
 
 function Emit-Detections {
@@ -151,7 +154,7 @@ function Emit-Detections {
     # Emit detections in JSON format
     $detection_list | ConvertTo-Json | Out-File $script:JSONDetectionsPath.Path
 
-    foreach ($det in $detection_list){
+    foreach ($det in $detection_list) {
         #EVTX Output
         if ($evtx) {
             Write-DetectionToEVTX $det
@@ -163,3 +166,5 @@ function Emit-Detections {
     }
 
 }
+
+#endregion

@@ -1,3 +1,5 @@
+#region EventLogging
+
 function Create-EventSource {
     <#
     .SYNOPSIS
@@ -11,12 +13,14 @@ function Create-EventSource {
             Write-Message("Successfully created Event Log Source: $evtx_source")
             # Created ok
             return $true
-        } catch {
+        }
+        catch {
             # Error creating
             Write-Message("Failed to create Event Log Source: $evtx_source")
             return $false
         }
-    } else {
+    }
+    else {
         # Source already exists
         Write-Message("Event Log Source already exists")
         return $true
@@ -42,3 +46,5 @@ function Write-DetectionToEVTX($detection) {
         }#>
     Write-EventLog -LogName $evtx_logname -Source $evtx_source -EventID 9001 -EntryType Information -Message $($detection | ConvertTo-Json) -ErrorAction SilentlyContinue
 }
+
+#endregion
