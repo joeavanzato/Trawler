@@ -135,6 +135,7 @@ param
 		"OfficeAI",
 		"OfficeGlobalDotName",
 		"Officetest",
+        "OfficeTrustedDocuments",
 		"OfficeTrustedLocations",
 		"OutlookStartup",
 		"PATHHijacks",
@@ -14200,11 +14201,63 @@ function Check-Suspicious-Certificates {
     }
 }
 
+function Check-OfficeTrustedDocuments {
+    <#
+    .SYNOPSIS
+        Attempt to detect potentially-suspicious documents interacted with by the user.
+    #>
+    # When a user enables macros or creates a macro-enabled document, a reference to the document is stored at HKEY_CURRENT_USER\Software\Microsoft\Office\[office_version]\(Word|Excel|PowerPoint)\Security\Trusted Documents\TrustRecords
+    # We can iterate this key to attempt and find any initial access related malware
+
+    $basepath = "Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\*\*\Security\Trusted Documents\TrustRecords"
+    $paths = Get-Item $basepath
+    $reference = "https://www.bleepingcomputer.com/news/security/windows-registry-helps-find-malicious-docs-behind-infections/"
+    # Last 4 bytes of "Data" will be 01 00 00 00 if we 'Enable Editing', FF FF FF 7F if we 'Enable Content'
+    foreach ($path in $paths){
+        $path = "Registry::$path"
+        $data = Get-ItemProperty -Path $path | Select-Object * -ExcludeProperty PSPath,PSParentPath,PSChildName,PSProvider
+        foreach ($prop in $data.psobject.Properties){
+            [byte[]]$val = $prop.Value
+            $hexbin = [System.Runtime.Remoting.Metadata.W3cXsd2001.SoapHexBinary]::new()
+            $hexbin.Value = $val
+            $hexString = $hexbin.ToString()
+            $macroEnabled = $false
+            if ($hexString.EndsWith("FFFFFF7F")){
+                $macroEnabled = $true
+            }
+            $Int64Value = [System.BitConverter]::ToInt64($prop.Value, 0)
+            $date = [DateTime]::FromFileTime($Int64Value)
+            if ($date.Year -eq 1600){
+                $date = "Unknown"
+            }
+            $detection = [PSCustomObject]@{
+                Name = 'Enable Content clicked on Office Document'
+                Risk = 'Medium'
+                Source = 'Office'
+                Technique = "T1137.006: Office Application Startup: Add-ins"
+                Meta = [PSCustomObject]@{
+                    Location = $path
+                    EntryName = $prop.Name
+                    Created = $date
+                }
+            }
+            if (-not $macroEnabled){
+                $detection.Name = "Enable Editing clicked on Office Document"
+                $detection.Risk = "Very Low"
+            }
+            Write-Detection $detection
+
+        }
+    }
+
+}
+
 function Check-Office-Trusted-Locations {
     # Mostly supports drive retargeting
     # https://github.com/PowerShell/PowerShell/issues/16812
     Write-Message "Checking Office Trusted Locations"
     #TODO - Add 'abnormal trusted location' detection
+    # TODO - Redo this to consider all Office versions as well as Word, Excel and PowerPoint - need to abstract the logic better
     $profile_names = Get-ChildItem "$env_homedrive\Users" -Attributes Directory | Select-Object *
     $actual_current_user = $env:USERNAME
     $user_pattern = "$env_assumedhomedrive\\Users\\(.*?)\\.*"
@@ -14236,13 +14289,20 @@ function Check-Office-Trusted-Locations {
                     }
 
                     $default_trusted_locations = @(
-                        "C:\Users\$actual_current_user\AppData\Roaming\Microsoft\Templates"
-                        "C:\Program Files\Microsoft Office\root\Templates\"
-                        "C:\Program Files (x86)\Microsoft Office\root\Templates\"
-                        "C:\Users\$actual_current_user\AppData\Roaming\Microsoft\Word\Startup"
+                        ".*\\Users\\.*\\AppData\\Roaming\\Microsoft\\Templates"
+                        ".*\\Program Files\\Microsoft Office\\root\\Templates\\"
+                        ".*\\Program Files \(x86\)\\Microsoft Office\\root\\Templates\\"
+                        ".*\\Users\\.*\\AppData\\Roaming\\Microsoft\\Word\\Startup"
                     )
 
-                    if ('{0}' -f $data.Path -notin $default_trusted_locations){
+                    $match = $false
+                    foreach ($allowedpath in $default_trusted_locations){
+                        if ($data.Path -match $allowedpath){
+                            $match = $true
+                        }
+                    }
+
+                    if (-not $match){
                         $p = $data.Path
                         $detection = [PSCustomObject]@{
                             Name = 'Non-Standard Office Trusted Location'
@@ -17689,6 +17749,7 @@ function Main {
 			"OfficeGlobalDotName" { Check-OfficeGlobalDotName }
 			"Officetest" { Check-Officetest }
 			"OfficeTrustedLocations" { Check-Office-Trusted-Locations }
+            "OfficeTrustedDocuments"  { Check-OfficeTrustedDocuments }
 			"OutlookStartup" { Check-Outlook-Startup }
 			"PATHHijacks" { Check-PATH-Hijacks }
 			"PeerDistExtensionDll" { Check-PeerDistExtensionDll }
@@ -17704,7 +17765,6 @@ function Main {
 			# "RegistryChecks" {Check-Registry-Checks}  # Deprecated
 			"RemoteUACSetting" { Check-RemoteUACSetting }
 			"ScheduledTasks" { Check-ScheduledTasks }
-			# "SCMDACL" {Check-SCM-DACL} # TODO
 			"ScreenSaverEXE" { Check-ScreenSaverEXE }
             "ServiceControlManagerSD" {Check-ServiceControlManagerSD }
 			"SEMgrWallet" { Check-SEMgrWallet }
