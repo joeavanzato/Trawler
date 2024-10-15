@@ -191,6 +191,7 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * Suspiciously-Named Installed Software
 * Directory Services Restore Mode Status
 * Service Control Manager Security Descriptor Modifications
+* Windows Subsystem for Linux VMs
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
@@ -249,6 +250,7 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1553: Subvert Trust Controls
 * T1553.004: Subvert Trust Controls: Install Root Certificate
 * T1556.002: Modify Authentication Process: Password Filter DLL
+* T1564.006: Hide Artifacts: Run Virtual Instance
 * T1574: Hijack Execution Flow
 * T1574.007: Hijack Execution Flow: Path Interception by PATH Environment Variable
 * T1574.009: Hijack Execution Flow: Path Interception by Unquoted Path
