@@ -14,7 +14,7 @@ $time = Measure-Command {
 
     Add-Content -Path $path -Value (Get-Content .\src\Common\Detections.ps1)
     Add-Content -Path $path -Value (Get-Content .\src\Common\EventLog.ps1)
-    Add-Content -Path $path -Value (Get-Content .\src\Common\Detections.ps1)
+    Add-Content -Path $path -Value (Get-Content .\src\Common\HelperFunctions.ps1)
     Add-Content -Path $path -Value (Get-Content .\src\Common\DriveChanges.ps1)
     Add-Content -Path $path -Value (Get-Content .\src\Common\MainFunctionality.ps1)
 }
