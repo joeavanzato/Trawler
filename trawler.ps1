@@ -107,6 +107,7 @@ param
 		"CommandAutoRunProcessors",
 		"Connections",
 		"ContextMenu",
+        "ChromeExtensions",
 		"DebuggerHijacks",
 		"DirectoryServicesRestoreMode",
         "DisableLowIL",
@@ -201,6 +202,7 @@ $drivechange = $PSBoundParameters.ContainsKey('drivetarget')
 $suspicious_process_paths = @(
 	".*\\users\\(administrator|default|public|guest)\\.*",
 	".*\\windows\\(debug|fonts|media|repair|servicing|temp)\\.*",
+	".*\\programdata\\.*",
 	".*recycle\.bin.*"
 )
 $suspicious_extensions = @('*.exe', '*.bat', '*.ps1', '*.hta', '*.vb', '*.vba', '*.vbs','*.rar', '*.zip', '*.gz', '*.7z', '*.dll', '*.scr', '*.cmd', '*.com', '*.ws', '*.wsf', '*.scf', '*.scr', '*.pif', '*.dmp','*.htm', '*.doc*','*.xls*','*.ppt*')
@@ -17184,6 +17186,344 @@ function Check-WSL {
 
 }
 
+function Check-ChromeExtensions {
+    <#
+    .SYNOPSIS
+        Attempts to check installed Chrome Extensions for suspicious keywords, high-risk permissions or permissions on specific high-risk domains
+    #>
+
+    # Reference: https://storage.googleapis.com/support-kms-prod/H67pelgBrKlKSgvA24ooNwVYYx6emmcuJ0LD
+    # TODO - JavaScript content analysis
+    # TODO - Hashing of extensions
+    # TODO - Extension datetime created
+    # TODO - Extensions with permissions to high-risk sites (banking, etc)
+
+    $critical_risk_hosts = @(
+        "http://\*/\*"
+        "https://\*/\*"
+        "ftp://\*/\*"
+        "sftp://\*/\*"
+    )
+
+    $dangerous_permission_website = @(
+        "ally"
+        "capitalone"
+        "chase"
+        "bankofamerica"
+        "wellsfargo"
+        "citibank"
+        "pnc"
+        "usbank"
+        "bbva"
+        "suntrust"
+        "truist"
+        "regions"
+        "key"
+        "hsbc"
+        "santander"
+        "firstrepublic"
+        "chime"
+        "simple"
+        "aspiration"
+        "n26"
+        "varomoney"
+        "revolut"
+        "sofi"
+        "paypal"
+        "venmo"
+        "zellepay"
+        "square"
+        "stripe"
+        "cash"
+        "apple"
+        "google"
+        "wise"
+        "dwolla"
+        "robinhood"
+        "etrade"
+        "fidelity"
+        "schwab"
+        "tdameritrade"
+        "vanguard"
+        "merrilledge"
+        "webull"
+        "acorns"
+        "betterment"
+        "stash"
+        "motifinvesting"
+        "etrade"
+        "coinbase"
+        "binance"
+        "kraken"
+        "gemini"
+        "bitstamp"
+        "bittrex"
+        "huobi"
+        "kucoin"
+        "crypto"
+        "experian"
+        "equifax"
+        "transunion"
+        "creditkarma"
+        "creditsesame"
+        "toasttab"
+        "klarna"
+        "affirm"
+        "plaid"
+        "nerdwallet"
+        "lendingclub"
+        "prosper"
+        "upgrade"
+        "kabbage"
+        "point"
+        "statefram"
+        "geico"
+        "progressive"
+        "allstate"
+        "metlife"
+        "mint"
+        "ynab"
+    )
+
+    $high_risk_permissions = @{
+        "app.window.fullscreen.overrideEsc" = "Can prevent escape button from exiting fullscreen"
+        "browsingData" = "Clears browsing data which could result in a forensics/logging issues"
+        "content_security_policy" = "Can manipulate default CSP"
+        "contentSettings" = "Could allow plugins to run unsandboxed"
+        "debugger" = "Provides high level super user access"
+        "declarativeNetRequest" = "API is used to block or redirect network requests by specifying declarative rules"
+        "declarativeWebRequest" = "API to intercept, block, or modify requests in-flight."
+        "experimental" = "Access to any of the experimental APIs"
+        "history" = "Full history (read, add, delete)"
+        "nativeMessaging" = "Allows native (Win, Linux, Mac) programs that register with chrome to talk with extensions"
+        "pageCapture" = "Gets MHTML (archived Web page) of any page"
+        "privacy" = "Can turn off malware protections (e.g. chrome.privacy.services.safeBrowsingEnabled)"
+        "proxy" = "Manage Chrome's proxy settings. Can be used to send user’s internet traffic"
+        "tabCapture" = "Get picture/video of user’s current tab"
+        "tabs" = "Can access current URLs and favicons"
+        "videoCapture" = "Extension can use webcam, possibly screen contents depending on settings"
+        "vpnProvider" = "Extension can create a VPN tunnel and send/receive packets through it, across sessions"
+        "web_accessible_resources" = "This can be used to execute remote scripts."
+        "webNavigation" = "Listen to the websites that a user visits"
+    }
+
+    $critical_risk_permissions = @{
+
+        # TODO - Fix lookup bug on <all_urls>
+        "<all_urls>" = "The extension wants to interact with the code running on pages which matches any URL that starts with a permitted scheme (http:, https:, file:, ftp:, or chrome-extension)."
+        "audioCapture" = "Capture audio from attached mic or webcam. Could be used to listen in on user"
+        "copresence" = "P2P communication"
+        "downloads" = "Programmatically initiate, monitor, manipulate, and search for downloads. Can be used to download scripts."
+        "downloads.open" = "Allows an extension to open a downloaded file; as above, can be used to run a downloaded script."
+        "hid" = "Access USB devices (can act as driver)"
+        "socket" = "Raw TCP/UDP connection, listen on a port, etc."
+        "unsafe-eval" = "Can be used to fetch and execute remote script"
+        "usb" = "Interact with any USB device (Raw Format)"
+        "usbDevices" = "Used in conjunction with USB permission to specify the types of USB devices the extension wants access to"
+        "*://*/*" = "Extension wants to interact with the code running on pages which matches any URL that uses the https: or http: scheme"
+        "://*" = "Extension wants to interact with the code running on pages which matches any URL that uses the https: or http: scheme"
+        "http://*/*" = "Extension wants to interact with the code running on pages which matches any URL that uses the https: or http: scheme"
+        "https://*/*" = "Extension wants to interact with the code running on pages which matches any URL that uses the https: or http: scheme"
+    }
+
+    $basepath = "$env_assumedhome\Users\*\AppData\Local\Google\Chrome\User Data\Default\Extensions"
+    $paths = Get-ChildItem -Path $basepath
+    $extension_paths = New-Object System.Collections.ArrayList
+    foreach ($path in $paths){
+        $user = ""
+        if ($path -match "Users\\(?<user>.*)\\AppData"){
+            $user = $Matches.user
+        }
+        $extension_dirs = Get-ChildItem -Path $path -ErrorAction SilentlyContinue
+        foreach ($extension_dir in $extension_dirs){
+            $extension_paths.Add($extension_dir.FullName) | Out-Null
+        }
+    }
+
+    foreach ($extension_path in $extension_paths){
+        $manifest_file = Get-ChildItem -Path $extension_path -Filter "manifest.json" -Recurse -File
+        if ($manifest_file.Count -eq 0){
+            continue
+        }
+        $extension_string = Get-Content -Path $manifest_file[0].FullName -Raw |  ConvertFrom-Json
+        $extension_data = Parse-ExtensionManifest $extension_string
+        $very_high_risk_found = $false
+        $high_risk_found = $false
+        $med_risk_found = $false
+        #[regex]::Escape($k)
+        $extension_risky_permissions = New-Object System.Collections.ArrayList
+        foreach ($permission in $extension_data.permissions){
+            foreach ($k in $high_risk_permissions.Keys){
+                if ($permission -eq $k){
+                    $tmp = [PSCustomObject]@{
+                        "Permission" = $k
+                        "Reason" = $high_risk_permissions[$k]
+                        "Risk" = "High"
+                    }
+                    $extension_risky_permissions.Add($tmp) | Out-Null
+                }
+            }
+            foreach ($k in $critical_risk_permissions.Keys){
+                if ($permission -eq $k){
+                    $tmp = [PSCustomObject]@{
+                        "Permission" = $k
+                        "Reason" = $high_risk_permissions[$k]
+                        "Risk" = "Very High"
+                    }
+                    $extension_risky_permissions.Add($tmp) | Out-Null
+                    $very_high_risk_found = $true
+                }
+            }
+        }
+
+        $extension_risky_hosts = New-Object System.Collections.ArrayList
+        foreach ($term in $extension_data.host_permissions){
+            foreach ($k in $dangerous_permission_website){
+                if ($term -match $k){
+                    $tmp = [PSCustomObject]@{
+                        "Host" = $term
+                        "Reason" = "Access to a high-risk domain"
+                        "Risk" = "High"
+                        "SuspiciousEntry" = $k
+                    }
+                    $extension_risky_hosts.Add($tmp) | Out-Null
+                }
+            }
+            foreach ($k in $critical_risk_hosts){
+                if ($term -match $k){
+                    $tmp = [PSCustomObject]@{
+                        "Host" = $term
+                        "Reason" = "Access to a very high-risk domain"
+                        "Risk" = "Very High"
+                        "SuspiciousEntry" = $k
+                    }
+                    $very_high_risk_found = $true
+                    $extension_risky_hosts.Add($tmp) | Out-Null
+                }
+            }
+        }
+
+
+        # TODO - Other Less-Risky Permissions
+
+        $permission_detection = [PSCustomObject]@{
+            Name = 'Potentially Suspicious Browser Extension'
+            Risk = 'High'
+            Source = 'Chrome'
+            Technique = "T1176: Browser Extensions"
+            Reference = "https://support.google.com/chrome/a/answer/9897812?hl=en"
+            Meta = [PSCustomObject]@{
+                Location = $manifest_file[0].FullName
+                EntryName = $extension_data.name
+                ExtensionMetadata = [PSCustomObject]@{
+                    BackgroundScripts = $extension_data.background_scripts
+                    ManifestVersion = $extension_data.manifest_version
+                    Name = $extension_data.name
+                    Description = $extension_data.description
+                    OAuthAutoApprove = $extension_data.oauth_autoapprove
+                    OAuthClientID = $extension_data.oauth_client_id
+                    OAuthScopes = $extension_data.oauth_scopes
+                    Permissions = $extension_data.permissions
+                    HostPermissions = $extension_data.host_permissions
+                    UpdateURL = $extension_data.update_url
+                    Version = $extension_data.version
+                }
+                RiskyPermissions = $extension_risky_permissions
+                RiskyHosts = $extension_risky_hosts
+            }
+        }
+
+        if ($very_high_risk_found){
+            $permission_detection.Risk = "Very High"
+        }
+
+        if (($extension_risky_permissions.Count -ne 0) -or ($extension_risky_hosts.Count -ne 0)){
+            Write-Detection $permission_detection
+        }
+    }
+}
+
+function Parse-ExtensionManifest ($manifest_json){
+    <#
+    .SYNOPSIS
+        Receives a PowerShell object representing the JSON conversion of a Browser Extension Manifest file and attempts to return a more neatly formatted PowerShell object
+    #>
+    if ($manifest_json.app.background.scripts){
+        $background_scripts = $manifest_json.app.background.scripts -Join ","
+    } else {
+        $background_scripts = ""
+    }
+    if ($manifest_json.background.service_worker){
+        $service_worker = $manifest_json.background.service_worker
+    } else {
+        $service_worker = ""
+    }
+    if ($manifest_json.manifest_version){
+        $manifest_version = $manifest_json.manifest_version
+    } else {
+        $manifest_version = ""
+    }
+    if ($manifest_json.name){
+        $name = $manifest_json.name
+    } else {
+        $name = ""
+    }
+    if ($manifest_json.description){
+        $description = $manifest_json.description
+    } else {
+        $description = ""
+    }
+    if ($manifest_json.oauth2.auto_approve){
+        $oauth_autoapprove = $manifest_json.oauth2.auto_approve
+    } else {
+        $oauth_autoapprove = ""
+    }
+    if ($manifest_json.oauth2.client_id){
+        $oauth_client_id = $manifest_json.oauth2.client_id
+    } else {
+        $oauth_client_id = ""
+    }
+    if ($manifest_json.oauth2.scopes){
+        $oauth_scopes = $manifest_json.oauth2.scopes -Join ","
+    } else {
+        $oauth_scopes = ""
+    }
+    if ($manifest_json.permissions){
+        $permissions = $manifest_json.permissions -Join ","
+    } else {
+        $permissions = ""
+    }
+    if ($manifest_json.host_permissions){
+        $host_permissions = $manifest_json.host_permissions -Join ","
+    } else {
+        $host_permissions = ""
+    }
+    if ($manifest_json.update_url){
+        $update_url = $manifest_json.update_url
+    } else {
+        $update_url = ""
+    }
+    if ($manifest_json.version){
+        $version = $manifest_json.version
+    } else {
+        $version = ""
+    }
+    $tmp = [PSCustomObject]@{
+        background_scripts = $background_scripts
+        manifest_version = $manifest_version
+        name = $name
+        description = $description
+        oauth_autoapprove = $oauth_autoapprove
+        oauth_client_id = $oauth_client_id
+        oauth_scopes = $oauth_scopes
+        permissions = $permissions -split ","
+        host_permissions = $host_permissions -split ","
+        update_url = $update_url
+        version = $version
+    }
+    return $tmp
+}
+
 function Get-File-Hash($file){
     <#
     .SYNOPSIS
@@ -17621,7 +17961,7 @@ function Emit-Detections {
         Called at the end of the execution flow to emit all detections in the various specified formats.
     #>
     # Emit detections in JSON format
-    $detection_list | ConvertTo-Json | Out-File $script:JSONDetectionsPath.Path
+    $detection_list | ConvertTo-Json -Depth 4 | Out-File $script:JSONDetectionsPath.Path
 
     foreach ($det in $detection_list){
         #EVTX Output
@@ -17718,6 +18058,7 @@ function Main {
 			"CommandAutoRunProcessors" { Check-CommandAutoRunProcessors }
 			"Connections" { Check-Connections }
 			"ContextMenu" { Check-ContextMenu }
+            "ChromeExtensions" {Check-ChromeExtensions }
 			"DebuggerHijacks" { Check-Debugger-Hijacks }
 			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
             "DisableLowIL" { Check-DisableLowILProcessIsolation }

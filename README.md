@@ -193,6 +193,7 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * Directory Services Restore Mode Status
 * Service Control Manager Security Descriptor Modifications
 * Windows Subsystem for Linux VMs
+* Browser Extension Analysis
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
@@ -226,6 +227,7 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1137.001: Office Application Office Template Macros
 * T1137.002: Office Application Startup: Office Test
 * T1137.006: Office Application Startup: Add-ins
+* T1176: Browser Extensions
 * T1197: BITS Jobs
 * T1505.005: Server Software Component: Terminal Services DLL
 * T1543.003: Create or Modify System Process: Windows Service
