@@ -107,7 +107,7 @@ param
 		"CommandAutoRunProcessors",
 		"Connections",
 		"ContextMenu",
-        "ChromeExtensions",
+        "ChromiumExtensions",
 		"DebuggerHijacks",
 		"DirectoryServicesRestoreMode",
         "DisableLowIL",
@@ -17186,7 +17186,7 @@ function Check-WSL {
 
 }
 
-function Check-ChromeExtensions {
+function Check-ChromiumExtensions {
     <#
     .SYNOPSIS
         Attempts to check installed Chrome Extensions for suspicious keywords, high-risk permissions or permissions on specific high-risk domains
@@ -17308,7 +17308,6 @@ function Check-ChromeExtensions {
     }
 
     $critical_risk_permissions = @{
-
         # TODO - Fix lookup bug on <all_urls>
         "<all_urls>" = "The extension wants to interact with the code running on pages which matches any URL that starts with a permitted scheme (http:, https:, file:, ftp:, or chrome-extension)."
         "audioCapture" = "Capture audio from attached mic or webcam. Could be used to listen in on user"
@@ -17326,7 +17325,8 @@ function Check-ChromeExtensions {
         "https://*/*" = "Extension wants to interact with the code running on pages which matches any URL that uses the https: or http: scheme"
     }
 
-    $basepath = "$env_assumedhome\Users\*\AppData\Local\Google\Chrome\User Data\Default\Extensions"
+    $basepath = "$env_assumedhome\Users\*\AppData\Local\*\*\User Data\Default\Extensions"
+    #$basepath2 = "$env_assumedhome\Users\*\AppData\Local\Microsoft\Edge\User Data\Default\Extensions"
     $paths = Get-ChildItem -Path $basepath
     $extension_paths = New-Object System.Collections.ArrayList
     foreach ($path in $paths){
@@ -17346,7 +17346,7 @@ function Check-ChromeExtensions {
             continue
         }
         $extension_string = Get-Content -Path $manifest_file[0].FullName -Raw |  ConvertFrom-Json
-        $extension_data = Parse-ExtensionManifest $extension_string
+        $extension_data = Parse-ExtensionManifest $extension_string $manifest_file[0]
         $very_high_risk_found = $false
         $high_risk_found = $false
         $med_risk_found = $false
@@ -17443,7 +17443,7 @@ function Check-ChromeExtensions {
     }
 }
 
-function Parse-ExtensionManifest ($manifest_json){
+function Parse-ExtensionManifest ($manifest_json, $extension_dir){
     <#
     .SYNOPSIS
         Receives a PowerShell object representing the JSON conversion of a Browser Extension Manifest file and attempts to return a more neatly formatted PowerShell object
@@ -17508,6 +17508,37 @@ function Parse-ExtensionManifest ($manifest_json){
     } else {
         $version = ""
     }
+
+    # For extensions with a specified locale, we must parse the locale folder to get at true data
+    # "If an extension has a /_locales directory, the manifest must define "default_locale"."
+    # So first we check if _locales exists
+
+    $locales_dir = "$($extension_dir.DirectoryName)\_locales"
+    $locales_exists = Test-Path $locales_dir
+    if ($locales_exists){
+        # If it exists, then check default_locale in the JSON
+        if ($manifest_json.default_locale){
+            Write-Host $manifest_json.default_locale
+            # Then we check if the default locale actually is specified and use that to replace vars
+            $default_locale_file = "$locales_dir\$($manifest_json.default_locale)\messages.json"
+            if (Test-Path $default_locale_file){
+                $locale_data = Get-Content -Path $default_locale_file -Raw |  ConvertFrom-Json
+                if ($locale_data.extDesc.message){
+                    $description = $locale_data.extDesc.message
+                } elseif ($locale_data.extensionDescription.message){
+                    $description = $locale_data.extensionDescription.message
+                }
+                if ($locale_data.extName.message){
+                    $name = $locale_data.extName.message
+                } elseif ($locale_data.extensionName.message){
+                    $name = $locale_data.extensionName.message
+                }
+            } else {
+                # try to use en otherwise or en_US depending?
+            }
+        }
+    }
+
     $tmp = [PSCustomObject]@{
         background_scripts = $background_scripts
         manifest_version = $manifest_version
@@ -18058,7 +18089,7 @@ function Main {
 			"CommandAutoRunProcessors" { Check-CommandAutoRunProcessors }
 			"Connections" { Check-Connections }
 			"ContextMenu" { Check-ContextMenu }
-            "ChromeExtensions" {Check-ChromeExtensions }
+            "ChromiumExtensions" {Check-ChromiumExtensions }
 			"DebuggerHijacks" { Check-Debugger-Hijacks }
 			"DNSServerLevelPluginDLL" { Check-DNSServerLevelPluginDLL }
             "DisableLowIL" { Check-DisableLowILProcessIsolation }
