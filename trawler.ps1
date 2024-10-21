@@ -789,12 +789,12 @@ function Test-OutputDirectoryPermissions(){
     } else {
         # Can we write to the specified dir?
         $testfile = Join-Path $OutputLocation "trawler_writetest.trawler"
-        Try {
+        try {
             [io.file]::OpenWrite($testfile).close()
             Remove-Item $testfile
             return $true
         }
-        Catch {
+        catch {
             return $false
         }
     }
@@ -867,12 +867,12 @@ function Check-ScheduledTasks {
             $userid_match = [regex]::Matches($task_content, $userid_pattern)
 
 
-            If ($author_match[0] -eq $null){
+            if ($author_match[0] -eq $null){
                 $author = "N/A"
             } else {
                 $author = $author_match[0].Groups["Author"].Value
             }
-            If ($runas_match[0] -eq $null){
+            if ($runas_match[0] -eq $null){
                 $runas = "N/A"
             } else {
                 $runas = $runas_match[0].Groups["RunAs"].Value
@@ -880,17 +880,17 @@ function Check-ScheduledTasks {
                     $runas = $author
                 }
             }
-            If ($execute_match[0] -eq $null){
+            if ($execute_match[0] -eq $null){
                 $execute = "N/A"
             } else {
                 $execute = $execute_match[0].Groups["Execute"].Value
             }
-            If ($arguments_match[0] -eq $null){
+            if ($arguments_match[0] -eq $null){
                 $arguments = "N/A"
             } else {
                 $arguments = $arguments_match[0].Groups["Arguments"].Value
             }
-            If ($userid_match[0] -eq $null){
+            if ($userid_match[0] -eq $null){
                 $userid = $author
             } else {
                 $userid = $userid_match[0].Groups["UserId"].Value
@@ -1020,7 +1020,7 @@ function Check-ScheduledTasks {
             }
         }
 
-        ForEach ($term in $rat_terms) {
+        foreach ($term in $rat_terms) {
             if ($task.Execute -match ".*$term.*" -or $task.Arguments -match ".*$term.*") {
                 # Service has a suspicious launch pattern matching a known RAT
                 $detection = [PSCustomObject]@{
@@ -2363,7 +2363,7 @@ function Check-Processes {
     Write-Message "Checking Running Processes"
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     foreach ($process in $processes){
-        ForEach ($term in $rat_terms) {
+        foreach ($term in $rat_terms) {
             if ($process.CommandLine -match ".*$term.*") {
                 $detection = [PSCustomObject]@{
                     Name = 'Running Process has known-RAT Keyword'
