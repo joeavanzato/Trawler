@@ -17145,18 +17145,13 @@ function Format-MetadataToString($detectionmeta) {
     .SYNOPSIS
         Receives an object representing the metadata of a specific detection and formats this to a more human-readable string for u se in CSV/Console output
     #>
-	$output = ""
-    $propertyCount = ($detectionmeta|Get-Member -Type NoteProperty).count
-    $index = 1
+	$output = @()
+
     foreach ($prop in $detectionmeta.PSObject.Properties) {
-        if ($index -eq $propertyCount){
-            $output += "$($prop.Name): $($prop.Value)"
-        } else {
-            $output += "$($prop.Name): $($prop.Value), "
-        }
-        $index += 1
+		$output += "$($prop.Name): $($prop.Value)"
     }
-	return $output
+
+	return $output -join ", "
 }
 
 function Write-Detection($det) {
@@ -17225,8 +17220,6 @@ function Write-Detection($det) {
 		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
 		Write-Host "[%] $(Format-MetadataToString($det.Meta))" -ForegroundColor White
 	}
-
-
 }
 
 function Check-DetectionInSnapshot($detection){
@@ -17244,12 +17237,9 @@ function Check-DetectionInSnapshot($detection){
     $jsondetection = $prepared_detection | ConvertTo-Json
     $detection_hash = Get-HashOfString $jsondetection
     $detection_hash # for some reason, this only works when this is here - I have no idea why right now.
+
     # Check if this already exists in our hash array of the loaded detection snapshot
-    if ($detection_hash_array_snapshot -contains $detection_hash) {
-        return $true
-    } else {
-        return $false
-    }
+	return $detection_hash_array_snapshot -contains $detection_hash
 }
 
 function Prepare-DetectionForHash ($detection){
@@ -17278,7 +17268,7 @@ function Load-DetectionSnapshot {
     }
 
     $snapshot_detection_count = 0
-    $json = Get-Content $snapshot | Out-String | ConvertFrom-Json
+    $json = Get-Content $snapshot | ConvertFrom-Json
     foreach ($det in $json){
         $detection_prepared = Prepare-DetectionForHash($det)
         $detection_hash = Get-HashOfString $($detection_prepared | ConvertTo-Json)
@@ -17286,20 +17276,17 @@ function Load-DetectionSnapshot {
         $snapshot_detection_count += 1
     }
     Write-Message "Loaded $snapshot_detection_count Allowed Detections from Snapshot: $snapshot"
-
 }
 
 function Get-HashOfString($string){
     <#
     .SYNOPSIS
-        Receives a string and converts it to a hash-representation, emitting the resulting hash
+        Receives a string and converts it to a hash-representation, emitting the resulting hash. Forces UTF8 Encoding for deterministic hash generation
     #>
-    $stream = [System.IO.MemoryStream]::new()
-    $w = [System.IO.StreamWriter]::new($stream)
-    $w.write($string)
-    $w.Flush()
-    $stream.Position = 0
+	$bytes = [System.Text.Encoding]::UTF8.GetBytes($string)
+    $stream = [System.IO.MemoryStream]::new($bytes)
     $hash = Get-FileHash -Algorithm SHA1 -InputStream $stream
+	$stream.Close()
     return $hash.Hash
 }
 
@@ -17309,10 +17296,10 @@ function Format-DateTime($datetime, $utc_convert) {
         Receives a PowerShell datetime object and a boolean - returns a standardized string representation - if utc_convert is $true, converts the (assumed) local timestamp into UTC
     #>
     if ($utc_convert){
-        return $datetime.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss")
-    } else {
-        return $datetime.ToString("yyyy-MM-dd'T'HH:mm:ss")
+        $datetime = $datetime.ToUniversalTime()
     }
+
+	return $datetime.ToString("o")
 }
 
 function Detection-Metrics {
