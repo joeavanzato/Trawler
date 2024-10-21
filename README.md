@@ -41,10 +41,10 @@ Additionally, if you identify obvious false positives, please let me know by ope
 -quiet : Suppress Detection output to console
 -snapshot : Path to a previous trawler JSON output to use as an allow-list.
 -outpath : Define a custom file-path for saving detection output to (defaults to "$PSScriptRoot\detections.csv")
--drivetarget : Define the variable for a mounted target drive (eg. .\trawler.ps1 -targetdrive "D:") - skipping this argument leads to an 'assumed homedrive' variable of C: for analysis purposes
+-drivetarget : Define the variable for a mounted target drive (eg. .\trawler.ps1 -targetdrive "D:") - (defaults to local system)
 -daysago : Define how many 'days back' we want to take into consideration for time-based detections (defaults to 45)
--hashmode : Define which hashing algorithm we want to use for supported detections - supports sha1, md5 or sha256
--evtx : Enable creation of Event Log Source and Writing of Detections to Application event log under Source=trawler with EID=9001
+-hashmode : Define which hashing algorithm we want to use for supported detections - supports sha1, md5 or sha256 (defaults to sha1)
+-evtx : Enable creation of Event Log Source and Writing of Detections to Application event log under Source=trawler with EID=9001 (default is disabled)
 ```
 
 ## What separates this from PersistenceSniper?
@@ -116,6 +116,7 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * BITS Jobs Discovery
 * Windows Accessibility Feature Modifications
 * PowerShell Profile Existence
+* Office TrustedDocuments
 * Office Addins from Trusted Locations
 * SilentProcessExit Monitoring
 * Winlogon Helper DLL Hijacking
@@ -191,6 +192,8 @@ Any limitations in checks when doing drive-retargeting will be discussed more fu
 * Suspiciously-Named Installed Software
 * Directory Services Restore Mode Status
 * Service Control Manager Security Descriptor Modifications
+* Windows Subsystem for Linux VMs
+* Browser Extension Analysis
 
 TODO
 * Add Analysis/Remediation Guidance to each detection in the GitHub Wiki (In-Progress)
@@ -224,6 +227,7 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1137.001: Office Application Office Template Macros
 * T1137.002: Office Application Startup: Office Test
 * T1137.006: Office Application Startup: Add-ins
+* T1176: Browser Extensions
 * T1197: BITS Jobs
 * T1505.005: Server Software Component: Terminal Services DLL
 * T1543.003: Create or Modify System Process: Windows Service
@@ -249,6 +253,7 @@ Please be aware that some of these are (of course) more detected than others - f
 * T1553: Subvert Trust Controls
 * T1553.004: Subvert Trust Controls: Install Root Certificate
 * T1556.002: Modify Authentication Process: Password Filter DLL
+* T1564.006: Hide Artifacts: Run Virtual Instance
 * T1574: Hijack Execution Flow
 * T1574.007: Hijack Execution Flow: Path Interception by PATH Environment Variable
 * T1574.009: Hijack Execution Flow: Path Interception by Unquoted Path
