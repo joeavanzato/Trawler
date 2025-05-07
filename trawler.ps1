@@ -817,12 +817,12 @@ function Test-OutputDirectoryPermissions(){
     } else {
         # Can we write to the specified dir?
         $testfile = Join-Path $OutputLocation "trawler_writetest.trawler"
-        Try {
+        try {
             [io.file]::OpenWrite($testfile).close()
             Remove-Item $testfile
             return $true
         }
-        Catch {
+        catch {
             return $false
         }
     }
@@ -902,12 +902,12 @@ function Check-ScheduledTasks {
             $userid_match = [regex]::Matches($task_content, $userid_pattern)
 
 
-            If ($author_match[0] -eq $null){
+            if ($author_match[0] -eq $null){
                 $author = "N/A"
             } else {
                 $author = $author_match[0].Groups["Author"].Value
             }
-            If ($runas_match[0] -eq $null){
+            if ($runas_match[0] -eq $null){
                 $runas = "N/A"
             } else {
                 $runas = $runas_match[0].Groups["RunAs"].Value
@@ -915,17 +915,17 @@ function Check-ScheduledTasks {
                     $runas = $author
                 }
             }
-            If ($execute_match[0] -eq $null){
+            if ($execute_match[0] -eq $null){
                 $execute = "N/A"
             } else {
                 $execute = $execute_match[0].Groups["Execute"].Value
             }
-            If ($arguments_match[0] -eq $null){
+            if ($arguments_match[0] -eq $null){
                 $arguments = "N/A"
             } else {
                 $arguments = $arguments_match[0].Groups["Arguments"].Value
             }
-            If ($userid_match[0] -eq $null){
+            if ($userid_match[0] -eq $null){
                 $userid = $author
             } else {
                 $userid = $userid_match[0].Groups["UserId"].Value
@@ -1055,7 +1055,7 @@ function Check-ScheduledTasks {
             }
         }
 
-        ForEach ($term in $rat_terms) {
+        foreach ($term in $rat_terms) {
             if ($task.Execute -match ".*$term.*" -or $task.Arguments -match ".*$term.*") {
                 # Service has a suspicious launch pattern matching a known RAT
                 $detection = [PSCustomObject]@{
@@ -2398,7 +2398,7 @@ function Check-Processes {
     Write-Message "Checking Running Processes"
     $processes = Get-CimInstance -ClassName Win32_Process | Select-Object ProcessName,CreationDate,CommandLine,ExecutablePath,ParentProcessId,ProcessId
     foreach ($process in $processes){
-        ForEach ($term in $rat_terms) {
+        foreach ($term in $rat_terms) {
             if ($process.CommandLine -match ".*$term.*") {
                 $detection = [PSCustomObject]@{
                     Name = 'Running Process has known-RAT Keyword'
@@ -17663,18 +17663,13 @@ function Format-MetadataToString($detectionmeta) {
     .SYNOPSIS
         Receives an object representing the metadata of a specific detection and formats this to a more human-readable string for u se in CSV/Console output
     #>
-	$output = ""
-    $propertyCount = ($detectionmeta|Get-Member -Type NoteProperty).count
-    $index = 1
+	$output = @()
+
     foreach ($prop in $detectionmeta.PSObject.Properties) {
-        if ($index -eq $propertyCount){
-            $output += "$($prop.Name): $($prop.Value)"
-        } else {
-            $output += "$($prop.Name): $($prop.Value), "
-        }
-        $index += 1
+		$output += "$($prop.Name): $($prop.Value)"
     }
-	return $output
+
+	return $output -join ", "
 }
 
 function Write-Detection($det) {
@@ -17745,8 +17740,6 @@ function Write-Detection($det) {
 		Write-Host "[!] Detection: $($det.Name) - Risk: $($det.Risk)" -ForegroundColor $fg_color
 		Write-Host "[%] $(Format-MetadataToString($det.Meta))" -ForegroundColor White
 	}
-
-
 }
 
 function Check-DetectionInSnapshot($detection){
@@ -17764,12 +17757,9 @@ function Check-DetectionInSnapshot($detection){
     $jsondetection = $prepared_detection | ConvertTo-Json
     $detection_hash = Get-HashOfString $jsondetection
     $detection_hash # for some reason, this only works when this is here - I have no idea why right now.
+
     # Check if this already exists in our hash array of the loaded detection snapshot
-    if ($detection_hash_array_snapshot -contains $detection_hash) {
-        return $true
-    } else {
-        return $false
-    }
+	return $detection_hash_array_snapshot -contains $detection_hash
 }
 
 function Prepare-DetectionForHash ($detection){
@@ -17798,7 +17788,7 @@ function Load-DetectionSnapshot {
     }
 
     $snapshot_detection_count = 0
-    $json = Get-Content $snapshot | Out-String | ConvertFrom-Json
+    $json = Get-Content $snapshot | ConvertFrom-Json
     foreach ($det in $json){
         $detection_prepared = Prepare-DetectionForHash($det)
         $detection_hash = Get-HashOfString $($detection_prepared | ConvertTo-Json)
@@ -17806,20 +17796,17 @@ function Load-DetectionSnapshot {
         $snapshot_detection_count += 1
     }
     Write-Message "Loaded $snapshot_detection_count Allowed Detections from Snapshot: $snapshot"
-
 }
 
 function Get-HashOfString($string){
     <#
     .SYNOPSIS
-        Receives a string and converts it to a hash-representation, emitting the resulting hash
+        Receives a string and converts it to a hash-representation, emitting the resulting hash. Forces UTF8 Encoding for deterministic hash generation
     #>
-    $stream = [System.IO.MemoryStream]::new()
-    $w = [System.IO.StreamWriter]::new($stream)
-    $w.write($string)
-    $w.Flush()
-    $stream.Position = 0
+	$bytes = [System.Text.Encoding]::UTF8.GetBytes($string)
+    $stream = [System.IO.MemoryStream]::new($bytes)
     $hash = Get-FileHash -Algorithm SHA1 -InputStream $stream
+	$stream.Close()
     return $hash.Hash
 }
 
@@ -17829,10 +17816,10 @@ function Format-DateTime($datetime, $utc_convert) {
         Receives a PowerShell datetime object and a boolean - returns a standardized string representation - if utc_convert is $true, converts the (assumed) local timestamp into UTC
     #>
     if ($utc_convert){
-        return $datetime.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss")
-    } else {
-        return $datetime.ToString("yyyy-MM-dd'T'HH:mm:ss")
+        $datetime = $datetime.ToUniversalTime()
     }
+
+	return $datetime.ToString("o")
 }
 
 function Detection-Metrics {
